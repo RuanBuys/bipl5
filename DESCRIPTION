@@ -1,0 +1,27 @@
+Package: bipl5
+Title: Construct Reactive Calibrated Axes Biplots
+Version: 0.0.0.9100
+Authors@R: 
+    c(person(given = "Ruan",
+           family = "Buys",
+           role = c("aut", "cre"),
+           email = "ruanbuys8@gmail.com",
+           comment = c(ORCID = "0000-0001-8527-8631")),
+           person("Carel", 
+           "van der Merwe",
+           role = c("aut"),
+           comment = c(ORCID = "0000-0003-0676-8240")))
+Description: A modern view on PCA biplot with calibrated axes. Create PCA biplots rendered in HTML with significant reactivity embedded on the plot. Furtheremore, the traditional biplot view is enhanced by translated axes with interclass kernel densities superimposed.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports: 
+    cluster,
+    crayon (>= 1.5.2),
+    htmlwidgets (>= 1.6.2),
+    knitr (>= 1.43),
+    plotly (>= 4.10.2)
+Depends: 
+    R (>= 2.10)

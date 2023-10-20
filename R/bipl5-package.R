@@ -1,0 +1,38 @@
+#' bipl5: Constructing Reactive Calibrated Axes Biplots
+#'
+#' A modern view on PCA biplot with calibrated axes. Create PCA biplots rendered in HTML with significant reactivity embedded on the plot. Furtheremore, the traditional biplot view is enhanced by translated axes with interclass kernel densities superimposed.
+#'
+#' @section Details:
+#'
+#' \tabular{ll}{
+#'    Package: \tab bipl5 \cr
+#'    Type: \tab Package \cr
+#'    Version: \tab 0.9006\cr
+#'    Date: \tab 16-10-2023\cr
+#'    License: \tab MIT \cr
+#'    LazyLoad: \tab TRUE\cr
+#'  }
+#' @section Author(s):
+#'
+#'
+#' \itemize{
+#'  \item{Ruan Buys (Maintainer)}
+#'
+#'  \item{Carel van der Merwe}
+#'
+#' }
+#'
+#'
+#' @section Core Functions:
+#' \itemize{
+#'  \item{\link{PCAbiplot}}
+#'
+#'  \item{\link{TDA}}
+#'
+#'  \item{Fit Measures}
+#' }
+#'
+#' @docType package
+#' @name bipl5
+NULL
+#> NULL
