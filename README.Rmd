@@ -18,30 +18,30 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of bpl5 is to ...
+The goal of bpl5 is to provide a modern take on PCA biplots with calibrated axes. The biplots are rendered in HTML via the plotly graphing library, upon which custom JavaScript code is appended to make the plot reactive. The traditional biplot view is also extended through an algorithm that translates the axes out of the data centroid, decluttering the view. In addition to the former, inter-class kernel densities are superimposed on the axes to give an indication of the data spread across the variables.
 
 ## Installation
 
 You can install the development version of bpl5 from [GitHub](https://github.com/) with:
 
-``` r
+```{r}
 # install.packages("devtools")
-devtools::install_github("RuanBuys/biplotzero")
+devtools::install_github("RuanBuys/bipl5")
 ```
 
-## Example
+## Example: traditional PCA biplot
 
-This is a basic example which shows you how to solve a common problem:
+This is a basic example of constucting a traditional PCA biplot with calibrated axes and vector loadings. In the literature, a square is often drawn around the biplot purely for aesthetic reasons. This approached was modified by contructing a circle which bounds the plot:
 
 ```{r example}
-library(bpl5)
-## basic example code
+library(bipl5)
+PCAbiplot(iris[,-5],group=iris[,5])
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
+On the rendered HTML file there are reactive events embedded on the plot, such as changing the principal components used for the scaffolding. More detailed information can be obtained by reading the help documentation
 
 ```{r cars}
-summary(cars)
+?PCAbiplot
 ```
 
 You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.

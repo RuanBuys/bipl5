@@ -32,6 +32,11 @@
 #'  \item{Fit Measures}
 #' }
 #'
+#' @section Code Availability:
+#'
+#' The newest version of the package can be obtained on GitHub: \url{https://github.com/RuanBuys/bipl5}
+#'
+#'
 #' @docType package
 #' @name bipl5
 NULL

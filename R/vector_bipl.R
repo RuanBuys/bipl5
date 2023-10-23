@@ -46,17 +46,21 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
   angles<-list()
   for(i in 1:p){
     AnnotCounter[i]<-length(shift[[i]][,3])
-    index<-which(shift[[i]][,1]== max(shift[[i]][,1],na.rm=TRUE))
     index2<-which(shift[[i]][,3]== max(shift[[i]][,3],na.rm=TRUE))
-    if(index<index2){
-      AxName<-paste("  ",colnames(x$x)[i])
-      pos<-"right"
+    angle<-atan(shift[[i]][index2,2]/shift[[i]][index2,1])
+    AxName<-colnames(x$x)[i]
+    pos<-"right"
+    quads<-getquad(x$V,x$m)
+
+    if(quads[i]==3){
+      angle<-angle-pi
+      pos="left"
     }
-    else{
-      index<-index2
-      AxName<-paste(colnames(x$x)[i],"  ")
-      pos<-"left"
+    if(quads[i]==2){
+      angle<-angle-pi
+      pos="left"
     }
+
     angles[[i]]<-list(x=-10*sin(atan(x$m[i])),y=10*cos(atan(x$m[i])))
     p_ly<-p_ly |> add_trace(x=shift[[i]][,1],y=shift[[i]][,2],
                             type="scatter", mode="markers",
@@ -74,7 +78,7 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
                       showarrow=FALSE,textangle=-atan(x$m[i])*180/pi,visible=visible,yshift=-10*cos(atan(x$m[i])),
                       xshift=10*sin(atan(x$m[i])),meta='axis',xaxis="x",yaxis="y",customdata=i )|>
 
-      add_trace(x=shift[[i]][index,1],y=shift[[i]][index,2],text=AxName,type="scatter",mode="text",textposition=pos,
+      add_trace(x=radius*cos(angle),y=radius*sin(angle),text=AxName,type="scatter",mode="text",textposition=pos,
                 legendgroup=paste("Ax",i,sep=""),showlegend=FALSE,textfont=list(size=14),
                 meta='axis',xaxis="x",yaxis="y",visible=visible)
 
