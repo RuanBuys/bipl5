@@ -53,7 +53,7 @@ InsertFitMeasures<-function(p_ly,x){
   eigval <- x$PCA$d^2
   lambda.mat <- diag(eigval)
 
-  J<-matrix(0,nrow=x$p,ncol=x$p)
+  J<-matrix(0,nrow=min(x$p,x$n),ncol=min(x$p,x$n))
 
   J[c(1,2),c(1,2)]<-diag(2)
   V<-x$PCA$v

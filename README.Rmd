@@ -18,25 +18,28 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of bpl5 is to provide a modern take on PCA biplots with calibrated axes. The biplots are rendered in HTML via the plotly graphing library, upon which custom JavaScript code is appended to make the plot reactive. The traditional biplot view is also extended through an algorithm that translates the axes out of the data centroid, decluttering the view. In addition to the former, inter-class kernel densities are superimposed on the axes to give an indication of the data spread across the variables.
+The goal of bipl5 is to provide a modern take on PCA biplots with calibrated axes. The biplots are rendered in HTML via the plotly graphing library, upon which custom JavaScript code is appended to make the plot reactive. The traditional biplot view is also extended through an algorithm that translates the axes out of the data centroid, decluttering the view. In addition to the former, inter-class kernel densities are superimposed on the axes to give an indication of the data spread across the variables.
 
 ## Installation
 
-You can install the development version of bpl5 from [GitHub](https://github.com/) with:
+You can install the latest version of bipl5 from CRAN with:
 
 ```{r}
-# install.packages("devtools")
-devtools::install_github("RuanBuys/bipl5")
+install.packages("bipl5")
+library(bipl5)
 ```
 
-## Example: traditional PCA biplot
+## Example: Traditional PCA biplot
 
-This is a basic example of constucting a traditional PCA biplot with calibrated axes and vector loadings. In the literature, a square is often drawn around the biplot purely for aesthetic reasons. This approached was modified by contructing a circle which bounds the plot:
+This is a basic example of constructing a traditional PCA biplot with calibrated axes and vector loadings. In the literature, a square is often drawn around the biplot purely for aesthetic reasons. This approached was modified by constructing a circle which bounds the plot:
 
 ```{r example}
-library(bipl5)
 PCAbiplot(iris[,-5],group=iris[,5])
 ```
+
+<img src="man/figures/PCAbiplot.png" width="100%" />
+
+
 
 On the rendered HTML file there are reactive events embedded on the plot, such as changing the principal components used for the scaffolding. More detailed information can be obtained by reading the help documentation
 
@@ -44,12 +47,15 @@ On the rendered HTML file there are reactive events embedded on the plot, such a
 ?PCAbiplot
 ```
 
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.
 
-You can also embed plots, for example:
+## Example: Automated Orthogonal Parallel Translation of the axes
 
-```{r pressure, echo = FALSE}
-plot(pressure)
+The cluttering in the centroid of the biplot can be relieved by the Orthogonal Parallel Translation of the axes out of the data centroid in such a way that the correlation structure among variables are retained. This is done with the following:
+
+```{r}
+x<-PCAbiplot(iris[,-5],group=iris[,5])
+x |> TDAbiplot()
 ```
 
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.
+
+<img src="man/figures/TDAbiplot.png" width="100%" />

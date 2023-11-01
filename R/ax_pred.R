@@ -5,7 +5,7 @@
 #'
 #' @param x An object of class biplot
 #'
-#' @return Coordinates for axis predictivities (column 1:p) + overall quality (col p+1)
+#' @return Coordinates for axis predictivities (row 1:p) + overall quality (row p+1)
 #' @noRd
 axis_predictivities<-function(x){
   V.mat <- x$PCA$v
@@ -13,7 +13,7 @@ axis_predictivities<-function(x){
   lambda.mat <- diag(eigval)
 
   databasis<-matrix(NA,ncol=x$p,nrow=x$p+1)
-  for(i in 1:x$p){
+  for(i in 1:min(x$p,x$n)){
     V <- x$PCA$v[,1:i]
     if(i==1){
       V<-matrix(V,ncol=1)
@@ -29,6 +29,8 @@ axis_predictivities<-function(x){
     databasis[x$p+1,i]<-sum(eigval[1:i])/sum(eigval)
 
   }
+  rownames(databasis)<-c(colnames(x$x),"Overall Quality")
+  colnames(databasis)<-paste("Rank",1:x$p)
   return(databasis)
 }
 

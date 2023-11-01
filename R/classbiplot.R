@@ -1,6 +1,6 @@
-#' Contruct a rank-2 PCA biplot
+#' Construct a rank-2 PCA biplot
 #'
-#' Rank-2 PCA biplots are constructed based on three sets of principal components.
+#' Rank-2 PCA biplots are constructed based on a combination of the first three principal components.
 #'
 #' @param x A numeric matrix or data frame of size n x p
 #' @param group Vector of size n representing the class of each observation in x
@@ -8,11 +8,11 @@
 #' @param basis A vector specifying which eigenvectors serve as basis for the plot. Currently only a biplot of rank 2 is supported
 #' @param build_plot Boolean, indicating whether the biplot should be drawn or not. Mostly used in internal function calls
 #' serve as basis for the biplot. Currently only a biplot of rank 2 is supported
-#' @inheritParams TDA.bipl5
+#' @inheritParams TDAbiplot.bipl5
 #' @details
-#' The method performs Principal Component Analysis (PCA) on the input data and constructs a traditional
-#' biplot using vector representation. The data is clustered together on the display by the
-#' \code{group} parameter. The \code{scale} paramater determines if SVD is performed on the covariance matrix
+#' The method performs Principal Component Analysis (PCA) on the input data and constructs both a traditional
+#' biplot using vector representation and with calibrated axes. The data is clustered together on the display by the
+#' \code{group} parameter. The \code{scale} parameter determines if SVD is performed on the covariance matrix
 #' or correlation of \code{x}. It is highly recommended to set \code{scale=TRUE} as the rendered display
 #' is sensitive to the scaling in \code{x}.
 #'
@@ -22,12 +22,12 @@
 #'
 #' * A dropdown menu to change the principal components used to construct the display. Currently only the first three pairwise are supported.
 #' * A button to give fit statistics of the biplot. Once clicked, a table is added to give the adequacy and predictivity of each axis for the display.
-#' * A button that inserts a a graph depicting the cumulative predictivity of each axis against the dimension of the biplot.
+#' * A button that inserts a graph depicting the cumulative predictivity of each axis against the dimension of the biplot. See \link{FMbiplot} for the coordinates.
 #' * A button that changes the display from vector representation of the variables, to calibrated axes in their original scale. The vector representation includes a unit circle around the origin.
 #' * Prediction lines are inserted onto the display if an observation is clicked. The prediction lines can be removed by clicking on the legend entry.
 #'
 #'
-#' @return A named list of class 'biplot' with the following attributes
+#' @return A named list of class \code{bipl5} with the following attributes
 #' \item{x}{A data frame which is the original input data}
 #'
 #' \item{Z}{A matrix of n x 2 representing the coordinates of each observation on the biplot}
@@ -40,35 +40,34 @@
 #'
 #' \item{mu}{The vector of column means of the input data}
 #'
-#' \item{stddev}{vector of column standard deviations if the scale paramter is set to TRUE.}
+#' \item{stddev}{Vector of column standard deviations if the scale parameter is set to TRUE.}
 #'
 #' \item{PCA}{The singular value decomposition of the covariance/correlation matrix, see \code{\link[base]{svd}}}
 #'
 #' \item{bipl}{The plotly graph displaying the biplot, see \code{\link[plotly]{plot_ly}}}
 #'
-#' \item{Adequacy}{The adeqacy of each axis displayed for each set of principal components}
+#' \item{Adequacy}{The adequacy of each axis displayed for each set of principal components}
 #'
 #' \item{Predictivity}{The predictivity of each axis displayed for each set of principal components}
 #'
 #' @seealso
 #' \code{\link{print.bipl5}} to display the biplot graph and
-#' further see \code{\link{TDA}} to
-#' draw a biplot with calibrated density axes. Fit measures can be obtained by FITMEASURES
+#' further see \code{\link{TDAbiplot}} to
+#' draw a biplot with calibrated density axes. Fit measures can be obtained by \code{\link{FMbiplot}}
 #' @export
 #'
 #' @import plotly
 #' @importFrom stats sd
 #' @importFrom htmlwidgets onRender
+#' @importFrom methods is
 #' @examples
 #' ## Consruct a biplot with
 #' x<-PCAbiplot(iris[,1:4],group=iris[,5])
-#' x
 #' #alternatively
 #' print(x)
 #'
 #' ## Construct a biplot that preserves the correlation structure among the variables
 #' y<-PCAbiplot(iris[,-5],group=iris[,5],scale=TRUE)
-#' y
 PCAbiplot<-function(x,group=NULL,scale=TRUE,basis=1:2,symbol="circle",color=NULL,build_plot=TRUE){
   rank<-2
   #validify plot symbol
@@ -82,7 +81,7 @@ PCAbiplot<-function(x,group=NULL,scale=TRUE,basis=1:2,symbol="circle",color=NULL
     stop(paste("\n","Length of group differes from the number of rows in x"))
   col_not_numeric<-NULL
   for (i in 1:ncol(x)){
-    if(class(x[,i])!="numeric") col_not_numeric<-append(col_not_numeric,paste(colnames(x)[i],"\n"))
+    if(!is(x[,i],"numeric")) col_not_numeric<-append(col_not_numeric,paste(colnames(x)[i],"\n"))
   }
   if(!is.null(col_not_numeric)) stop("The following columns are not numeric: \n",col_not_numeric)
 

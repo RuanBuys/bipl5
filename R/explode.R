@@ -1,26 +1,26 @@
 #' Construct PCA biplots with translated calibrated density axes
 #'
-#' Construct various rank-2 PCA biplots based on the first three principal components.
+#' Construct various rank-2 PCA biplots with translated axes based on a combination of the first three principal components.
 #'
-#' @export TDA
-#' @rdname TDA
-TDA<-function(x,dist,inflate=1,alpha=0.95,alpha_Elip=NULL,swop=FALSE,
+#' @export TDAbiplot
+#' @rdname TDAbiplot
+TDAbiplot<-function(x,dist=NULL,inflate=1,alpha=0.95,alpha_Elip=NULL,swop=FALSE,
                   density.args=NULL,color=NULL,symbol="circle"){
-  UseMethod("TDA",x)
+  UseMethod("TDAbiplot",x)
 }
 
 
 
 
 #' @param x An object of class \code{bipl5}. See \code{\link{PCAbiplot}} in this regard.
-#' @param dist Minimum distance between each axis
+#' @param dist Minimum distance between each axis. Default is roughly 12.5% of the plot diameter
 #' @param inflate Density inflation factor
 #' @param alpha Argument passes to \code{alpha_Elip}
 #' @param alpha_Elip A function taking two arguments, Z and alpha. The output of the function should
 #' be a two-column matrix of coordinates which will be used to construct an alpha-ellipse. See details below.
 #' @param swop Swop the direction which to which each axis is translated
 #' @param density.args Arguments to be passed to the density function
-#' @param color Colors to be utilised per class group
+#' @param color Colors to be utilized per class group
 #' @param symbol Plotting symbol to be used per class group
 #'
 #' @return A named list of class \code{bipl5}, see \code{\link{PCAbiplot}}, with the following attributes:
@@ -36,21 +36,21 @@ TDA<-function(x,dist,inflate=1,alpha=0.95,alpha_Elip=NULL,swop=FALSE,
 #'
 #' \item{mu}{The vector of column means of the input data}
 #'
-#' \item{stddev}{vector of column standard deviations if the scale paramter is set to TRUE.}
+#' \item{stddev}{Vector of column standard deviations if the scale parameter is set to TRUE.}
 #'
 #' \item{PCA}{The singular value decomposition of the covariance/correlation matrix, see \code{\link[base]{svd}}}
 #'
 #' \item{plot}{The plotly graph displaying the biplot, see \code{\link[plotly]{plot_ly}}}
 #'
-#' \item{Adequacy}{The adeqacy of each axis displayed for each set of principal components}
+#' \item{Adequacy}{The adequacy of each axis displayed for each set of principal components}
 #'
 #' \item{Predictivity}{The predictivity of each axis displayed for each set of principal components}
 #' @export
-#' @method TDA bipl5
-#' @S3method TDA bipl5
+#' @method TDAbiplot bipl5
+#' @S3method TDAbiplot bipl5
 #' @import plotly
 #' @importFrom htmlwidgets onRender
-#' @rdname TDA
+#' @rdname TDAbiplot
 #'
 #' @details
 #' This function produces a PCA biplot with translated calibrated axes. The function
@@ -59,29 +59,29 @@ TDA<-function(x,dist,inflate=1,alpha=0.95,alpha_Elip=NULL,swop=FALSE,
 #'
 #' * A dropdown menu to change the principal components used to construct the display. Currently only the first three pairwise are supported.
 #' * A button to give fit statistics of the biplot. Once clicked, a table is added to give the adequacy and predictivity of each axis for the display.
-#' * A button that inserts a a graph depicting the cumulative predictivity of each axis against the dimension of the biplot.
+#' * A button that inserts a graph depicting the cumulative predictivity of each axis against the dimension of the biplot.
 #' * Prediction lines are inserted onto the display if an observation is clicked. The prediction lines can be removed by clicking on the legend entry.
 #'
 #' The \code{alpha_Elip} argument is used to subset the biplot plotting coordinates (Z) to remove the effect of outliers in the data.
 #' A common suggestion is to use an alphabag or on Convex hull peeling algorithm to strip away extreme points. The alpha-ellipse
-#' will be constructed around this data, and will impact the lenghts of the calibrated axes.
+#' will be constructed around this data, and will impact the lengths of the calibrated axes.
 #' @seealso
-#' See also fjskfjs
+#' \link{PCAbiplot} \link{FMbiplot}
 #'
 #' @examples
 #' ## Simple illustration of a calibrated density axis biplot
 #' x<-PCAbiplot(iris[,-5],group=iris[,5])
-#' TDA(x,dist=1,inflate=1)
+#' TDAbiplot(x,dist=1,inflate=1)
 #'
 #' ## Change the plotting characters of class-groups:
-#' x |> TDA(dist=1,inflate=1,symbol=c("circle","diamond","square"))
+#' y<- x |> TDAbiplot(dist=1,inflate=1,symbol=c("circle","diamond","square"))
 #'
 #' ## Custom kernel densities can be drawn on the axes:
 #' density.args<-list()
 #' density.args$kernel <- "optcosine"
 #' density.args$bw <- "sj"
 #'
-#' x |> TDA(dist=1,inflate=1,density.args=density.args)
+#' y<- x |> TDAbiplot(dist=1,inflate=1,density.args=density.args)
 #'
 #' ## To lessen the effects of outliers, a smaller alpha-ellipse can be
 #' ## used to determine axis lengths. Define a function that strips away
@@ -101,8 +101,8 @@ TDA<-function(x,dist,inflate=1,alpha=0.95,alpha_Elip=NULL,swop=FALSE,
 #'     return(x2[grDevices::chull(x2),])
 #' }
 #'
-#' x |> TDA(dist=1,inflate=1, alpha_Elip =HullPeeling, alpha=0.4)
-TDA.bipl5<-function(x,dist,inflate=1,alpha=0.95,alpha_Elip=NULL,swop=FALSE,
+#' y<- x |> TDAbiplot(dist=1,inflate=1, alpha_Elip=HullPeeling, alpha=0.4)
+TDAbiplot.bipl5<-function(x,dist=NULL,inflate=1,alpha=0.95,alpha_Elip=NULL,swop=FALSE,
                          density.args=NULL,color=NULL,symbol="circle"){
   validity<-validate_symbol(symbol)
   if(!is.null(validity))
@@ -190,11 +190,22 @@ TDA.bipl5<-function(x,dist,inflate=1,alpha=0.95,alpha_Elip=NULL,swop=FALSE,
   p_ly$elementId<-"mydiv"
 
 
+  #---------Dist argument
+  if(is.null(dist)){
+    r1<-range(x$Z[,1])
+    r2<-range(x$Z[,2])
+    len<-sqrt((r1[1]-r1[2])^2+(r2[1]-r2[2])^2)
+    print(len/8)
+  }
+
   #-------------Plotly--------------------
   arguments<-as.list(match.call())
   arguments[[1]]<-NULL
   arguments$p_ly<-p_ly
   arguments$visible<-TRUE
+  if(is.null(arguments$dist))
+    arguments$dist<-len/8
+
 
   addPC12<- do.call(addPlotlyBiplot,arguments)
 
@@ -241,9 +252,8 @@ TDA.bipl5<-function(x,dist,inflate=1,alpha=0.95,alpha_Elip=NULL,swop=FALSE,
   x$dis_shifted<-addPC12$Dshift
   x$Adequacy<-FitMeasures[[2]]
   x$Predictivity<-FitMeasures[[3]]
-  x$progress<-"TDA"
+  x$progress<-"TDAbiplot"
   return(x)
-  #next get the tick marks and translate then outward
 }
 
 

@@ -1,6 +1,6 @@
 #' Method to obtain the predicted or fitted values of the biplot
 #'
-#' skryf iets
+#' Extract the fitted values of the biplot display
 #'
 #' @param object An object of class \code{bipl5} from which predicted values are to be obtained
 #' @param kable.args Additional arguments to be passes to the kable function
@@ -85,7 +85,7 @@ appendcall<-function(current,new){
 
 
 .onAttach <- function(libname, pkgname) {
-  packageStartupMessage("\nWelcome to bipl5!\n\nrun help(bipl5) for more information on the package scope!")
+  packageStartupMessage("\nWelcome to bipl5!\n\nRun help(bipl5) for more information on the package scope.\n")
 }
 
 #' Plot an object of class \code{bipl5}

@@ -59,7 +59,7 @@ addPlotlyBiplot<-function(p_ly,x,visible,dist,inflate=1,alpha=0.95,
   AnnotCounter<-numeric()
   angles<-list()
   for(i in 1:p){
-    AnnotCounter[i]<-length(shift$ends[[i]][,3])
+    AnnotCounter[i]<-length(shift$ends[[i]][,3])+1 +1
     index<-which(shift$ends[[i]][,1]== max(shift$ends[[i]][,1]))
     index2<-which(shift$ends[[i]][,3]== max(shift$ends[[i]][,3]))
     if(index==index2){
@@ -71,19 +71,34 @@ addPlotlyBiplot<-function(p_ly,x,visible,dist,inflate=1,alpha=0.95,
       AxName<-paste(colnames(x$x)[i],"  ")
       pos<-"left"
     }
+    AxName<-""
+    if(quads[i] %in% c(1,4)){
+      lab<-paste("<b>",colnames(x$x)[i]," &#129030; </b>",sep="")
+      lab2<-"&#11166;"
+    }
+    if(quads[i] %in% c(2,3)){
+      lab<-paste("<b> &#129028; ",colnames(x$x)[i]," </b>",sep="")
+      lab2<-"&#11164;"
+    }
+
     angles[[i]]<-list(x=-10*sin(atan(x$m[i])),y=10*cos(atan(x$m[i])))
     p_ly<-p_ly |> add_trace(x=shift$ends[[i]][,1],y=shift$ends[[i]][,2], text=as.character(shift$ends[[i]][,3]),
-                            type="scatter", mode="lines+markers",line = list(color = 'grey',width=2.2),
-                            marker=list(color="grey"),name=colnames(x$x)[i], textposition='top',
+                            type="scatter", mode="lines+markers",line = list(color = 'grey',width=1),
+                            marker=list(color="grey",size=4),name=colnames(x$x)[i], textposition='top',
                             legendgroup=paste("Ax",i,sep=""),meta='axis',xaxis="x",yaxis="y",customdata=i,
                             hoverinfo='name',visible=visible) |>
       add_annotations(x=shift$ends[[i]][,1],y=shift$ends[[i]][,2], text=as.character(shift$ends[[i]][,3]),
                       showarrow=FALSE,textangle=-atan(x$m[i])*180/pi,visible=visible,yshift=-10*cos(atan(x$m[i])),
-                      xshift=10*sin(atan(x$m[i])),meta='axis',xaxis="x",yaxis="y",customdata=i )|>
+                      xshift=10*sin(atan(x$m[i])),meta='axis',xaxis="x",yaxis="y",customdata=i,font=list(size=10))|>
 
       add_trace(x=shift$ends[[i]][index,1],y=shift$ends[[i]][index,2],text=AxName,type="scatter",mode="text",textposition=pos,
                 legendgroup=paste("Ax",i,sep=""),showlegend=FALSE,textfont=list(size=14),
-                meta='axis',xaxis="x",yaxis="y",visible=visible)
+                meta='axis',xaxis="x",yaxis="y",visible=visible)|>
+      add_annotations(x=mean(shift$ends[[i]][,1]),y=mean(shift$ends[[i]][,2]), text=paste("<b>",colnames(x$x)[i],"</b>"),showarrow=FALSE,
+                      textangle=-atan(x$m[i])*180/pi,visible=visible,yshift=-20*cos(atan(x$m[i])),
+                      xshift=20*sin(atan(x$m[i])),meta='axis',xaxis="x",yaxis="y",customdata=i)|>
+      add_annotations(x=shift$ends[[i]][index2,1],y=shift$ends[[i]][index2,2], text=lab2,
+                      showarrow=FALSE,textangle=-atan(x$m[i])*180/pi,visible=visible,meta='axis',xaxis="x",yaxis="y",customdata=i,font=list(size=18))
 
 
 
@@ -96,7 +111,7 @@ addPlotlyBiplot<-function(p_ly,x,visible,dist,inflate=1,alpha=0.95,
       if(j==1) showleg<-TRUE
       index_color<-which(levels(group)==unique(group)[i])
       p_ly<-p_ly|> add_trace(x=Dens[,2*j-1],y=Dens[,2*j],mode="lines",type="scatter",
-                             line=list(dash="dot",color=Col[index_color],width=1.5),legendgroup=unique(group)[i],
+                             line=list(dash="dot",color=Col[index_color],width=0.95),legendgroup=unique(group)[i],
                              showlegend=showleg, name=unique(group)[i], meta='density', xaxis="x",
                              yaxis="y",hoverinfo="skip",customdata=paste("Ax",j,sep=""),visible=visible)
     }
@@ -386,7 +401,8 @@ insert_reactivity_TDA<-function(plotly_plot,dat){
                       }
                     });
                 Plotly.deleteTraces('mydiv', remove);
-            }
+              }
+            clicked=false;
             selected = d.active;
             var Activetraces = Array(data.num).fill().map((element, index) => index + data.num*active);
             var NewActive = Array(data.num).fill().map((element, index) => index + data.num*selected);
@@ -594,7 +610,7 @@ insert_reactivity_TDA<-function(plotly_plot,dat){
                 line: {
                   dash: 'dot',
                   color: 'gray',
-                  width: 1.5
+                  width: 1
                              }
             };
             var newAnnotation = {
@@ -607,7 +623,10 @@ insert_reactivity_TDA<-function(plotly_plot,dat){
                 yshift: 10*Math.cos(Math.atan(data.a[active][i].m)),
                 name: 'Predicted Value',
                 meta: 'predict',
-                visible: true
+                visible: true,
+                font: {
+                  size:10
+                }
             }
 
             el.layout.annotations.push(newAnnotation);
@@ -623,7 +642,8 @@ insert_reactivity_TDA<-function(plotly_plot,dat){
             yaxis: 'y',
             meta: 'predict',
             marker: {
-              color:'gray'
+              color:'gray',
+              size: 4
             }
         }
         Plotly.addTraces('mydiv', markertrace);

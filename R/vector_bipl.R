@@ -48,7 +48,7 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
     AnnotCounter[i]<-length(shift[[i]][,3])
     index2<-which(shift[[i]][,3]== max(shift[[i]][,3],na.rm=TRUE))
     angle<-atan(shift[[i]][index2,2]/shift[[i]][index2,1])
-    AxName<-colnames(x$x)[i]
+    AxName<-paste("<b>",colnames(x$x)[i],"</b>")
     pos<-"right"
     quads<-getquad(x$V,x$m)
 
@@ -64,32 +64,31 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
     angles[[i]]<-list(x=-10*sin(atan(x$m[i])),y=10*cos(atan(x$m[i])))
     p_ly<-p_ly |> add_trace(x=shift[[i]][,1],y=shift[[i]][,2],
                             type="scatter", mode="markers",
-                            marker=list(color="grey"),name=colnames(x$x)[i],
+                            marker=list(color="grey",size=4),name=colnames(x$x)[i],
                             legendgroup=paste("Ax",i,sep=""),meta='axis',xaxis="x",yaxis="y",customdata=i,
                             hoverinfo='name',visible=visible,showlegend=FALSE) |>
 
       add_trace(x=c(radius*cos(atan(m[i])),radius*cos(atan(m[i])-pi)),y=c(radius*sin(atan(m[i])),radius*sin(atan(m[i])-pi)), type="scatter",
-                    mode="lines",line = list(color = 'grey',width=2.2),
+                    mode="lines",line = list(color = 'grey',width=1),
                     name=colnames(x$x)[i],legendgroup=paste("Ax",i,sep=""),
                     meta='axis',xaxis="x",yaxis="y",customdata=i,
                     hoverinfo='name',visible=visible)|>
 
       add_annotations(x=shift[[i]][,1],y=shift[[i]][,2], text=as.character(shift[[i]][,3]),
                       showarrow=FALSE,textangle=-atan(x$m[i])*180/pi,visible=visible,yshift=-10*cos(atan(x$m[i])),
-                      xshift=10*sin(atan(x$m[i])),meta='axis',xaxis="x",yaxis="y",customdata=i )|>
+                      xshift=10*sin(atan(x$m[i])),meta='axis',xaxis="x",yaxis="y",customdata=i,font=list(size=10) )|>
 
       add_trace(x=radius*cos(angle),y=radius*sin(angle),text=AxName,type="scatter",mode="text",textposition=pos,
-                legendgroup=paste("Ax",i,sep=""),showlegend=FALSE,textfont=list(size=14),
+                legendgroup=paste("Ax",i,sep=""),showlegend=FALSE,textfont=list(size=12),
                 meta='axis',xaxis="x",yaxis="y",visible=visible)
 
 
 
   }
   p_ly<-p_ly|> add_trace(x=elipcoords[,1],y=elipcoords[,2], type="scatter",
-                   mode="lines",line = list(color = 'green',width=1.2),
+                   mode="lines",line = list(color = 'green',width=0.6),
                    name="circle",showlegend=FALSE,
-                   meta='circle',xaxis="x",yaxis="y",
-                   hoverinfo='name',visible=visible)
+                   meta='circle',xaxis="x",yaxis="y",visible=visible,hoverinfo="none")
 
   #---------------Get equations of shifted axes for prediction lines---------------
   slope<-numeric()
@@ -436,7 +435,8 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                       }
                     });
                 Plotly.deleteTraces('mydiv', remove);
-            }
+              }
+            clicked=false;
             selected = d.active;
             var Activetraces = Array(data.num).fill().map((element, index) => index + data.num*active);
             var NewActive = Array(data.num).fill().map((element, index) => index + data.num*selected);
@@ -656,8 +656,8 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                 line: {
                   dash: 'dot',
                   color: 'gray',
-                  width: 1.5
-                             }
+                  width: 1
+                      }
             };
             var newAnnotation = {
                 x: x_new,
@@ -669,7 +669,10 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                 yshift: 10*Math.cos(Math.atan(data.a[active][i].m)),
                 name: 'Predicted Value',
                 meta: 'predict',
-                visible: true
+                visible: true,
+                font: {
+                  size:10
+                }
             }
 
             el.layout.annotations.push(newAnnotation);
@@ -685,7 +688,8 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
             yaxis: 'y',
             meta: 'predict',
             marker: {
-              color:'gray'
+              color:'gray',
+              size: 4
             }
         }
         Plotly.addTraces('mydiv', markertrace);

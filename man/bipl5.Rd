@@ -5,7 +5,7 @@
 \alias{bipl5}
 \title{bipl5: Constructing Reactive Calibrated Axes Biplots}
 \description{
-A modern view on PCA biplot with calibrated axes. Create PCA biplots rendered in HTML with significant reactivity embedded on the plot. Furtheremore, the traditional biplot view is enhanced by translated axes with interclass kernel densities superimposed.
+A modern view on PCA biplot with calibrated axes. Create PCA biplots rendered in HTML with significant reactivity embedded on the plot. Furthermore, the traditional biplot view is enhanced by translated axes with interclass kernel densities superimposed.
 }
 \section{Details}{
 
@@ -13,7 +13,7 @@ A modern view on PCA biplot with calibrated axes. Create PCA biplots rendered in
 \tabular{ll}{
 Package: \tab bipl5 \cr
 Type: \tab Package \cr
-Version: \tab 0.9006\cr
+Version: \tab 0.0.0.9400\cr
 Date: \tab 16-10-2023\cr
 License: \tab MIT \cr
 LazyLoad: \tab TRUE\cr
@@ -36,9 +36,9 @@ LazyLoad: \tab TRUE\cr
 \itemize{
 \item{\link{PCAbiplot}}
 
-\item{\link{TDA}}
+\item{\link{TDAbiplot}}
 
-\item{Fit Measures}
+\item{\link{FMbiplot}}
 }
 }
 
