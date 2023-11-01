@@ -7,7 +7,7 @@
 \usage{
 TDAbiplot(
   x,
-  dist,
+  dist = NULL,
   inflate = 1,
   alpha = 0.95,
   alpha_Elip = NULL,
@@ -19,7 +19,7 @@ TDAbiplot(
 
 \method{TDAbiplot}{bipl5}(
   x,
-  dist,
+  dist = NULL,
   inflate = 1,
   alpha = 0.95,
   alpha_Elip = NULL,
@@ -32,7 +32,7 @@ TDAbiplot(
 \arguments{
 \item{x}{An object of class \code{bipl5}. See \code{\link{PCAbiplot}} in this regard.}
 
-\item{dist}{Minimum distance between each axis}
+\item{dist}{Minimum distance between each axis. Default is roughly 12.5\% of the plot diameter}
 
 \item{inflate}{Density inflation factor}
 

@@ -31,7 +31,7 @@ PCAbiplot(
 serve as basis for the biplot. Currently only a biplot of rank 2 is supported}
 }
 \value{
-A named list of class 'biplot' with the following attributes
+A named list of class \code{bipl5} with the following attributes
 \item{x}{A data frame which is the original input data}
 
 \item{Z}{A matrix of n x 2 representing the coordinates of each observation on the biplot}
@@ -58,8 +58,8 @@ A named list of class 'biplot' with the following attributes
 Rank-2 PCA biplots are constructed based on a combination of the first three principal components.
 }
 \details{
-The method performs Principal Component Analysis (PCA) on the input data and constructs a traditional
-biplot using vector representation. The data is clustered together on the display by the
+The method performs Principal Component Analysis (PCA) on the input data and constructs both a traditional
+biplot using vector representation and with calibrated axes. The data is clustered together on the display by the
 \code{group} parameter. The \code{scale} parameter determines if SVD is performed on the covariance matrix
 or correlation of \code{x}. It is highly recommended to set \code{scale=TRUE} as the rendered display
 is sensitive to the scaling in \code{x}.
@@ -70,7 +70,7 @@ embedded on the display. The following features are available on the display:
 \itemize{
 \item A dropdown menu to change the principal components used to construct the display. Currently only the first three pairwise are supported.
 \item A button to give fit statistics of the biplot. Once clicked, a table is added to give the adequacy and predictivity of each axis for the display.
-\item A button that inserts a graph depicting the cumulative predictivity of each axis against the dimension of the biplot.
+\item A button that inserts a graph depicting the cumulative predictivity of each axis against the dimension of the biplot. See \link{FMbiplot} for the coordinates.
 \item A button that changes the display from vector representation of the variables, to calibrated axes in their original scale. The vector representation includes a unit circle around the origin.
 \item Prediction lines are inserted onto the display if an observation is clicked. The prediction lines can be removed by clicking on the legend entry.
 }

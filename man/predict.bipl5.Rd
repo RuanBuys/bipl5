@@ -16,7 +16,7 @@ The function invisibly returns the predicted values of the biplot display,
 and outputs the predicted values via the \code{\link[knitr]{kable}} function
 }
 \description{
-skryf iets
+Extract the fitted values of the biplot display
 }
 \examples{
 x<-PCAbiplot(iris[,-5])

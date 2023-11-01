@@ -39,6 +39,10 @@ LazyLoad: \tab TRUE\cr
 \item{\link{TDAbiplot}}
 
 \item{\link{FMbiplot}}
+
+\item{\link{predict.bipl5}}
+
+\item{\link{print.bipl5}}
 }
 }
 

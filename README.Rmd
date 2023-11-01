@@ -50,7 +50,7 @@ On the rendered HTML file there are reactive events embedded on the plot, such a
 
 ## Example: Automated Orthogonal Parallel Translation of the axes
 
-The cluttering in the centroid of the biplot can be relieved by the Orthogonal Parallel Translation of the axes out of the data centroid in such a way that the correlation structure among variables are retained. This is done with the following:
+The cluttering in the centroid of the biplot can be relieved by the Orthogonal Parallel Translation of the axes out of the data centroid in such a way that the correlation structure among variables is retained. This is done with the following:
 
 ```{r}
 x<-PCAbiplot(iris[,-5],group=iris[,5])
