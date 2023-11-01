@@ -3,16 +3,21 @@
 #' Extract the fitted values of the biplot display
 #'
 #' @param object An object of class \code{bipl5} from which predicted values are to be obtained
-#' @param kable.args Additional arguments to be passes to the kable function
+#' @param ... Additional arguments to be passes to the kable function, contained in a list named kable.args
 #'
 #' @return The function invisibly returns the predicted values of the biplot display,
 #'          and outputs the predicted values via the \code{\link[knitr]{kable}} function
+#' @export predict.bipl5
 #' @export
 #' @importFrom knitr kable
 #' @examples
+#' kable.args<-list()
+#' kable.args$format<-"pipe"
 #' x<-PCAbiplot(iris[,-5])
-#' predict(x)
-predict.bipl5<-function(object,kable.args=list()){
+#' predict(x,kable.args)
+predict.bipl5<-function(object,...){
+  if(is.null(kable.args))
+    kable.args<-list()
   kable.args$x<-object$x
   if(is.null(kable.args$format))
     kable.args$format<-"pipe"
@@ -26,7 +31,7 @@ predict.bipl5<-function(object,kable.args=list()){
 #' Default print method for an object of class \code{bipl5}
 #'
 #' @param x Object of class \code{bipl5}
-#' @param ... Additional paramaters
+#' @param ... Additional parameters
 #'
 #' @return The object is returned invisibly
 #' @export print.bipl5

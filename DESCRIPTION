@@ -1,6 +1,6 @@
 Package: bipl5
 Title: Construct Reactive Calibrated Axes Biplots
-Version: 0.0.0.9600
+Version: 1.0.1
 Authors@R: 
     c(person(given = "Ruan",
            family = "Buys",
@@ -11,11 +11,11 @@ Authors@R:
            "van der Merwe",
            role = c("aut","ths"),
            comment = c(ORCID = "0000-0003-0676-8240")))
-Description: A modern view on the PCA biplot with calibrated axes. Create 
-    principal component anylisis biplots rendered in HTML with significant
-    reactivity embedded within the plot. Furthermore, the traditional biplot 
-    view is enhanced by translated axes with interclass kernel densities
-    superimposed.
+Description: A modern view on the principal component analysis biplot with 
+    calibrated axes. Create principal component analysis biplots rendered in 
+    HTML with significant reactivity embedded within the plot. Furthermore, 
+    the traditional biplot view is enhanced by translated axes with inter-class
+    kernel densities superimposed.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
