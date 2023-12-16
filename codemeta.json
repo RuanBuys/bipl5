@@ -1,0 +1,162 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "identifier": "bipl5",
+  "description": "A modern view on the principal component analysis biplot with calibrated axes. Create principal component analysis biplots rendered in HTML with significant reactivity embedded within the plot. Furthermore, the traditional biplot view is enhanced by translated axes with inter-class kernel densities superimposed. For more information on biplots, see Gower, J.C., Lubbe, S. and le Roux, N.J. (2011, ISBN: 978-0-470-01255-0).",
+  "name": "bipl5: Construct Reactive Calibrated Axes Biplots",
+  "codeRepository": "https://github.com/RuanBuys/bipl5",
+  "issueTracker": "https://github.com/RuanBuys/bipl5/issues",
+  "license": "https://spdx.org/licenses/MIT",
+  "version": "1.0.2",
+  "programmingLanguage": {
+    "@type": "ComputerLanguage",
+    "name": "R",
+    "url": "https://r-project.org"
+  },
+  "runtimePlatform": "R version 4.3.1 (2023-06-16 ucrt)",
+  "provider": {
+    "@id": "https://cran.r-project.org",
+    "@type": "Organization",
+    "name": "Comprehensive R Archive Network (CRAN)",
+    "url": "https://cran.r-project.org"
+  },
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "Ruan",
+      "familyName": "Buys",
+      "email": "ruanbuys8@gmail.com",
+      "@id": "https://orcid.org/0000-0001-8527-8631"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Carel",
+      "familyName": "van der Merwe",
+      "@id": "https://orcid.org/0000-0003-0676-8240"
+    }
+  ],
+  "contributor": [
+    {
+      "@type": "Person",
+      "givenName": "Carel",
+      "familyName": "van der Merwe",
+      "@id": "https://orcid.org/0000-0003-0676-8240"
+    }
+  ],
+  "copyrightHolder": [
+    {
+      "@type": "Person",
+      "givenName": "Ruan",
+      "familyName": "Buys",
+      "email": "ruanbuys8@gmail.com",
+      "@id": "https://orcid.org/0000-0001-8527-8631"
+    }
+  ],
+  "maintainer": [
+    {
+      "@type": "Person",
+      "givenName": "Ruan",
+      "familyName": "Buys",
+      "email": "ruanbuys8@gmail.com",
+      "@id": "https://orcid.org/0000-0001-8527-8631"
+    }
+  ],
+  "softwareSuggestions": [
+    {
+      "@type": "SoftwareApplication",
+      "identifier": "testthat",
+      "name": "testthat",
+      "version": ">= 3.0.0",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=testthat"
+    }
+  ],
+  "softwareRequirements": {
+    "1": {
+      "@type": "SoftwareApplication",
+      "identifier": "cluster",
+      "name": "cluster",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=cluster"
+    },
+    "2": {
+      "@type": "SoftwareApplication",
+      "identifier": "crayon",
+      "name": "crayon",
+      "version": ">= 1.5.2",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=crayon"
+    },
+    "3": {
+      "@type": "SoftwareApplication",
+      "identifier": "htmlwidgets",
+      "name": "htmlwidgets",
+      "version": ">= 1.6.2",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=htmlwidgets"
+    },
+    "4": {
+      "@type": "SoftwareApplication",
+      "identifier": "knitr",
+      "name": "knitr",
+      "version": ">= 1.43",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=knitr"
+    },
+    "5": {
+      "@type": "SoftwareApplication",
+      "identifier": "methods",
+      "name": "methods"
+    },
+    "6": {
+      "@type": "SoftwareApplication",
+      "identifier": "plotly",
+      "name": "plotly",
+      "version": ">= 4.10.2",
+      "provider": {
+        "@id": "https://cran.r-project.org",
+        "@type": "Organization",
+        "name": "Comprehensive R Archive Network (CRAN)",
+        "url": "https://cran.r-project.org"
+      },
+      "sameAs": "https://CRAN.R-project.org/package=plotly"
+    },
+    "7": {
+      "@type": "SoftwareApplication",
+      "identifier": "R",
+      "name": "R",
+      "version": ">= 2.10"
+    },
+    "SystemRequirements": null
+  },
+  "fileSize": "291.717KB",
+  "relatedLink": "https://cran.r-project.org/web/packages/bipl5/index.html",
+  "releaseNotes": "https://github.com/RuanBuys/bipl5/blob/master/NEWS.md",
+  "readme": "https://github.com/RuanBuys/bipl5/blob/main/README.md",
+  "keywords": ["biplots", "multivariate-data"]
+}
