@@ -33,3 +33,6 @@ Depends:
     R (>= 2.10)
 URL: https://cran.r-project.org/web/packages/bipl5/index.html
 BugReports: https://github.com/RuanBuys/bipl5/issues
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
