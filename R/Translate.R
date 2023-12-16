@@ -18,11 +18,13 @@ MoveLines<-function(elip,m,quadrant,d,initial_ends,swop,cols){
 
   FinalPos2<-matrix(NA,nrow=1,ncol=2)
   final_enders<-list()
-  ordering<-order(m,decreasing = TRUE)#-----------------------------------------------------order
+  #customise the ordering
+  ordering<-order(m,decreasing = TRUE)
   Axis<-list() #just stores the axis names
   for(i in ordering){
     ends<-initial_ends[[i]][,-3]%*%RotMatrix[,(2*i-1):(2*i)]
-    translate_deets<-translate(RotatedElip[,(2*i-1):(2*i)],quadrant[i],FinalPos2,d,ends,thetas[i],swop)
+    translate_deets<-translate(RotatedElip[,(2*i-1):(2*i)],quadrant[i],
+                               FinalPos2,d,ends,thetas[i],swop)
     FinalPos2<-rbind(FinalPos2,translate_deets$ends)
     distShifted[i]<-translate_deets$distance
     final_enders[[i]]<-cbind(translate_deets$ends,initial_ends[[i]][,3])
@@ -78,7 +80,8 @@ MoveDensities<-function(Z,m,endpoints,dist,dinflation,group,densityargs=NULL){
       if(length(Density_per_group)<j)
         Density_per_group[[j]]<-coors%*%back_rotate
       else
-        Density_per_group[[j]]<-cbind(Density_per_group[[j]],coors%*%back_rotate)
+        Density_per_group[[j]]<-cbind(Density_per_group[[j]],
+                                      coors%*%back_rotate)
     }
   }
   return(Density_per_group)

@@ -1,6 +1,6 @@
 Package: bipl5
 Title: Construct Reactive Calibrated Axes Biplots
-Version: 1.0.1
+Version: 1.0.2
 Authors@R: 
     c(person(given = "Ruan",
            family = "Buys",
@@ -15,7 +15,8 @@ Description: A modern view on the principal component analysis biplot with
     calibrated axes. Create principal component analysis biplots rendered in 
     HTML with significant reactivity embedded within the plot. Furthermore, 
     the traditional biplot view is enhanced by translated axes with inter-class
-    kernel densities superimposed.
+    kernel densities superimposed. For more information on biplots, see 
+    Gower, J.C., Lubbe, S. and le Roux, N.J. (2011, ISBN: 978-0-470-01255-0).
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -30,3 +31,5 @@ Imports:
     plotly (>= 4.10.2)
 Depends: 
     R (>= 2.10)
+URL: https://cran.r-project.org/web/packages/bipl5/index.html
+BugReports: https://github.com/RuanBuys/bipl5/issues

@@ -30,16 +30,20 @@ TDAbiplot(
 )
 }
 \arguments{
-\item{x}{An object of class \code{bipl5}. See \code{\link{PCAbiplot}} in this regard.}
+\item{x}{An object of class \code{bipl5}. See \code{\link{PCAbiplot}} in
+this regard.}
 
-\item{dist}{Minimum distance between each axis. Default is roughly 12.5\% of the plot diameter}
+\item{dist}{Minimum distance between each axis. Default is roughly 12.5\%
+of the plot diameter}
 
 \item{inflate}{Density inflation factor}
 
 \item{alpha}{Argument passes to \code{alpha_Elip}}
 
-\item{alpha_Elip}{A function taking two arguments, Z and alpha. The output of the function should
-be a two-column matrix of coordinates which will be used to construct an alpha-ellipse. See details below.}
+\item{alpha_Elip}{A function taking two arguments, Z and alpha.
+The output of the function should be a two-column
+matrix of coordinates which will be used to construct
+an alpha-ellipse. See details below.}
 
 \item{swop}{Swop the direction which to which each axis is translated}
 
@@ -50,46 +54,64 @@ be a two-column matrix of coordinates which will be used to construct an alpha-e
 \item{symbol}{Plotting symbol to be used per class group}
 }
 \value{
-A named list of class \code{bipl5}, see \code{\link{PCAbiplot}}, with the following attributes:
+A named list of class \code{bipl5}, see \code{\link{PCAbiplot}},
+with the following attributes:
 \item{x}{A data frame which is the original input data}
 
-\item{Z}{A matrix of n x 2 representing the coordinates of each observation on the biplot}
+\item{Z}{A matrix of n x 2 representing the coordinates of each observation
+on the biplot}
 
 \item{rank}{The rank of the approximated data}
 
-\item{scale}{Whether the data is standardized prior to performing dimension reduction}
+\item{scale}{Whether the data is standardized prior to performing dimension
+reduction}
 
 \item{group}{The grouping vector of the data}
 
 \item{mu}{The vector of column means of the input data}
 
-\item{stddev}{Vector of column standard deviations if the scale parameter is set to TRUE.}
+\item{stddev}{Vector of column standard deviations if the scale parameter
+is set to TRUE.}
 
-\item{PCA}{The singular value decomposition of the covariance/correlation matrix, see \code{\link[base]{svd}}}
+\item{PCA}{The singular value decomposition of the covariance/correlation
+matrix, see \code{\link[base]{svd}}}
 
-\item{plot}{The plotly graph displaying the biplot, see \code{\link[plotly]{plot_ly}}}
+\item{plot}{The plotly graph displaying the biplot,
+see \code{\link[plotly]{plot_ly}}}
 
-\item{Adequacy}{The adequacy of each axis displayed for each set of principal components}
+\item{Adequacy}{The adequacy of each axis displayed for each set
+of principal components}
 
-\item{Predictivity}{The predictivity of each axis displayed for each set of principal components}
+\item{Predictivity}{The predictivity of each axis displayed for each set
+of principal components}
 }
 \description{
-Construct various rank-2 PCA biplots with translated axes based on a combination of the first three principal components.
+Construct various rank-2 PCA biplots with translated axes based on a
+combination of the first three principal components.
 }
 \details{
-This function produces a PCA biplot with translated calibrated axes. The function
-constructs this biplot in the \code{\link[plotly]{plot_ly}} graphing library with reactivity
-embedded on the display. The following features are available on the display:
+This function produces a PCA biplot with translated calibrated axes.
+The function constructs this biplot in the \code{\link[plotly]{plot_ly}}
+graphing library with reactivity embedded on the display. The following
+features are available on the display:
 \itemize{
-\item A dropdown menu to change the principal components used to construct the display. Currently only the first three pairwise are supported.
-\item A button to give fit statistics of the biplot. Once clicked, a table is added to give the adequacy and predictivity of each axis for the display.
-\item A button that inserts a graph depicting the cumulative predictivity of each axis against the dimension of the biplot.
-\item Prediction lines are inserted onto the display if an observation is clicked. The prediction lines can be removed by clicking on the legend entry.
+\item A dropdown menu to change the principal components used to construct
+the display. Currently only the first three pairwise are supported.
+\item A button to give fit statistics of the biplot. Once clicked, a table
+is added to give the adequacy and predictivity of each axis for the display.
+\item A button that inserts a graph depicting the cumulative predictivity
+of each axis against the dimension of the biplot.
+\item Prediction lines are inserted onto the display if an observation is
+clicked. The prediction lines can be removed by clicking on the legend
+entry.
 }
 
-The \code{alpha_Elip} argument is used to subset the biplot plotting coordinates (Z) to remove the effect of outliers in the data.
-A common suggestion is to use an alphabag or on Convex hull peeling algorithm to strip away extreme points. The alpha-ellipse
-will be constructed around this data, and will impact the lengths of the calibrated axes.
+The \code{alpha_Elip} argument is used to subset the biplot plotting
+coordinates (Z) to remove the effect of outliers in the data.
+A common suggestion is to use an alphabag or on Convex hull peeling
+algorithm to strip away extreme points. The alpha-ellipse
+will be constructed around this data, and will impact the lengths
+of the calibrated axes.
 }
 \examples{
 ## Simple illustration of a calibrated density axis biplot

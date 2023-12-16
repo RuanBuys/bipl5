@@ -7,7 +7,8 @@
 #' @param color colors per class group
 #' @param visible boolean: whether traces visible or not
 #'
-#' @return a list containing plotly graph, axes details, predicted values, number annotations, angles of axes
+#' @return a list containing plotly graph, axes details, predicted values,
+#'         number annotations, angles of axes
 #' @noRd
 add_vector_biplot<-function(p_ly,x,symbol,color,visible){
 
@@ -19,13 +20,15 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
   group<-x$group
   m<-x$m
   quads<-x$quads
-  Xhat<-Z%*%t(x$V) |> sweep(MARGIN = 2,STATS=stddev,FUN="*") |> sweep(MARGIN=2,STATS=mu,FUN="+")
+  Xhat<-Z%*%t(x$V) |> sweep(MARGIN = 2,STATS=stddev,FUN="*") |>
+    sweep(MARGIN=2,STATS=mu,FUN="+")
   p_ly_pch<-symbol
 
   radius<-max(abs(Z))*1.2
   theta<-seq(0,2*pi,length.out=200)
   elipcoords<-cbind(radius*cos(theta),radius*sin(theta))
-  endpoints<-tickmarks(ellip=elipcoords,gradient=m,p=p,V=x$V, mu=mu,stddev=stddev)
+  endpoints<-tickmarks(ellip=elipcoords,gradient=m,p=p,
+                       V=x$V, mu=mu,stddev=stddev)
   shift<-check_inside_circle(ticks=endpoints,r=radius,thetas=atan(m))
   #----------PLoTLY-----------
   #Insert observations
@@ -36,9 +39,13 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
   #insert the Z coordinates
   for(i in 1:length(levels(x$group))){
     p_ly<-p_ly |>
-      add_trace(data=Z,x=Z[x$group==levels(x$group)[i],1],y=Z[x$group==levels(x$group)[i],2],name=levels(x$group)[i],
-                type = "scatter", mode = "markers",hovertext=rownames(x$x)[x$group==levels(x$group)[i]],hoverinfo="text+name",
-                customdata=(1:n)[x$group==levels(x$group)[i]], meta="data",xaxis="x",yaxis="y",visible=visible,
+      add_trace(data=Z,x=Z[x$group==levels(x$group)[i],1],
+                y=Z[x$group==levels(x$group)[i],2],name=levels(x$group)[i],
+                type = "scatter", mode = "markers",
+                hovertext=rownames(x$x)[x$group==levels(x$group)[i]],
+                hoverinfo="text+name",
+                customdata=(1:n)[x$group==levels(x$group)[i]],
+                meta="data",xaxis="x",yaxis="y",visible=visible,
                 marker=list(symbol=p_ly_pch[i],color=Col[i]))
   }
   # Insert axes with the tick marks
@@ -54,32 +61,41 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
 
     if(quads[i]==3){
       angle<-angle-pi
-      pos="left"
+      pos<-"left"
     }
     if(quads[i]==2){
       angle<-angle-pi
-      pos="left"
+      pos<-"left"
     }
 
     angles[[i]]<-list(x=-10*sin(atan(x$m[i])),y=10*cos(atan(x$m[i])))
-    p_ly<-p_ly |> add_trace(x=shift[[i]][,1],y=shift[[i]][,2],
-                            type="scatter", mode="markers",
-                            marker=list(color="grey",size=4),name=colnames(x$x)[i],
-                            legendgroup=paste("Ax",i,sep=""),meta='axis',xaxis="x",yaxis="y",customdata=i,
-                            hoverinfo='name',visible=visible,showlegend=FALSE) |>
+    p_ly<-p_ly |>
+      add_trace(x=shift[[i]][,1],y=shift[[i]][,2],
+                type="scatter", mode="markers",
+                marker=list(color="grey",size=4),
+                name=colnames(x$x)[i],legendgroup=paste("Ax",i,sep=""),
+                meta='axis',xaxis="x",yaxis="y",customdata=i,
+                hoverinfo='name',visible=visible,showlegend=FALSE) |>
 
-      add_trace(x=c(radius*cos(atan(m[i])),radius*cos(atan(m[i])-pi)),y=c(radius*sin(atan(m[i])),radius*sin(atan(m[i])-pi)), type="scatter",
-                    mode="lines",line = list(color = 'grey',width=1),
-                    name=colnames(x$x)[i],legendgroup=paste("Ax",i,sep=""),
-                    meta='axis',xaxis="x",yaxis="y",customdata=i,
-                    hoverinfo='name',visible=visible)|>
+      add_trace(x=c(radius*cos(atan(m[i])),radius*cos(atan(m[i])-pi)),
+                y=c(radius*sin(atan(m[i])),radius*sin(atan(m[i])-pi)),
+                type="scatter",
+                mode="lines",line = list(color = 'grey',width=1),
+                name=colnames(x$x)[i],legendgroup=paste("Ax",i,sep=""),
+                meta='axis',xaxis="x",yaxis="y",customdata=i,
+                hoverinfo='name',visible=visible)|>
 
-      add_annotations(x=shift[[i]][,1],y=shift[[i]][,2], text=as.character(shift[[i]][,3]),
-                      showarrow=FALSE,textangle=-atan(x$m[i])*180/pi,visible=visible,yshift=-10*cos(atan(x$m[i])),
-                      xshift=10*sin(atan(x$m[i])),meta='axis',xaxis="x",yaxis="y",customdata=i,font=list(size=10) )|>
+      add_annotations(x=shift[[i]][,1],y=shift[[i]][,2],
+                      text=as.character(shift[[i]][,3]),
+                      showarrow=FALSE,textangle=-atan(x$m[i])*180/pi,
+                      visible=visible,yshift=-10*cos(atan(x$m[i])),
+                      xshift=10*sin(atan(x$m[i])),meta='axis',
+                      xaxis="x",yaxis="y",customdata=i,font=list(size=10) )|>
 
-      add_trace(x=radius*cos(angle),y=radius*sin(angle),text=AxName,type="scatter",mode="text",textposition=pos,
-                legendgroup=paste("Ax",i,sep=""),showlegend=FALSE,textfont=list(size=12),
+      add_trace(x=radius*cos(angle),y=radius*sin(angle),
+                text=AxName,type="scatter",mode="text",textposition=pos,
+                legendgroup=paste("Ax",i,sep=""),showlegend=FALSE,
+                textfont=list(size=12),
                 meta='axis',xaxis="x",yaxis="y",visible=visible)
 
 
@@ -88,9 +104,10 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
   p_ly<-p_ly|> add_trace(x=elipcoords[,1],y=elipcoords[,2], type="scatter",
                    mode="lines",line = list(color = 'green',width=0.6),
                    name="circle",showlegend=FALSE,
-                   meta='circle',xaxis="x",yaxis="y",visible=visible,hoverinfo="none")
+                   meta='circle',xaxis="x",yaxis="y",
+                   visible=visible,hoverinfo="none")
 
-  #---------------Get equations of shifted axes for prediction lines---------------
+  #---------Get equations of shifted axes for prediction lines------------
   slope<-numeric()
   intercept<-numeric()
   for(i in 1:p){
@@ -136,14 +153,22 @@ check_inside_circle<-function(ticks,r,thetas){
 #' @return plotly graph
 #' @noRd
 make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
+  Title<-"Overall quality and axis predictivities (cumulative)"
   p_ly<-plot_ly() |>
-    layout(legend=list(tracegroupgap=0,xref="container",yref="container",x=1,y=0.82,title=list(text='<b> PCA Biplot </b>')),
-           xaxis=list(title=pc12$DisplQuality,showticklabels = FALSE,zeroline=FALSE,showgrid = FALSE,domain=c(0,1)),
-           yaxis=list(showticklabels = FALSE,zeroline=FALSE,scaleanchor={'x'}, scaleratio=1,showgrid = FALSE),
+    layout(legend=list(tracegroupgap=0,xref="container",
+                       yref="container",x=1,y=0.82,
+                       title=list(text='<b> PCA Biplot </b>')),
+           xaxis=list(title=pc12$DisplQuality,showticklabels = FALSE,
+                      zeroline=FALSE,showgrid = FALSE,domain=c(0,1)),
+           yaxis=list(showticklabels = FALSE,zeroline=FALSE,
+                      scaleanchor={'x'}, scaleratio=1,showgrid = FALSE),
            xaxis2=list(domain=c(0,0.15),zeroline=TRUE),
            yaxis2=list(zeroline=TRUE,side="left",position=0),
-           xaxis3=list(domain=c(0.65,1),zeroline=TRUE,showgrid=TRUE,anchor="y3",dtick=1,title="Dimension of Subspace"),
-           yaxis3=list(zeroline=TRUE,side="left",position=0.65,showgrid=TRUE,domain=c(0.15,0.85),layer="below traces",title="Overall quality and axis predictivities (cumulative)"),
+           xaxis3=list(domain=c(0.65,1),zeroline=TRUE,showgrid=TRUE,
+                       anchor="y3",dtick=1,title="Dimension of Subspace"),
+           yaxis3=list(zeroline=TRUE,side="left",position=0.65,
+                       showgrid=TRUE,domain=c(0.15,0.85),layer="below traces",
+                       title=Title),
            updatemenus = list(
              list(
                y = 0.8,
@@ -213,7 +238,8 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
   p_ly$elementId<-"mydiv"
   pc13<-PCAbiplot(pc12$x,group=pc12$group,basis=c(1,3),build_plot=FALSE)
   pc23<-PCAbiplot(pc12$x,group=pc12$group,basis=c(2,3),build_plot=FALSE)
-  addpc12<-add_vector_biplot(p_ly=p_ly,x=pc12,symbol=symbol,color=colorpalete,visible=TRUE)
+  addpc12<-add_vector_biplot(p_ly=p_ly,x=pc12,symbol=symbol,
+                             color=colorpalete,visible=TRUE)
   p_ly<-addpc12[[1]]
   addpc13<-add_vector_biplot(p_ly,pc13,symbol,colorpalete,visible=FALSE)
   p_ly<-addpc13[[1]]
@@ -226,10 +252,12 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
   Xhat2<-list(t(addpc12[[3]]),t(addpc13[[3]]),t(addpc23[[3]]))
   df<-list(addpc12[[2]],addpc13[[2]],addpc23[[2]])
 
-  #need to count the annotations as these are tick marks. JS should toggle visibility
+  #need to count the annotations as these are tick marks.
+  #JS should toggle visibility
   counter<-c(addpc12[[4]],addpc13[[4]],addpc23[[4]])
 
-  #also need the angles of all the tick marks as annotation for new predict lines
+  #also need the angles of all the tick marks as annotation for
+  #new predict lines
 
   angles<-list(addpc12[[5]],addpc13[[5]],addpc23[[5]])
   numtraces<-length(levels(pc12$group))+3*pc12$p +1
@@ -237,11 +265,13 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
 
 
 
-  p_ly<-p_ly|> add_trace(x=cos(seq(0,2*pi,length.out=200)),y=sin(seq(0,2*pi,length.out=200)), type="scatter",
-                         mode="lines",line = list(color = 'red',width=1.2),
-                         name="Unit Circle",showlegend=FALSE,
-                         meta='veccircle',xaxis="x",yaxis="y",
-                         hoverinfo='name',visible=FALSE)
+  p_ly<-p_ly|>
+    add_trace(x=cos(seq(0,2*pi,length.out=200)),
+              y=sin(seq(0,2*pi,length.out=200)), type="scatter",
+              mode="lines",line = list(color = 'red',width=1.2),
+              name="Unit Circle",showlegend=FALSE,
+              meta='veccircle',xaxis="x",yaxis="y",
+              hoverinfo='name',visible=FALSE)
 
   p_ly<-InsertAxisDeets(p_ly,pc12)
   FitMeasures<-InsertFitMeasures(p_ly,pc12)
@@ -704,7 +734,9 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
 
 }
 
-   ",data=list(a=df,Xhat=Xhat,Xhat2=Xhat2,colnames=colnames(pc12$x),num=numtraces,DP=Dispquality,counts=c(0,cumsum(counter)),Angles=angles))
+   ",data=list(a=df,Xhat=Xhat,Xhat2=Xhat2,colnames=colnames(pc12$x),
+               num=numtraces,DP=Dispquality,counts=c(0,cumsum(counter)),
+               Angles=angles))
 
   return(list(p_ly,FitMeasures[[2]],FitMeasures[[3]]))
 }
@@ -726,7 +758,7 @@ insert_vector_annots<-function(p_ly,PC12,PC13,PC23){
                    xref = "x", yref = "y",
                    axref = "x", ayref = "y",
                    text = colnames(PC12$x),
-                   showarrow = T,
+                   showarrow = TRUE,
                    x = rep(0,PC12$p),
                    y = rep(0,PC12$p),
                    arrowside="start",
@@ -737,7 +769,7 @@ insert_vector_annots<-function(p_ly,PC12,PC13,PC23){
                        xref = "x", yref = "y",
                        axref = "x", ayref = "y",
                        text = colnames(PC12$x),
-                       showarrow = T,
+                       showarrow = TRUE,
                        x = rep(0,PC12$p),
                        y = rep(0,PC12$p),
                        arrowside="start",
@@ -748,7 +780,7 @@ insert_vector_annots<-function(p_ly,PC12,PC13,PC23){
                        xref = "x", yref = "y",
                        axref = "x", ayref = "y",
                        text = colnames(PC12$x),
-                       showarrow = T,
+                       showarrow = TRUE,
                        x = rep(0,PC12$p),
                        y = rep(0,PC12$p),
                        arrowside="start",

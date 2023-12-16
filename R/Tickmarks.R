@@ -12,7 +12,9 @@
 tickmarks<-function(ellip,gradient,p,V,mu,stddev,ticks=4){
   #V,x,tickoverride
   ticks<-rep(4,p)
-  #first need to construct rotation matrix to determine upper and lower bounds of each line segment
+  #first need to construct rotation matrix to determine upper and lower bounds
+  #of each line segment
+
   #need to use the gradient vector
   thetas<-atan(gradient)
   RotMatrix<-RotationConstructor(thetas)
@@ -31,7 +33,8 @@ tickmarks<-function(ellip,gradient,p,V,mu,stddev,ticks=4){
     ticks_coors<-cbind(ticks_x,rep(0,length(ticks_x)))
     #hos tokkelos rotate them back
 
-    if(Xhats[2,1]-Xhats[1,1]<0) #need to reverse ordering cause pretty only ascending
+    if(Xhats[2,1]-Xhats[1,1]<0)
+      #need to reverse ordering cause pretty only ascending
       interval<- interval[order(interval,decreasing = TRUE)]
     axes[[i]]<-cbind(ticks_coors%*%RotationConstructor(-thetas[i]),interval)
 
@@ -45,9 +48,10 @@ tickmarks<-function(ellip,gradient,p,V,mu,stddev,ticks=4){
 
 #' Interpolate sequence of points
 #'
-#' Used to interpolate the tickmarks on the axes. Calles by tickmarks function
+#' Used to interpolate the tickmarks on the axes. Called by tickmarks function
 #'
-#' @param vect Sequence of points from wich we want to interpolate -> y-coordinates
+#' @param vect Sequence of points from wich we want to
+#'             interpolate -> y-coordinates
 #' @param Range1 x-coordinates of endpoints of interpolation
 #' @param Range2 y-coordinates of endpoints of interpolation
 #'

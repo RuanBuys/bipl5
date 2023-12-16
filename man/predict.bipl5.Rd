@@ -7,13 +7,16 @@
 \method{predict}{bipl5}(object, ...)
 }
 \arguments{
-\item{object}{An object of class \code{bipl5} from which predicted values are to be obtained}
+\item{object}{An object of class \code{bipl5} from which predicted
+values are to be obtained}
 
-\item{...}{Additional arguments to be passes to the kable function, contained in a list named kable.args}
+\item{...}{Additional arguments to be passes to the kable function,
+contained in a list named kable.args}
 }
 \value{
-The function invisibly returns the predicted values of the biplot display,
-and outputs the predicted values via the \code{\link[knitr]{kable}} function
+The function invisibly returns the predicted values of the
+biplot display, and outputs the predicted values via the
+\code{\link[knitr]{kable}} function
 }
 \description{
 Extract the fitted values of the biplot display

@@ -25,7 +25,9 @@ FMbiplot<-function(x){
   cat(ReturnList$DisplayQuality)
 
 
-  kable.args<-list(x=ReturnList$cum_pred,format="pipe",caption="Cumulative predictivity across dimensions",digits=4)
+  kable.args<-list(x=ReturnList$cum_pred,format="pipe",
+                   caption="Cumulative predictivity across dimensions",
+                   digits=4)
   print(do.call(kable,kable.args))
 
   ad<-x$Adequacy
@@ -35,7 +37,8 @@ FMbiplot<-function(x){
 
 
   pred<-x$Predictivity
-  kable.args<-list(x=pred,format="pipe",caption="Marginal Predictivity of Axes")
+  kable.args<-list(x=pred,format="pipe",
+                   caption="Marginal Predictivity of Axes")
   print(do.call(kable,kable.args))
   invisible(ReturnList)
 }

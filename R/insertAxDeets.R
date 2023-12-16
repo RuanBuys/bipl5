@@ -17,10 +17,13 @@ InsertAxisDeets<-function(p_ly,x){
       linetipe<-"solid"
       lwidth<-3
     }
-    p_ly<-p_ly |> add_trace(y=pred_deets[i,],x=1:p,type="scatter", mode="lines+markers",line=list(dash=linetipe,width=lwidth),
-                            xaxis="x",yaxis="y",hoverinfo="skip",showlegend=TRUE,
-                            name=ColNames[i],visible=FALSE,meta="axis_pred",legendgroup="AxPred",
-                            legendgrouptitle=list(text="<b> Axis Predictivity <b>"))
+    p_ly<-p_ly |>
+      add_trace(y=pred_deets[i,],x=1:p,type="scatter", mode="lines+markers",
+                line=list(dash=linetipe,width=lwidth),
+                xaxis="x",yaxis="y",hoverinfo="skip",showlegend=TRUE,
+                name=ColNames[i],visible=FALSE,meta="axis_pred",
+                legendgroup="AxPred",
+                legendgrouptitle=list(text="<b> Axis Predictivity <b>"))
   }
   return(p_ly)
 }

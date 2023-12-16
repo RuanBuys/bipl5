@@ -1,3 +1,10 @@
+
+## Resubmission
+
+This is a resubmission. In this version I have:
+
+* Added a reference for the package methods in the Description section of the DESCRIPTION file
+
 ## Resubmission
 
 This is a resubmission. In this version I have:

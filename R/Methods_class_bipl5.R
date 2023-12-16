@@ -2,11 +2,14 @@
 #'
 #' Extract the fitted values of the biplot display
 #'
-#' @param object An object of class \code{bipl5} from which predicted values are to be obtained
-#' @param ... Additional arguments to be passes to the kable function, contained in a list named kable.args
+#' @param object An object of class \code{bipl5} from which predicted
+#'               values are to be obtained
+#' @param ... Additional arguments to be passes to the kable function,
+#'            contained in a list named kable.args
 #'
-#' @return The function invisibly returns the predicted values of the biplot display,
-#'          and outputs the predicted values via the \code{\link[knitr]{kable}} function
+#' @return The function invisibly returns the predicted values of the
+#'         biplot display, and outputs the predicted values via the
+#'         \code{\link[knitr]{kable}} function
 #' @export predict.bipl5
 #' @export
 #' @importFrom knitr kable
@@ -90,7 +93,9 @@ appendcall<-function(current,new){
 
 
 .onAttach <- function(libname, pkgname) {
-  packageStartupMessage("\nWelcome to bipl5!\n\nRun help(bipl5) for more information on the package scope.\n")
+  boodskap<-
+  packageStartupMessage("\nWelcome to bipl5!\n\nRun help(bipl5) for more
+                        information on the package scope.\n")
 }
 
 #' Plot an object of class \code{bipl5}

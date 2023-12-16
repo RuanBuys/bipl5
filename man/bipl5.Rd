@@ -5,7 +5,10 @@
 \alias{bipl5}
 \title{bipl5: Constructing Reactive Calibrated Axes Biplots}
 \description{
-A modern view on PCA biplot with calibrated axes. Create PCA biplots rendered in HTML with significant reactivity embedded on the plot. Furthermore, the traditional biplot view is enhanced by translated axes with interclass kernel densities superimposed.
+A modern view on PCA biplot with calibrated axes. Create PCA biplots
+rendered in HTML with significant reactivity embedded on the plot.
+Furthermore, the traditional biplot view is enhanced by translated axes
+with interclass kernel densities superimposed.
 }
 \section{Details}{
 
@@ -49,6 +52,7 @@ LazyLoad: \tab TRUE\cr
 \section{Code Availability}{
 
 
-The newest version of the package can be obtained on GitHub: \url{https://github.com/RuanBuys/bipl5}
+The newest version of the package can be obtained on
+GitHub: \url{https://github.com/RuanBuys/bipl5}
 }
 
