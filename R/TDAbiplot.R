@@ -211,7 +211,6 @@ TDAbiplot.bipl5<-function(x,dist=NULL,inflate=1,alpha=0.95,
     r1<-range(x$Z[,1])
     r2<-range(x$Z[,2])
     len<-sqrt((r1[1]-r1[2])^2+(r2[1]-r2[2])^2)
-    print(len/8)
   }
 
   #-------------Plotly--------------------

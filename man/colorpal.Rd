@@ -2,19 +2,21 @@
 % Please edit documentation in R/Translate_Helpers.R
 \name{colorpal}
 \alias{colorpal}
-\title{bpl5 default color scales}
+\title{bipl5 default color scales}
 \usage{
 colorpal(number = 16)
 }
 \arguments{
-\item{number}{Number of distinct colors to return}
+\item{number}{Integer - number of distinct colors to return. Ranges from
+1 to 16.}
 }
 \value{
-A vector of colors
+Character vector of default colors in \code{bipl5}. There are
+sixteen unique colors defined.
 }
 \description{
-bpl5 default color scales
+bipl5 default color scales
 }
 \examples{
-colorpal()
+colorpal(number=7)
 }

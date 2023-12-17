@@ -283,7 +283,6 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
   p_ly<- p_ly|> htmlwidgets::onRender("
 
      function(el,x,data) {
-     console.log(el.data)
      var clicked = false;
      var hasbox = false;
      var arr1 = new Array(data.Xhat[0][0].length).fill(0);
@@ -300,7 +299,8 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
      var pred12 = el.data[el.data.length-3];
      var pred13 = el.data[el.data.length-2];
      var pred23 = el.data[el.data.length-1];
-     Plotly.deleteTraces('mydiv',[el.data.length-1,el.data.length-2,el.data.length-3])
+     Plotly.deleteTraces('mydiv',
+                        [el.data.length-1,el.data.length-2,el.data.length-3])
      var All_annot = el.layout.annotations;
      function myFunction(up,low) {
         for (let i = up; i < low; i++) {
@@ -346,13 +346,14 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
 
               if(d.menu._index==2){
                   // that is the fit measures table needs to be inserted
+                  var idx = table_visible+table2_visible;
                   table2_visible = [1,0][table2_visible];
                   var update = {
                     'updatemenus[2].active': [0,1][rel_but_sel],
-                    'yaxis.domain' : [[0,1],[0.3,1],[0.3,1]][table_visible+table2_visible],
-                    'yaxis2.domain': [[0.15,0.85],[0.3,1],[0.3,1]][table_visible+table2_visible],
-                    'yaxis3.domain': [[0.15,0.85],[0.3,1],[0.3,1]][table_visible+table2_visible],
-                    'legend.y':[0.82,0.92,0.92][table_visible+table2_visible]
+                    'yaxis.domain' : [[0,1],[0.3,1],[0.3,1]][idx],
+                    'yaxis2.domain': [[0.15,0.85],[0.3,1],[0.3,1]][idx],
+                    'yaxis3.domain': [[0.15,0.85],[0.3,1],[0.3,1]][idx],
+                    'legend.y':[0.82,0.92,0.92][idx]
                   }
                   if(rel_but_sel === 0){
                     Plotly.addTraces('mydiv',[pred12,pred13,pred23][selected])
@@ -393,13 +394,17 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                     var update = {
                       visible: true
                     };
-                    myFunction(data.counts[data.counts.length-4+active],data.counts[data.counts.length-3+active])
-                    All_annot.slice(data.counts[data.counts.length-3+active],data.counts[data.counts.length-2+active])
+                    var n = data.counts.length;
+                    myFunction(data.counts[n-4+active],data.counts[n-3+active])
+                    All_annot.slice(data.counts[n-3+active],
+                                    data.counts[n-2+active])
+
                     Plotly.restyle('mydiv', update, [3*data.num]);
                     console.log(active)
                     console.log(data.counts)
                     var dp_update = {
-                      annotations : All_annot.slice(data.counts[data.counts.length-4+active],data.counts[data.counts.length-3+active]),
+                      annotations : All_annot.slice(data.counts[n-4+active],
+                                    data.counts[n-3+active]),
                       'updatemenus[3].active': [0,1][rel_but_sel],
                     }
                     vect_visible = 1;
@@ -442,7 +447,8 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                     vect_visible=0;
                     dp_update = {
                       'updatemenus[3].active': [0,1][rel_but_sel],
-                      annotations : All_annot.slice(data.counts[active],data.counts[active+1])
+                      annotations : All_annot.slice(data.counts[active],
+                                                    data.counts[active+1])
                     }
                     el.data[3*data.num].visible = false;
                     Plotly.update('mydiv',update,dp_update,tr_index)
@@ -470,8 +476,6 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
             selected = d.active;
             var Activetraces = Array(data.num).fill().map((element, index) => index + data.num*active);
             var NewActive = Array(data.num).fill().map((element, index) => index + data.num*selected);
-            console.log('new active traces oppad')
-            console.log(NewActive)
             if (selected === active){//basies hoef fokol te doen
               return;
             }
@@ -500,13 +504,14 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
             Plotly.restyle('mydiv', update2, NewActive);
             active = selected;
 
-            // make sure the vector display button is unselected and red circle gone
+          //ensure the vector display button is unselected and red circle gone
             el.data[3*data.num].visible = false;
             rel_but[2] = 0;
             dp_update = {
             'updatemenus[3].active': 1,
             'xaxis.title' : data.DP[selected],
-            annotations : All_annot.slice(data.counts[active],data.counts[active+1])
+            annotations : All_annot.slice(data.counts[active],
+                                          data.counts[active+1])
             }
             myFunction(data.counts[active],data.counts[active+1])
             Plotly.relayout('mydiv',dp_update)
@@ -600,11 +605,10 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
 //-------------------POINTS CLICK--------------
 
        el.on('plotly_click', function(d) {
+       console.log('punt begin pappa')
        if(d.points[0].meta === 'density'){
           return;
        }
-       console.log('awe hier kom vect_visible')
-       console.log(vect_visible)
        if(vect_visible ===1){
           return;
        }
@@ -649,9 +653,11 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
         hasbox = true;
         return;
        }
+       console.log('boxplot klaar process')
   //-----------------PREDICTION LINES--------------
 
          if(clicked){
+         console.log('haal ou predict uit begin')
          var remove = [];
             el.data.forEach(function (item, index, arr) {
 
@@ -663,9 +669,12 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
             for(let i = 0; i < data.a[active].length; i++){
                 el.layout.annotations.pop();
             }
+          console.log('ou predict eindig')
          }
          var X = [];
          var Y = [];
+         console.log('begin nuwes insit')
+         var traces_to_be_added = [];
          for (let i = 0; i < data.a[active].length; i++) {
             var c = d.points[0].y+1/data.a[active][i].m*d.points[0].x;
             var x_new = (data.a[active][i].c-c)/(-1/data.a[active][i].m-data.a[active][i].m);
@@ -704,10 +713,12 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                   size:10
                 }
             }
-
+            traces_to_be_added.push(newtrace)
             el.layout.annotations.push(newAnnotation);
-            Plotly.addTraces('mydiv', newtrace);
+            //Plotly.addTraces('mydiv', newtrace);
          }
+         Plotly.addTraces('mydiv', traces_to_be_added);
+         console.log('eindig nuwes insit')
         clicked=true;
         var markertrace = {
             x: X,

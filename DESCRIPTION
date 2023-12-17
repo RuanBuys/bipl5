@@ -20,7 +20,8 @@ Description: A modern view on the principal component analysis biplot with
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Roxygen: list(markdown = TRUE)
+Roxygen: list(markdown = TRUE, 
+              roclets = c ("namespace", "rd", "srr::srr_stats_roclet"))
 RoxygenNote: 7.2.3
 Imports: 
     cluster,

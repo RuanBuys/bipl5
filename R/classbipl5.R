@@ -110,7 +110,9 @@ PCAbiplot<-function(x,group=NULL,scale=TRUE,basis=1:2,symbol="circle",
   if(length(group)!=nrow(x))
     stop(paste("\n","Length of group differes from the number of rows in x"))
   col_not_numeric<-NULL
-  for (i in 1:ncol(x)){
+  n<-nrow(x)
+  p<-ncol(x)
+  for (i in 1:p){
     if(!is(x[,i],"numeric"))
       col_not_numeric<-append(col_not_numeric,paste(colnames(x)[i],"\n"))
   }
@@ -127,8 +129,7 @@ PCAbiplot<-function(x,group=NULL,scale=TRUE,basis=1:2,symbol="circle",
   #get all the attributes ready before the constructer is invoked
   if(length(basis)>rank)
     basis<-basis[1:rank]
-  n<-nrow(x)
-  p<-ncol(x)
+
   if(is.null(colnames(x))){
     colnames(x)<-paste0('Var',1:p)
   }
@@ -245,7 +246,8 @@ construct_biplot<-function(x,rank,group,scale,n,p,mu,
 #' @noRd
 getquad<-function(V,m){
   quads<-numeric(length(m))
-  for(i in 1:length(m)){
+  p<-length(m)
+  for(i in 1:p){
     if(m[i]>0 && V[i,1]>0)
       quads[i]<-1
     if (m[i]>0 && V[i,1]<0)

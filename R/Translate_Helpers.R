@@ -57,16 +57,24 @@ translate<-function(elip,quadrant,other,d,endpoints,theta,swop=FALSE){
 }
 
 
-#' bpl5 default color scales
+#' bipl5 default color scales
 #'
-#' @param number Number of distinct colors to return
+#' @param number Integer - number of distinct colors to return. Ranges from
+#'              1 to 16.
 #'
-#' @return A vector of colors
+#' @return Character vector of default colors in \code{bipl5}. There are
+#'         sixteen unique colors defined.
 #' @importFrom grDevices rgb
 #' @export
 #' @examples
-#' colorpal()
+#' colorpal(number=7)
 colorpal<-function(number=16){
+  if(!is.numeric(number))
+    stop("Enter a numeric integer")
+  if(number>16)
+    stop("Only 16 unique colors are available")
+  if(number==0)
+    stop("Enter integer between 1 and 16")
   pal <- c(
     rgb(57 / 255, 106 / 255, 177 / 255),
     rgb(218 / 255, 124 / 255, 48 / 255),
