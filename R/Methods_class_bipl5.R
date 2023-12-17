@@ -4,8 +4,9 @@
 #'
 #' @param object An object of class \code{bipl5} from which predicted
 #'               values are to be obtained
-#' @param ... Additional arguments to be passes to the kable function,
-#'            contained in a list named kable.args
+#' @param kable.args Additional arguments to be passes to the
+#'                  \code{\link[knitr]{kable}} function,
+#' @param ... Not used
 #'
 #' @return The function invisibly returns the predicted values of the
 #'         biplot display, and outputs the predicted values via the

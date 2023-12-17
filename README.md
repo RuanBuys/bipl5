@@ -25,12 +25,12 @@ You can install the latest version of bipl5 from CRAN with:
 
 ``` r
 install.packages("bipl5")
-#> Installing package into 'C:/Users/user-pc/AppData/Local/Temp/RtmporYSSG/temp_libpath194725750d5'
+#> Installing package into 'C:/Users/user-pc/AppData/Local/Temp/RtmporYSSG/temp_libpath19433ca7ab4'
 #> (as 'lib' is unspecified)
 #> package 'bipl5' successfully unpacked and MD5 sums checked
 #> 
 #> The downloaded binary packages are in
-#>  C:\Users\user-pc\AppData\Local\Temp\Rtmp2PgX1e\downloaded_packages
+#>  C:\Users\user-pc\AppData\Local\Temp\Rtmpc3g79u\downloaded_packages
 library(bipl5)
 #> Warning: package 'bipl5' was built under R version 4.3.2
 #> 
