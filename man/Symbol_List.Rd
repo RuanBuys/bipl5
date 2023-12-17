@@ -2,15 +2,16 @@
 % Please edit documentation in R/TDAbiplot_helper.R
 \name{Symbol_List}
 \alias{Symbol_List}
-\title{Retrieve all valid plotting symbols for plotly library}
+\title{Retrieve all valid plotting symbols for the \code{plotly} library}
 \usage{
 Symbol_List()
 }
 \value{
-A vector of all the valid plotting symbols used in the \code{\link[plotly]{plot_ly}} library.
+A vector of all the valid plotting symbols used in the
+\code{\link[plotly]{plot_ly}} library.
 }
 \description{
-Retrieve all valid plotting symbols for plotly library
+Retrieve all valid plotting symbols for the \code{plotly} library
 }
 \examples{
 Symbol_List()

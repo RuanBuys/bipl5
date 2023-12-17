@@ -1,38 +1,3 @@
-#' Insert table displaying data on plotly graph
-#'
-#' @param p_ly Plotly graph
-#' @param x Biplot object
-#'
-#' @return Updated plotly graph
-#' @noRd
-InsertDataTable<-function(p_ly,x){
-  p_ly <- p_ly|> add_trace(
-    type = 'table',
-    meta = 'tableDATA',
-    domain=list(x=c(0.53,1),y=c(0,0.2)),
-    columnwidth = c(10,rep(20,x$p)),
-    columnorder = 1:(x$p+1),
-    visible=TRUE,
-    header = list(
-      values = paste("<b>",c("Obs",colnames(x$x))),
-      align = rep("center",x$p+1),
-      line = list(width = 1, color = 'black'),
-      fill = list(color = c("grey", "grey")),
-      font = list(family = "Arial", size = 14, color = "white")
-    ),
-    cells = list(
-      values = t(cbind(rownames(x$x),x$x)),
-      align = rep("center",x$p+1),
-      line = list(color = "black", width = 1),
-      font = list(family = "Arial", size = 14, color = c("black")),
-      height=24,
-      fill=list(color=t(matrix(rep(c(rep("white",x$p+1),
-                                     rep("#ededed",x$p+1)),x$n/2),ncol=x$p+1,
-                               byrow=TRUE)))
-    ))
-  return(p_ly)
-}
-
 
 
 #' Insert fit measures to plotly graph

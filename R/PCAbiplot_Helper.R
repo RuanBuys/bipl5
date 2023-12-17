@@ -37,7 +37,8 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
   else
     Col<-color
   #insert the Z coordinates
-  for(i in 1:length(levels(x$group))){
+  num_groups<-length(levels(x$group))
+  for(i in 1:num_groups){
     p_ly<-p_ly |>
       add_trace(data=Z,x=Z[x$group==levels(x$group)[i],1],
                 y=Z[x$group==levels(x$group)[i],2],name=levels(x$group)[i],
@@ -132,7 +133,8 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
 #' @return list of tick marks which are inside bounding circle
 #' @noRd
 check_inside_circle<-function(ticks,r,thetas){
-  for(i in 1:length(ticks)){
+  n<-length(ticks)
+  for(i in 1:n){
     inside<-ticks[[i]][,1]^2+ticks[[i]][,2]^2 <= r^2
     bound1<-c(r*cos(thetas[i]),r*sin(thetas[i]),NA)
     bound2<-c(r*cos(thetas[i]-pi),r*sin(thetas[i]-pi),NA)

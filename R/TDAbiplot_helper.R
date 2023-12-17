@@ -54,7 +54,8 @@ addPlotlyBiplot<-function(p_ly,x,visible,dist,inflate=1,alpha=0.95,
 
   if(is.null(color))
     Col<-colorpal(length(levels(group)))
-  for(i in 1:length(levels(x$group))){
+  num_groups<-length(levels(x$group))
+  for(i in 1:num_groups){
     p_ly<-p_ly |>
       add_trace(data=Z,x=Z[x$group==levels(x$group)[i],1],
                 y=Z[x$group==levels(x$group)[i],2],name=levels(x$group)[i],
@@ -132,7 +133,7 @@ addPlotlyBiplot<-function(p_ly,x,visible,dist,inflate=1,alpha=0.95,
 
   }
   #insert the densities
-  for(i in 1:length(levels(group))){
+  for(i in 1:num_groups){
     Dens<-DensCoors[[i]]
     for(j in 1:p){
       showleg<-FALSE #show legend... only true for first iteration
@@ -253,9 +254,11 @@ validate_symbol<-function(x){
 }
 
 
-#' Retrieve all valid plotting symbols for plotly library
+#' Retrieve all valid plotting symbols for the \code{plotly} library
 #'
-#' @return A vector of all the valid plotting symbols used in the \code{\link[plotly]{plot_ly}} library.
+#' @return
+#' A vector of all the valid plotting symbols used in the
+#' \code{\link[plotly]{plot_ly}} library.
 #' @export
 #' @examples
 #' Symbol_List()

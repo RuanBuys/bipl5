@@ -18,7 +18,7 @@
 #' kable.args$format<-"pipe"
 #' x<-PCAbiplot(iris[,-5])
 #' predict(x,kable.args)
-predict.bipl5<-function(object,...){
+predict.bipl5<-function(object,...,kable.args=NULL){
   if(is.null(kable.args))
     kable.args<-list()
   kable.args$x<-object$x
@@ -35,6 +35,7 @@ predict.bipl5<-function(object,...){
 #'
 #' @param x Object of class \code{bipl5}
 #' @param ... Additional parameters
+#' @param plot Boolean. Whether or not to display the plot
 #'
 #' @return The object is returned invisibly
 #' @export print.bipl5
@@ -44,7 +45,7 @@ predict.bipl5<-function(object,...){
 #' @examples
 #' x<-PCAbiplot(iris[,1:4],group=iris[,5])
 #' print.bipl5(x)
-print.bipl5<-function(x,...){
+print.bipl5<-function(x,...,plot=TRUE){
   cat("Call:\n")
   cat(x$callhistory)
 
@@ -71,9 +72,10 @@ print.bipl5<-function(x,...){
   print(do.call(kable,kable.args))
 
   cat(paste("\n",x$DisplQuality,sep=""))
+  if(plot){
   if(!is.null(x$bipl))
     print(x$bipl)
-
+  }
   invisible(x)
 }
 

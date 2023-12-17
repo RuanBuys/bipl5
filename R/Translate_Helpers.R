@@ -8,7 +8,8 @@
 #' @noRd
 RotationConstructor<-function(angles){
   mat<-matrix(NA,nrow=2,ncol=2*length(angles))
-  for(i in 1:length(angles)){
+  n<-length(angles)
+  for(i in 1:n){
     mat[1,(2*i-1):(2*i)]<-c(cos(angles[i]),-sin(angles[i]))
     mat[2,(2*i-1):(2*i)]<-c(sin(angles[i]),cos(angles[i]))
   }

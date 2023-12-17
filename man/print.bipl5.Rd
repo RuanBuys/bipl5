@@ -4,7 +4,7 @@
 \alias{print.bipl5}
 \title{Default print method for an object of class \code{bipl5}}
 \usage{
-\method{print}{bipl5}(x, ...)
+\method{print}{bipl5}(x, ..., plot = TRUE)
 }
 \arguments{
 \item{x}{Object of class \code{bipl5}}

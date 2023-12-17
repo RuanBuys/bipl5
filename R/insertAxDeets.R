@@ -12,8 +12,9 @@ InsertAxisDeets<-function(p_ly,x){
   p<-x$p
   linetipe<-"dashdot"
   lwidth<-2
-  for(i in 1:nrow(pred_deets)){
-    if(i == nrow(pred_deets)){
+  n<-nrow(pred_deets)
+  for(i in 1:n){
+    if(i == n){
       linetipe<-"solid"
       lwidth<-3
     }

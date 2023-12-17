@@ -61,7 +61,8 @@ interpolate<-function(vect,Range1,Range2){
   range_1<-max(Range1)-min(Range1)
   range_2<-max(Range2)-min(Range2)
   interps<-numeric()
-  for(i in 1:length(vect)){
+  n<-length(vect)
+  for(i in 1:n){
     interps[i]<-(vect[i]-min(Range2))/range_2*range_1+min(Range1)
   }
   return(interps)
