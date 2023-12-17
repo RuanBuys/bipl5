@@ -16,6 +16,7 @@ knitr::opts_chunk$set(
 # bipl5
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/RuanBuys/bipl5/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/RuanBuys/bipl5/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The goal of bipl5 is to provide a modern take on PCA biplots with calibrated axes. The biplots are rendered in HTML via the plotly graphing library, upon which custom JavaScript code is appended to make the plot reactive. The traditional biplot view is also extended through an algorithm that translates the axes out of the data centroid, decluttering the view. In addition to the former, inter-class kernel densities are superimposed on the axes to give an indication of the data spread across the variables.

@@ -10,6 +10,8 @@
 \item{x}{Object of class \code{bipl5}}
 
 \item{...}{Additional parameters}
+
+\item{plot}{Boolean. Whether or not to display the plot}
 }
 \value{
 The object is returned invisibly

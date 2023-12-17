@@ -4,7 +4,7 @@
 \alias{predict.bipl5}
 \title{Method to obtain the predicted or fitted values of the biplot}
 \usage{
-\method{predict}{bipl5}(object, ...)
+\method{predict}{bipl5}(object, ..., kable.args = NULL)
 }
 \arguments{
 \item{object}{An object of class \code{bipl5} from which predicted
