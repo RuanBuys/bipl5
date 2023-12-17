@@ -8,6 +8,7 @@
 [![R-CMD-check](https://github.com/RuanBuys/bipl5/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/RuanBuys/bipl5/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
 coverage](https://codecov.io/gh/RuanBuys/bipl5/branch/main/graph/badge.svg)](https://app.codecov.io/gh/RuanBuys/bipl5?branch=main)
+[![pkgcheck](https://github.com/RuanBuys/bipl5/workflows/pkgcheck/badge.svg)](https://github.com/RuanBuys/bipl5/actions?query=workflow%3Apkgcheck)
 <!-- badges: end -->
 
 The goal of bipl5 is to provide a modern take on PCA biplots with
@@ -25,12 +26,12 @@ You can install the latest version of bipl5 from CRAN with:
 
 ``` r
 install.packages("bipl5")
-#> Installing package into 'C:/Users/user-pc/AppData/Local/Temp/RtmporYSSG/temp_libpath19433ca7ab4'
+#> Installing package into 'C:/Users/user-pc/AppData/Local/Temp/RtmpSO1WZC/temp_libpath1c6029d41587'
 #> (as 'lib' is unspecified)
 #> package 'bipl5' successfully unpacked and MD5 sums checked
 #> 
 #> The downloaded binary packages are in
-#>  C:\Users\user-pc\AppData\Local\Temp\Rtmpc3g79u\downloaded_packages
+#>  C:\Users\user-pc\AppData\Local\Temp\Rtmp6fPmuo\downloaded_packages
 library(bipl5)
 #> Warning: package 'bipl5' was built under R version 4.3.2
 #> 
