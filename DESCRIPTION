@@ -11,15 +11,15 @@ Authors@R:
            "van der Merwe",
            role = c("aut","ths"),
            comment = c(ORCID = "0000-0003-0676-8240")),
+      person(given = "Delia",
+           family = "Sandilands",
+           role = "ctb",
+           comment = c(ORCID = "0000-0001-9419-7286")),
       person(given = "Sugnet", 
            family = "Lubbe",
            email = "muvisu@sun.ac.za", 
            role = c("ctb"),
-           comment = c(ORCID = "0000-0003-2762-9944")),
-      person(given = "Delia",
-           family = "Sandilands",
-           role = "ctb",
-           comment = c(ORCID = "0000-0001-9419-7286")))
+           comment = c(ORCID = "0000-0003-2762-9944")))
 Description: A modern view on the principal component analysis biplot with 
     calibrated axes. Create principal component analysis biplots rendered in 
     HTML with significant reactivity embedded within the plot. Furthermore, 

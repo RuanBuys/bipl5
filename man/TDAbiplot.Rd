@@ -90,7 +90,8 @@ Construct various rank-2 PCA biplots with translated axes based on a
 combination of the first three principal components.
 }
 \details{
-This function produces a PCA biplot with translated calibrated axes.
+This function produces a PCA biplot with translated calibrated axes. The
+algorithm utilised is first of its kind, and detailed in the vignette.
 The function constructs this biplot in the \code{\link[plotly]{plot_ly}}
 graphing library with reactivity embedded on the display. The following
 features are available on the display:

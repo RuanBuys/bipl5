@@ -11,6 +11,24 @@ You can find the `.R` file that generates the `.Rd` by reading the comment in th
 
 ## Bigger changes
 
+
+## Life Cycle Statement
+
+This package is
+
+- In an initially stable state of development focusing primarily on PCA biplots.
+- A great deal of active subsequent development is envisioned by extending it
+  to other types of biplots, specifically CVA biplots in the near future.
+
+
+
+
+
+
+
+
+
+
 If you want to make a bigger change, it's a good idea to first file an issue and make sure someone from the team agrees that it’s needed. 
 If you’ve found a bug, please file an issue that illustrates the bug with a minimal 
 [reprex](https://www.tidyverse.org/help/#reprex) (this will also help you write a unit test, if needed).

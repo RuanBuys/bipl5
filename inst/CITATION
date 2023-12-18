@@ -1,0 +1,8 @@
+bibentry(
+  bibtype  = "Manual",
+  title    = "bipl5: Construct Reactive Calibrated Axes Biplot",
+  author   = "R. Buys and Carel J. van der Merwe and Delia Sandilands and Sugnet Lubbe",
+  year     = 2023,
+  url      ="https://cran.r-project.org/web/packages/bipl5/index.html",
+  note = "R package version 1.0.2"
+)

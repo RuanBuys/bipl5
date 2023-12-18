@@ -15,6 +15,11 @@
 #'                  drawn or not. Mostly used in internal function calls
 #'                  serve as basis for the biplot. Currently only a biplot
 #'                  of rank 2 is supported.
+#'
+#' @param na_action How to treat missing values. \code{error} produces an error,
+#'                  \code{remove} removes the entire observation and
+#'                  \code{impute} replaces it with the column mean. Infinite
+#'                  and NaN values are converted to NA.
 #' @inheritParams TDAbiplot.bipl5
 #' @details
 #' The method performs Principal Component Analysis (PCA) on the input data
@@ -46,6 +51,39 @@
 #'  clicked. The prediction lines can be removed by clicking on the legend
 #'  entry.
 #'
+#'
+#' @srrstats {G2.10} Extraction of columns not affected by class
+#' @srrstats {G2.3} Requirements met:
+#' @srrstats {G2.3a} Custom function to ensure character input valid
+#' @srrstats {G2.3b} tolower() function applied
+#'
+#' @srrstats {G2.4} Conversion to data types implemented:
+#' @srrstats {G2.4c} explicit convergion to character via as.character()
+#' @srrstats {G2.4e} explicit conversion from factor
+#'
+#'
+#' @srrstats {G2.7} Most tabular forms are accepted and converted to data frame
+#' @srrstats {G2.9} Diagnostic message when column names not specified
+#'
+#'
+#' @srrstats {G2.11} All columns are checked to be numeric, without explicit
+#' conversion.
+#'
+#' @srrstats {G2.12} list columns are checked to be numeric, otherwise
+#' an error is thrown
+#'
+#'
+#' @srrstats {G2.13} Checks are implemented to look for missing values.
+#' default is to be removed
+#' @srrstats {G2.14} Following are done:
+#' @srrstats {G2.14a} Option to get error via na_action
+#' @srrstats {G2.14b} option to be removed from data with message
+#' @srrstats {G2.14c} option to be imputed with the column mean
+#'
+#' @srrstats {G2.16} undefined and infinite values converted to NA values.
+#' They can therefore be removed or imputed via na_action
+#'
+#' @srrstats {G2.15} Top level function makes provision for non-missingness.
 #'
 #' @return A named list of class \code{bipl5} with the following attributes
 #' \item{x}{A data frame which is the original input data}
@@ -98,10 +136,16 @@
 #' ## variables
 #' y<-PCAbiplot(iris[,-5],group=iris[,5],scale=TRUE)
 PCAbiplot<-function(x,group=NULL,scale=TRUE,basis=1:2,symbol="circle",
-                    color=NULL,build_plot=TRUE){
+                    color=NULL,build_plot=TRUE,
+                    na_action=c("remove", "error", "impute")){
+
+  na_action<-match.arg(na_action,c("remove", "error", "impute"))
   rank<-2
   #validify plot symbol
+  symbol<-as.character(symbol)
+  symbol<-tolower(symbol)
   validity<-validate_symbol(symbol)
+  x<-as.data.frame(x)
   if(!is.null(validity))
     stop(paste("\n",validity," is not a valid plotting symbol"))
   if(is.null(group))
@@ -118,13 +162,28 @@ PCAbiplot<-function(x,group=NULL,scale=TRUE,basis=1:2,symbol="circle",
   }
   if(!is.null(col_not_numeric))
     stop("The following columns are not numeric: \n",col_not_numeric)
-
-  #first call the validator
-
-
- # errors<-validate_biplot(x=x,group=group)
- # if(!is.null(errors)) stop(errors)
-
+  obs_to_remove<-numeric()
+  for(i in 1:p){
+    if(any(is.infinite(x[,i])))
+      x[which(is.infinite(x[,i])),i]<-NA
+    if(any(is.nan(x[,i])))
+      x[which(is.infinite(x[,i])),i]<-NA
+    if(any(is.na(x[,i]))){
+      obs_to_remove<-c(obs_to_remove,which(is.na(x[,i])))
+      if(na_action=="error"){
+        stop("\nInput data contains missing values")
+      }
+      if(na_action == "impute"){
+        x[which(is.na(x[,i])),i]<-mean(x[-which(is.na(x[,i])),i])
+      }
+    }
+  }
+  if(na_action=="remove" & length(obs_to_remove)>0){
+    x<-x[-obs_to_remove,]
+    group<-group[-obs_to_remove]
+    message("\nThe following observations were removed due to missing values",
+            unique(obs_to_remove))
+  }
 
   #get all the attributes ready before the constructer is invoked
   if(length(basis)>rank)
@@ -132,6 +191,7 @@ PCAbiplot<-function(x,group=NULL,scale=TRUE,basis=1:2,symbol="circle",
 
   if(is.null(colnames(x))){
     colnames(x)<-paste0('Var',1:p)
+    message("No column names specified. Default names generated")
   }
   if(is.null(rownames(x))){
     rownames(x)<-paste("Obs:",1:n)
@@ -202,6 +262,9 @@ PCAbiplot<-function(x,group=NULL,scale=TRUE,basis=1:2,symbol="circle",
 #' @param V Vector loadings
 #' @param m gradients of loadings
 #' @param quads quadrants of the loadings
+#'
+#' @srrstats {G2.8} All functions are executed via method dispatch on the object
+#' of class bipl5
 #'
 #' @noRd
 #' @return bipl5 object

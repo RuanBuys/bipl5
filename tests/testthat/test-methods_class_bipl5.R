@@ -9,3 +9,5 @@ test_that("predict.bipl5 method prints to the console", {
   expect_output(predict(a))
 })
 
+
+

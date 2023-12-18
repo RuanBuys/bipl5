@@ -11,7 +11,8 @@ PCAbiplot(
   basis = 1:2,
   symbol = "circle",
   color = NULL,
-  build_plot = TRUE
+  build_plot = TRUE,
+  na_action = c("remove", "error", "impute")
 )
 }
 \arguments{
@@ -35,6 +36,11 @@ plot. Currently only a biplot of rank 2 is supported.}
 drawn or not. Mostly used in internal function calls
 serve as basis for the biplot. Currently only a biplot
 of rank 2 is supported.}
+
+\item{na_action}{How to treat missing values. \code{error} produces an error,
+\code{remove} removes the entire observation and
+\code{impute} replaces it with the column mean. Infinite
+and NaN values are converted to NA.}
 }
 \value{
 A named list of class \code{bipl5} with the following attributes

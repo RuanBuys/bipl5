@@ -599,7 +599,8 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
           hidden = [1,0][hidden];
           arr1[num-1] = hidden;
           var new_annot = {annotations:old_annotations};
-          Plotly.restyle('mydiv',update,indeces.map((element, index) => element + data.num*active));
+          Plotly.restyle('mydiv',update,indeces.map((element, index)=>element +
+                                          data.num*active));
           Plotly.relayout('mydiv',new_annot);
           return false;
         });
@@ -679,7 +680,8 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
          var traces_to_be_added = [];
          for (let i = 0; i < data.a[active].length; i++) {
             var c = d.points[0].y+1/data.a[active][i].m*d.points[0].x;
-            var x_new = (data.a[active][i].c-c)/(-1/data.a[active][i].m-data.a[active][i].m);
+            var x_new = (data.a[active][i].c-c)/(-1/data.a[active][i].m -
+                                                data.a[active][i].m);
             var y_new = data.a[active][i].m*x_new+data.a[active][i].c;
             var showleg = false;
             if(i === 0){showleg = true;}

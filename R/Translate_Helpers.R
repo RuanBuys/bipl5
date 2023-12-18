@@ -66,10 +66,14 @@ translate<-function(elip,quadrant,other,d,endpoints,theta,swop=FALSE){
 #' @return Character vector of default colors in \code{bipl5}. There are
 #'         sixteen unique colors defined.
 #' @importFrom grDevices rgb
+#'
+#' @srrstats {G2.4a} Paramater assumed integer converted via as.integer
+#'
 #' @export
 #' @examples
 #' colorpal(number=7)
 colorpal<-function(number=16){
+  number<-as.integer(number)
   if(!is.numeric(number))
     stop("Enter a numeric integer")
   if(number>16)

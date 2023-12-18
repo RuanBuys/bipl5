@@ -65,9 +65,28 @@ TDAbiplot<-function(x,dist=NULL,inflate=1,alpha=0.95,
 #' @import plotly
 #' @importFrom htmlwidgets onRender
 #' @rdname TDAbiplot
+
+#' @srrstats {G2.3} Requirements met:
+#' @srrstats {G2.3a} Custom function to ensure character input valid
+#' @srrstats {G2.3b} tolower() function applied
+#'
+#' @srrstats {G2.6} All one-dimensional input is preprocessed
+#' @srrstats {G5.0} Iris dataset used in examples
+#'
+#' @srrstats {G2.4} Conversion to data types implemented:
+#' @srrstats {G2.4b} Continious input converted via as.numeric()
+#' @srrstats {G2.4e} explicit conversion from factor performed
+#'
+#' @srrstats {G1.1} Algorithm is first of its kind. Stated in documentation
+#' @srrstats {G2.0} Assertions on length documented
+#'
+#' @srrstatsTODO {G2.1} Assertions implemented below
+#' @srrstatsTODO {G2.1a} all vector types appropriately documented
+#' @srrstatsTODO {G2.2} multivariate arguments prohibited with error
 #'
 #' @details
-#' This function produces a PCA biplot with translated calibrated axes.
+#' This function produces a PCA biplot with translated calibrated axes. The
+#' algorithm utilised is first of its kind, and detailed in the vignette.
 #' The function constructs this biplot in the \code{\link[plotly]{plot_ly}}
 #' graphing library with reactivity embedded on the display. The following
 #' features are available on the display:
@@ -129,6 +148,15 @@ TDAbiplot.bipl5<-function(x,dist=NULL,inflate=1,alpha=0.95,
                           alpha_Elip=NULL,swop=FALSE,
                           density.args=NULL,color=NULL,
                           symbol="circle"){
+  if(length(dist)>1)
+    stop("dist argument must be a single univariate number")
+  if(length(inflate)>1)
+    stop("inflate argument must be a single univariate number")
+  if(length(alpha)>1)
+    stop("alpha argument must be a single univariate number")
+  symbol<-as.character(symbol)
+  inflate<-as.numeric(inflate)
+  symbol<-tolower(symbol)
   validity<-validate_symbol(symbol)
   if(!is.null(validity))
     stop(paste("\n",validity," is not a valid plotting symbol"))

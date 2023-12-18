@@ -91,7 +91,11 @@ print.bipl5<-function(x,...,plot=TRUE){
 #' @noRd
 appendcall<-function(current,new){
   deparsed<-deparse(new)
-  paste(current," |> \n","\t",deparsed,sep="")
+  begin<-unlist(gregexpr('),', deparsed))[1]
+
+  if(begin==-1)
+    returnVal<-paste(current," |> \n","\t","TDAbiplot()",sep="")
+  paste(current," |> \n","\t","TDAbiplot(",substr(deparsed,begin+3,10000),sep="")
 }
 
 
@@ -118,4 +122,25 @@ appendcall<-function(current,new){
 plot.bipl5<-function(x,y=NULL,...){
   print(x$bipl)
   invisible(x)
+}
+
+
+
+#' Obtain summary statistics of an \code{bipl5} object
+#'
+#' @param object An object of class \code{bipl5}
+#' @param ... Not applicable
+#'
+#' @return
+#'
+#' The object is returned invisibly
+#'
+#' @export summary.bipl5
+#'
+#' @examples
+#' x<-PCAbiplot(iris[,-5])
+#' summary(x)
+summary.bipl5<-function(object,...){
+  print(object,plot=FALSE)
+  invisible(object)
 }

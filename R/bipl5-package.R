@@ -3,7 +3,9 @@
 #' A modern view on PCA biplot with calibrated axes. Create PCA biplots
 #' rendered in HTML with significant reactivity embedded on the plot.
 #' Furthermore, the traditional biplot view is enhanced by translated axes
-#' with interclass kernel densities superimposed.
+#' with interclass kernel densities superimposed. For more information on
+#' biplots, see Gower, J.C., Lubbe, S. and le Roux, N.J.
+#' (2011, ISBN: 978-0-470-01255-0)
 #'
 #' @section Details:
 #'
@@ -11,10 +13,13 @@
 #'    Package: \tab bipl5 \cr
 #'    Type: \tab Package \cr
 #'    Version: \tab 0.0.0.9400\cr
-#'    Date: \tab 16-10-2023\cr
+#'    Date: \tab 18-12-2023\cr
 #'    License: \tab MIT \cr
-#'    LazyLoad: \tab TRUE\cr
 #'  }
+#'
+#' @srrstats {G1.0} Primary reference included in package description
+#' @srrstats {G1.3} All statistical terminology explained in the documentation
+#' @srrstats {G1.2} Life cycle statement included in contributing file
 #' @section Author(s):
 #'
 #'
@@ -22,6 +27,11 @@
 #'  \item{Ruan Buys (Maintainer)}
 #'
 #'  \item{Carel van der Merwe}
+#'
+#'  \item{Delia Sandilands (contributer)}
+#'
+#'  \item{Sugnet Lubbe (contributer)}
+#'
 #'
 #' }
 #'
