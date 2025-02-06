@@ -18,7 +18,7 @@ biplots, see Gower, J.C., Lubbe, S. and le Roux, N.J.
 \tabular{ll}{
 Package: \tab bipl5 \cr
 Type: \tab Package \cr
-Version: \tab 0.0.0.9400\cr
+Version: \tab 1.1 \cr
 Date: \tab 18-12-2023\cr
 License: \tab MIT \cr
 }

@@ -11,7 +11,7 @@
 #' @noRd
 tickmarks<-function(ellip,gradient,p,V,mu,stddev,ticks=4){
   #V,x,tickoverride
-  ticks<-rep(4,p)
+  ticks<-rep(8,p)
   #first need to construct rotation matrix to determine upper and lower bounds
   #of each line segment
 

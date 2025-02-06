@@ -30,30 +30,21 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
   endpoints<-tickmarks(ellip=elipcoords,gradient=m,p=p,
                        V=x$V, mu=mu,stddev=stddev)
   shift<-check_inside_circle(ticks=endpoints,r=radius,thetas=atan(m))
-  #----------PLoTLY-----------
-  #Insert observations
+
+  #-------------------------------PLoTLY----------------------------
+  #insert the Z coordinates
   if(is.null(color))
     Col<-colorpal(length(levels(group)))
   else
     Col<-color
   #insert the Z coordinates
-  num_groups<-length(levels(x$group))
-  for(i in 1:num_groups){
-    p_ly<-p_ly |>
-      add_trace(data=Z,x=Z[x$group==levels(x$group)[i],1],
-                y=Z[x$group==levels(x$group)[i],2],name=levels(x$group)[i],
-                type = "scatter", mode = "markers",
-                hovertext=rownames(x$x)[x$group==levels(x$group)[i]],
-                hoverinfo="text+name",
-                customdata=(1:n)[x$group==levels(x$group)[i]],
-                meta="data",xaxis="x",yaxis="y",visible=visible,
-                marker=list(symbol=p_ly_pch[i],color=Col[i]))
-  }
+  p_ly<-insert_Z_coo(p_ly,x,p_ly_pch,Col,visible)
+
   # Insert axes with the tick marks
   AnnotCounter<-numeric()
   angles<-list()
   for(i in 1:p){
-    AnnotCounter[i]<-length(shift[[i]][,3])
+    AnnotCounter[i]<-length(shift[[i]][,3])*2#peuter-------------------------
     index2<-which(shift[[i]][,3]== max(shift[[i]][,3],na.rm=TRUE))
     angle<-atan(shift[[i]][index2,2]/shift[[i]][index2,1])
     AxName<-paste("<b>",colnames(x$x)[i],"</b>")
@@ -76,7 +67,7 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
                 marker=list(color="grey",size=4),
                 name=colnames(x$x)[i],legendgroup=paste("Ax",i,sep=""),
                 meta='axis',xaxis="x",yaxis="y",customdata=i,
-                hoverinfo='name',visible=visible,showlegend=FALSE) |>
+                hoverinfo='name',visible=F,showlegend=FALSE) |>
 
       add_trace(x=c(radius*cos(atan(m[i])),radius*cos(atan(m[i])-pi)),
                 y=c(radius*sin(atan(m[i])),radius*sin(atan(m[i])-pi)),
@@ -89,10 +80,16 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
       add_annotations(x=shift[[i]][,1],y=shift[[i]][,2],
                       text=as.character(shift[[i]][,3]),
                       showarrow=FALSE,textangle=-atan(x$m[i])*180/pi,
-                      visible=visible,yshift=-10*cos(atan(x$m[i])),
-                      xshift=10*sin(atan(x$m[i])),meta='axis',
+                      visible=visible,yshift=-12*cos(atan(x$m[i])),
+                      xshift=12*sin(atan(x$m[i])),meta='axis',
                       xaxis="x",yaxis="y",customdata=i,font=list(size=10) )|>
-
+      #-----------------------------------------------------------PEUTER------------
+      add_annotations(x=shift[[i]][,1],y=shift[[i]][,2],
+                      text=" &#124;",
+                      showarrow=FALSE,textangle=-atan(x$m[i])*180/pi,
+                      visible=visible,meta='axis',
+                      xaxis="x",yaxis="y",customdata=i,font=list(size=8) )|>
+      #----------------------------------------------------------------------------
       add_trace(x=radius*cos(angle),y=radius*sin(angle),
                 text=AxName,type="scatter",mode="text",textposition=pos,
                 legendgroup=paste("Ax",i,sep=""),showlegend=FALSE,
@@ -124,6 +121,35 @@ add_vector_biplot<-function(p_ly,x,symbol,color,visible){
 
 }
 
+
+
+
+#' Insert Z coordinates to plot
+#'
+#' @param p_ly Plotly object after scaffolding
+#' @param x Biplot object containing Z, group
+#' @param p_ly_pch plotting characters
+#' @param Col Colors
+#' @param visible Show trace or not
+#' @noRd
+insert_Z_coo<-function(p_ly,x,p_ly_pch,Col,visible=TRUE){
+  num_groups<-length(levels(x$group))
+  for(i in 1:num_groups){
+    p_ly<-p_ly |>
+      add_trace(data=x$Z,x=x$Z[x$group==levels(x$group)[i],1],
+                y=x$Z[x$group==levels(x$group)[i],2],name=levels(x$group)[i],
+                type = "scatter", mode = "markers",
+                hovertext=rownames(x$x)[x$group==levels(x$group)[i]],
+                hoverinfo="text+name",
+                customdata=(1:x$n)[x$group==levels(x$group)[i]],
+                meta="data",xaxis="x",yaxis="y",visible=visible,
+                marker=list(symbol=p_ly_pch[i],color=Col[i],opacity=1),
+                legendgroup="data",
+                legendgrouptitle=list(text="<b>Data</b>"))
+  }
+  return(p_ly)
+}
+
 #' Check if tick mark is inside bounding circle
 #'
 #' @param ticks list of tick marks
@@ -136,8 +162,8 @@ check_inside_circle<-function(ticks,r,thetas){
   n<-length(ticks)
   for(i in 1:n){
     inside<-ticks[[i]][,1]^2+ticks[[i]][,2]^2 <= r^2
-    bound1<-c(r*cos(thetas[i]),r*sin(thetas[i]),NA)
-    bound2<-c(r*cos(thetas[i]-pi),r*sin(thetas[i]-pi),NA)
+    #bound1<-c(r*cos(thetas[i]),r*sin(thetas[i]),NA)
+    #bound2<-c(r*cos(thetas[i]-pi),r*sin(thetas[i]-pi),NA)
     ticks[[i]]<-ticks[[i]][inside,]
 
   }
@@ -237,7 +263,6 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
              )
            )
 
-  p_ly$elementId<-"mydiv"
   pc13<-PCAbiplot(pc12$x,group=pc12$group,basis=c(1,3),build_plot=FALSE)
   pc23<-PCAbiplot(pc12$x,group=pc12$group,basis=c(2,3),build_plot=FALSE)
   addpc12<-add_vector_biplot(p_ly=p_ly,x=pc12,symbol=symbol,
@@ -285,23 +310,46 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
   p_ly<- p_ly|> htmlwidgets::onRender("
 
      function(el,x,data) {
-     var clicked = false;
-     var hasbox = false;
-     var arr1 = new Array(data.Xhat[0][0].length).fill(0);
-     var active = 0;
-     var rel_but = [0,0,0];
-     var is_visible=0;
-     var selected = 0;
-     var bip_domain = [0,1];
-     var table_visible = 0;
-     var table2_visible = 0;
-     var vect_visible = 0;
+
+          el.bipl5 = {clicked: false,
+                 hasbox: false,
+                 unit_circle: 0,
+                 arr1: new Array(data.Xhat[0][0].length).fill(0),
+                 active: 0,
+                 rel_but: [0,0,0],
+                 is_visible: 0,
+                 selected : 0,
+                 bip_domain : [0,1],
+                 table_visible : 0,
+                 table2_visible : 0,
+                 vect_visible : 0,
+                 but_names : ['PC','AxisStats','FitMeasures','vecload'],
+                 pred12 : el.data[el.data.length-3],
+                 pred13 : el.data[el.data.length-2],
+                 pred23 : el.data[el.data.length-1]
+                 };
+
+
+
+
+
+
+
+     //var el.bipl5.arr1 = new Array(data.Xhat[0][0].length).fill(0);
+     //var el.bipl5.active = 0;
+     //var el.bipl5.rel_but = [0,0,0];
+     //var el.bipl5.is_visible=0;
+     //var el.bipl5.selected = 0;
+     //var el.bipl5.bip_domain = [0,1];
+     //var el.bipl5.table_visible = 0;
+     //var el.bipl5.table2_visible = 0;
+     //var el.bipl5.vect_visible = 0;
 
      // trace for fit measure table
-     var pred12 = el.data[el.data.length-3];
-     var pred13 = el.data[el.data.length-2];
-     var pred23 = el.data[el.data.length-1];
-     Plotly.deleteTraces('mydiv',
+     //var el.bipl5.pred12 = el.data[el.data.length-3];
+     //var el.bipl5.pred13 = el.data[el.data.length-2];
+     //var el.bipl5.pred23 = el.data[el.data.length-1];
+     Plotly.deleteTraces(el.id,
                         [el.data.length-1,el.data.length-2,el.data.length-3])
      var All_annot = el.layout.annotations;
      function myFunction(up,low) {
@@ -317,15 +365,15 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
         el.on('plotly_buttonclicked',function(d){
               // toggle selectibility
 
-              var rel_but_sel = rel_but[d.menu._index-1];
+              var rel_but_sel = el.bipl5.rel_but[d.menu._index-1];
               if(d.menu._index==1){
               // that is, the axis predictivity is to be inserted
                   var update = {
                     'updatemenus[1].active': [0,1][rel_but_sel],
-                    'xaxis.domain': [[0,0.5],[0,1]][is_visible],
+                    'xaxis.domain': [[0,0.5],[0,1]][el.bipl5.is_visible],
                     'yaxis3.zeroline':true
                   }
-                  bip_domain[1] = [0.5,1][is_visible];
+                  el.bipl5.bip_domain[1] = [0.5,1][el.bipl5.is_visible];
                   var update_traces = [];
                   el.data.forEach(function (item, index, arr) {
 
@@ -335,30 +383,30 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                   });
 
                   var plot_update ={
-                    'visible':[true,false][is_visible],
-                    'xaxis':['x3','x'][is_visible],
-                    'yaxis':['y3','y'][is_visible]
+                    'visible':[true,false][el.bipl5.is_visible],
+                    'xaxis':['x3','x'][el.bipl5.is_visible],
+                    'yaxis':['y3','y'][el.bipl5.is_visible]
                   }
-                  is_visible=[1,0][is_visible];
-                  Plotly.restyle('mydiv',plot_update,update_traces)
-                  rel_but[d.menu._index-1] = [1,0][rel_but_sel];
-                  Plotly.relayout('mydiv',update)
+                  el.bipl5.is_visible=[1,0][el.bipl5.is_visible];
+                  Plotly.restyle(el.id,plot_update,update_traces)
+                  el.bipl5.rel_but[d.menu._index-1] = [1,0][rel_but_sel];
+                  Plotly.relayout(el.id,update)
                   return;
               }
 
               if(d.menu._index==2){
                   // that is the fit measures table needs to be inserted
-                  var idx = table_visible+table2_visible;
-                  table2_visible = [1,0][table2_visible];
+                  var idx = el.bipl5.table_visible+el.bipl5.table2_visible +1;
+                  el.bipl5.table2_visible = [1,0][el.bipl5.table2_visible];
                   var update = {
                     'updatemenus[2].active': [0,1][rel_but_sel],
-                    'yaxis.domain' : [[0,1],[0.3,1],[0.3,1]][idx],
-                    'yaxis2.domain': [[0.15,0.85],[0.3,1],[0.3,1]][idx],
-                    'yaxis3.domain': [[0.15,0.85],[0.3,1],[0.3,1]][idx],
-                    'legend.y':[0.82,0.92,0.92][idx]
+                    'yaxis.domain' : [[0.3,1],[0,1],[0.3,1]][idx-1],
+                    'yaxis2.domain': [[0.15,0.85],[0.3,1],[0.15,0.85]][idx],
+                    'yaxis3.domain': [[0.15,0.85],[0.3,1],[0.15,0.85]][idx],
+                    'legend.y':[0.92,0.82,0.82][idx-1]
                   }
                   if(rel_but_sel === 0){
-                    Plotly.addTraces('mydiv',[pred12,pred13,pred23][selected])
+                    Plotly.addTraces(el.id,[el.bipl5.pred12,el.bipl5.pred13,el.bipl5.pred23][el.bipl5.selected])
                 }
                 if(rel_but_sel === 1){
                   var update_traces = [];
@@ -368,11 +416,11 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                           update_traces.push(index);
                       }
                   });
-                  Plotly.deleteTraces('mydiv',update_traces)
+                  Plotly.deleteTraces(el.id,update_traces)
                 }
 
-                rel_but[d.menu._index-1] = [1,0][rel_but_sel];
-                Plotly.relayout('mydiv',update);
+                el.bipl5.rel_but[d.menu._index-1] = [1,0][rel_but_sel];
+                Plotly.relayout(el.id,update);
                 return;
               }
               if(d.menu._index==3){
@@ -381,7 +429,7 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                 if(rel_but_sel === 0){
                     //need to insert vects
                     // first remove prediction lines
-                    if(clicked){
+                    if(el.bipl5.clicked){
                         var remove = [];
                         el.data.forEach(function (item, index, arr) {
 
@@ -389,32 +437,32 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                              remove.push(index);
                           }
                         });
-                    Plotly.deleteTraces('mydiv', remove);
-                    clicked=false;
+                    Plotly.deleteTraces(el.id, remove);
+                    el.bipl5.clicked=false;
                     }
                     // next we need to insert red circle and vects pappa
                     var update = {
                       visible: true
                     };
                     var n = data.counts.length;
-                    myFunction(data.counts[n-4+active],data.counts[n-3+active])
-                    All_annot.slice(data.counts[n-3+active],
-                                    data.counts[n-2+active])
+                    myFunction(data.counts[n-4+el.bipl5.active],data.counts[n-3+el.bipl5.active])
+                    All_annot.slice(data.counts[n-3+el.bipl5.active],
+                                    data.counts[n-2+el.bipl5.active])
 
-                    Plotly.restyle('mydiv', update, [3*data.num]);
-                    console.log(active)
+                    Plotly.restyle(el.id, update, [3*data.num]);
+                    console.log(el.bipl5.active)
                     console.log(data.counts)
                     var dp_update = {
-                      annotations : All_annot.slice(data.counts[n-4+active],
-                                    data.counts[n-3+active]),
+                      annotations : All_annot.slice(data.counts[n-4+el.bipl5.active],
+                                    data.counts[n-3+el.bipl5.active]),
                       'updatemenus[3].active': [0,1][rel_but_sel],
                     }
-                    vect_visible = 1;
+                    el.bipl5.vect_visible = 1;
 
                     //alright pappa now need to take away axes
 
                     var tr_index = []
-                    for(let i = data.num*active; i<data.num*(active+1); i++){
+                    for(let i = data.num*el.bipl5.active; i<data.num*(el.bipl5.active+1); i++){
                         if(el.data[i].meta === 'axis'){
                         tr_index.push(i)
                         }
@@ -428,7 +476,7 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                     var trace_update = {
                         visible: false
                     }
-                    Plotly.update('mydiv',trace_update,dp_update,tr_index)
+                    Plotly.update(el.id,trace_update,dp_update,tr_index)
                 }
                 if(rel_but_sel === 1){
                   //need to remove vects and insert axes once more
@@ -437,7 +485,7 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                     };
 
                     var tr_index = []
-                    for(let i = data.num*active; i<data.num*(active+1); i++){
+                    for(let i = data.num*el.bipl5.active; i<data.num*(el.bipl5.active+1); i++){
                         if(el.data[i].meta === 'axis'){
                         tr_index.push(i)
                         }
@@ -446,17 +494,17 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                         }
                     }
 
-                    vect_visible=0;
+                    el.bipl5.vect_visible=0;
                     dp_update = {
                       'updatemenus[3].active': [0,1][rel_but_sel],
-                      annotations : All_annot.slice(data.counts[active],
-                                                    data.counts[active+1])
+                      annotations : All_annot.slice(data.counts[el.bipl5.active],
+                                                    data.counts[el.bipl5.active+1])
                     }
                     el.data[3*data.num].visible = false;
-                    Plotly.update('mydiv',update,dp_update,tr_index)
+                    Plotly.update(el.id,update,dp_update,tr_index)
                 }
 
-                rel_but[d.menu._index-1] = [1,0][rel_but_sel];
+                el.bipl5.rel_but[d.menu._index-1] = [1,0][rel_but_sel];
                 return;
               }
 
@@ -464,7 +512,7 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
               // CHANGE PC's
 
               // first remove prediction lines
-              if(clicked){
+              if(el.bipl5.clicked){
                     var remove = [];
                     el.data.forEach(function (item, index, arr) {
 
@@ -472,17 +520,17 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                           remove.push(index);
                       }
                     });
-                Plotly.deleteTraces('mydiv', remove);
+                Plotly.deleteTraces(el.id, remove);
               }
-            clicked=false;
-            selected = d.active;
-            var Activetraces = Array(data.num).fill().map((element, index) => index + data.num*active);
-            var NewActive = Array(data.num).fill().map((element, index) => index + data.num*selected);
-            if (selected === active){//basies hoef fokol te doen
+            el.bipl5.clicked=false;
+            el.bipl5.selected = d.active;
+            var Activetraces = Array(data.num).fill().map((element, index) => index + data.num*el.bipl5.active);
+            var NewActive = Array(data.num).fill().map((element, index) => index + data.num*el.bipl5.selected);
+            if (el.bipl5.selected === el.bipl5.active){//basies hoef fokol te doen
               return;
             }
 
-            if (table2_visible === 1){
+            if (el.bipl5.table2_visible === 1){
                   var update_traces = [];
                   el.data.forEach(function (item, index, arr) {
 
@@ -490,8 +538,8 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                           update_traces.push(index);
                       }
                   });
-                  Plotly.deleteTraces('mydiv',update_traces)
-                  Plotly.addTraces('mydiv',[pred12,pred13,pred23][selected])
+                  Plotly.deleteTraces(el.id,update_traces)
+                  Plotly.addTraces(el.id,[el.bipl5.pred12,el.bipl5.pred13,el.bipl5.pred23][el.bipl5.selected])
             }
 
             var update = {
@@ -502,21 +550,21 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
             }
 
 
-            Plotly.restyle('mydiv', update, Activetraces);
-            Plotly.restyle('mydiv', update2, NewActive);
-            active = selected;
+            Plotly.restyle(el.id, update, Activetraces);
+            Plotly.restyle(el.id, update2, NewActive);
+            el.bipl5.active = el.bipl5.selected;
 
           //ensure the vector display button is unselected and red circle gone
             el.data[3*data.num].visible = false;
-            rel_but[2] = 0;
+            el.bipl5.rel_but[2] = 0;
             dp_update = {
             'updatemenus[3].active': 1,
-            'xaxis.title' : data.DP[selected],
-            annotations : All_annot.slice(data.counts[active],
-                                          data.counts[active+1])
+            'xaxis.title' : data.DP[el.bipl5.selected],
+            annotations : All_annot.slice(data.counts[el.bipl5.active],
+                                          data.counts[el.bipl5.active+1])
             }
-            myFunction(data.counts[active],data.counts[active+1])
-            Plotly.relayout('mydiv',dp_update)
+            myFunction(data.counts[el.bipl5.active],data.counts[el.bipl5.active+1])
+            Plotly.relayout(el.id,dp_update)
             return false;
         })
 
@@ -524,7 +572,7 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
 //------------LEGENDCLICK--------------------
 
        el.on('plotly_legendclick', function(dat){
-          var Activetraces = Array(data.num).fill().map((element, index) => index + data.num*active);
+          var Activetraces = Array(data.num).fill().map((element, index) => index + data.num*el.bipl5.active);
           // Delete predictive lines
           // NOTE: this must come first before rest otherwise error
           if(dat.data[dat.curveNumber].meta=== 'predict'){
@@ -536,10 +584,10 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                       }
                 });
             //remove prediction lines annotations as well
-            for(let i = 0; i < data.a[active].length; i++){
+            for(let i = 0; i < data.a[el.bipl5.active].length; i++){
                 el.layout.annotations.pop();
             }
-            Plotly.deleteTraces('mydiv', remove);
+            Plotly.deleteTraces(el.id, remove);
             return false;
          }
 
@@ -550,13 +598,13 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
           return;
           }
           if(dat.data[dat.curveNumber].meta === 'box'){
-            Plotly.deleteTraces('mydiv',dat.curveNumber)
-            bip_domain[0] = 0;
+            Plotly.deleteTraces(el.id,dat.curveNumber)
+            el.bipl5.bip_domain[0] = 0;
             var update = {
-                'xaxis.domain': bip_domain,   // updates the xaxis range
+                'xaxis.domain': el.bipl5.bip_domain,   // updates the xaxis range
                 'yaxis2.side': 'left'
             };
-            Plotly.relayout('mydiv',update);
+            Plotly.relayout(el.id,update);
             return false;
           }
 
@@ -566,7 +614,7 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
           var axis = dat.data[dat.curveNumber].legendgroup;
           var num = dat.data[dat.curveNumber].customdata[0];
           var indeces =[];
-          el.data.slice(data.num*active,data.num*active+data.num).forEach(function(item,idx,arr){
+          el.data.slice(data.num*el.bipl5.active,data.num*el.bipl5.active+data.num).forEach(function(item,idx,arr){
               if(arr[idx].legendgroup === undefined){
               return;
               }
@@ -581,8 +629,8 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
               }
           });
           var old_annotations = el.layout.annotations;
-          if(active===0){
-            old_annotations.slice(data.counts[active],data.counts[active+1]).forEach(function(item,idx,arr){
+          if(el.bipl5.active===0){
+            old_annotations.slice(data.counts[el.bipl5.active],data.counts[el.bipl5.active+1]).forEach(function(item,idx,arr){
               if(arr[idx].customdata === num){
                 old_annotations[idx].visible = !old_annotations[idx].visible;
               }
@@ -594,14 +642,14 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                 }
             });
           }
-          hidden = arr1[num-1];
+          hidden = el.bipl5.arr1[num-1];
           var update = {'visible': ['legendonly',true][hidden]};
           hidden = [1,0][hidden];
-          arr1[num-1] = hidden;
+          el.bipl5.arr1[num-1] = hidden;
           var new_annot = {annotations:old_annotations};
-          Plotly.restyle('mydiv',update,indeces.map((element, index)=>element +
-                                          data.num*active));
-          Plotly.relayout('mydiv',new_annot);
+          Plotly.restyle(el.id,update,indeces.map((element, index)=>element +
+                                          data.num*el.bipl5.active));
+          Plotly.relayout(el.id,new_annot);
           return false;
         });
 
@@ -612,12 +660,12 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
        if(d.points[0].meta === 'density'){
           return;
        }
-       if(vect_visible ===1){
+       if(el.bipl5.vect_visible ===1){
           return;
        }
     //-------------BOXPLOT--------------------
        if(d.points[0].meta === 'axis'){
-            if(hasbox){
+            if(el.bipl5.hasbox){
             var deleters = [];
             //need to remove current boxplot
                 el.data.forEach(function (item, index, arr) {
@@ -627,16 +675,16 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                       }
                 })
 
-                Plotly.deleteTraces('mydiv', deleters);
+                Plotly.deleteTraces(el.id, deleters);
             }
-            bip_domain[0] = 0.15;
+            el.bipl5.bip_domain[0] = 0.15;
             var update = {
-                'xaxis.domain': bip_domain,   // updates the xaxis range
+                'xaxis.domain': el.bipl5.bip_domain,   // updates the xaxis range
                 'yaxis2.side': 'left'
             };
 
         var trace1 = {
-            y: data.Xhat2[active][d.points[0].customdata-1],
+            y: data.Xhat2[el.bipl5.active][d.points[0].customdata-1],
             type: 'box',
             name: 'Boxplot: <br>'+data.colnames[d.points[0].customdata-1],
             meta: 'box',
@@ -651,15 +699,15 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
         };
 
 
-        Plotly.relayout('mydiv',update);
-        Plotly.addTraces('mydiv', trace1);
-        hasbox = true;
+        Plotly.relayout(el.id,update);
+        Plotly.addTraces(el.id, trace1);
+        el.bipl5.hasbox = true;
         return;
        }
        console.log('boxplot klaar process')
   //-----------------PREDICTION LINES--------------
 
-         if(clicked){
+         if(el.bipl5.clicked){
          console.log('haal ou predict uit begin')
          var remove = [];
             el.data.forEach(function (item, index, arr) {
@@ -668,8 +716,8 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
                           remove.push(index);
                       }
                 });
-            Plotly.deleteTraces('mydiv', remove);
-            for(let i = 0; i < data.a[active].length; i++){
+            Plotly.deleteTraces(el.id, remove);
+            for(let i = 0; i < data.a[el.bipl5.active].length; i++){
                 el.layout.annotations.pop();
             }
           console.log('ou predict eindig')
@@ -678,11 +726,11 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
          var Y = [];
          console.log('begin nuwes insit')
          var traces_to_be_added = [];
-         for (let i = 0; i < data.a[active].length; i++) {
-            var c = d.points[0].y+1/data.a[active][i].m*d.points[0].x;
-            var x_new = (data.a[active][i].c-c)/(-1/data.a[active][i].m -
-                                                data.a[active][i].m);
-            var y_new = data.a[active][i].m*x_new+data.a[active][i].c;
+         for (let i = 0; i < data.a[el.bipl5.active].length; i++) {
+            var c = d.points[0].y+1/data.a[el.bipl5.active][i].m*d.points[0].x;
+            var x_new = (data.a[el.bipl5.active][i].c-c)/(-1/data.a[el.bipl5.active][i].m -
+                                                data.a[el.bipl5.active][i].m);
+            var y_new = data.a[el.bipl5.active][i].m*x_new+data.a[el.bipl5.active][i].c;
             var showleg = false;
             if(i === 0){showleg = true;}
             X.push(x_new);
@@ -705,11 +753,11 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
             var newAnnotation = {
                 x: x_new,
                 y: y_new,
-                text: data.Xhat[active][d.points[0].customdata-1][i].toFixed(2),
+                text: data.Xhat[el.bipl5.active][d.points[0].customdata-1][i].toFixed(2),
                 showarrow: false,
-                textangle: -Math.atan(data.a[active][i].m)*180/Math.PI,
-                xshift: -10*Math.sin(Math.atan(data.a[active][i].m)),
-                yshift: 10*Math.cos(Math.atan(data.a[active][i].m)),
+                textangle: -Math.atan(data.a[el.bipl5.active][i].m)*180/Math.PI,
+                xshift: -10*Math.sin(Math.atan(data.a[el.bipl5.active][i].m)),
+                yshift: 10*Math.cos(Math.atan(data.a[el.bipl5.active][i].m)),
                 name: 'Predicted Value',
                 meta: 'predict',
                 visible: true,
@@ -719,11 +767,11 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
             }
             traces_to_be_added.push(newtrace)
             el.layout.annotations.push(newAnnotation);
-            //Plotly.addTraces('mydiv', newtrace);
+            //Plotly.addTraces(el.id, newtrace);
          }
-         Plotly.addTraces('mydiv', traces_to_be_added);
+         Plotly.addTraces(el.id, traces_to_be_added);
          console.log('eindig nuwes insit')
-        clicked=true;
+        el.bipl5.clicked=true;
         var markertrace = {
             x: X,
             y: Y,
@@ -737,7 +785,7 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
               size: 4
             }
         }
-        Plotly.addTraces('mydiv', markertrace);
+        Plotly.addTraces(el.id, markertrace);
 
 
 
@@ -768,39 +816,45 @@ make_biplot<-function(pc12,colorpalete=NULL,symbol="circle"){
 #' @return Updated plotly graph with vector loadings inserted
 #' @noRd
 insert_vector_annots<-function(p_ly,PC12,PC13,PC23){
-  p_ly |>  add_annotations( ax = PC12$V[,1],
-                   ay = PC12$V[,2],
-                   xref = "x", yref = "y",
-                   axref = "x", ayref = "y",
-                   text = colnames(PC12$x),
-                   showarrow = TRUE,
-                   x = rep(0,PC12$p),
-                   y = rep(0,PC12$p),
-                   arrowside="start",
-                   visible=FALSE
-                   ) |>
-    add_annotations( ax = PC13$V[,1],
-                       ay = PC13$V[,2],
-                       xref = "x", yref = "y",
-                       axref = "x", ayref = "y",
-                       text = colnames(PC12$x),
-                       showarrow = TRUE,
-                       x = rep(0,PC12$p),
-                       y = rep(0,PC12$p),
-                       arrowside="start",
-                     visible=FALSE
-                      ) |>
-    add_annotations( ax = PC23$V[,1],
-                       ay = PC23$V[,2],
-                       xref = "x", yref = "y",
-                       axref = "x", ayref = "y",
-                       text = colnames(PC12$x),
-                       showarrow = TRUE,
-                       x = rep(0,PC12$p),
-                       y = rep(0,PC12$p),
-                       arrowside="start",
-                     visible=FALSE
+  p_ly<- p_ly |>  add_annotations( ax = PC12$V[,1],
+                    ay = PC12$V[,2],
+                    xref = "x", yref = "y",
+                    axref = "x", ayref = "y",
+                    text = colnames(PC12$x),
+                    showarrow = TRUE,
+                    x = rep(0,PC12$p),
+                    y = rep(0,PC12$p),
+                    arrowside="start",
+                    visible=FALSE,
+                    meta='vecload'
+                    )
+    if(!is.null(PC13)){
+      p_ly<- p_ly |> add_annotations( ax = PC13$V[,1],
+                          ay = PC13$V[,2],
+                          xref = "x", yref = "y",
+                          axref = "x", ayref = "y",
+                          text = colnames(PC12$x),
+                          showarrow = TRUE,
+                          x = rep(0,PC12$p),
+                          y = rep(0,PC12$p),
+                          arrowside="start",
+                          visible=FALSE
                       )
+    }
+    if(!is.null(PC23)){
+      p_ly<-p_ly |> add_annotations( ax = PC23$V[,1],
+                          ay = PC23$V[,2],
+                          xref = "x", yref = "y",
+                          axref = "x", ayref = "y",
+                          text = colnames(PC12$x),
+                          showarrow = TRUE,
+                          x = rep(0,PC12$p),
+                          y = rep(0,PC12$p),
+                          arrowside="start",
+                          visible=FALSE
+                      )
+    }
+  return(p_ly)
 }
 
 

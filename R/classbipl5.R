@@ -52,39 +52,6 @@
 #'  entry.
 #'
 #'
-#' @srrstats {G2.10} Extraction of columns not affected by class
-#' @srrstats {G2.3} Requirements met:
-#' @srrstats {G2.3a} Custom function to ensure character input valid
-#' @srrstats {G2.3b} tolower() function applied
-#'
-#' @srrstats {G2.4} Conversion to data types implemented:
-#' @srrstats {G2.4c} explicit convergion to character via as.character()
-#' @srrstats {G2.4e} explicit conversion from factor
-#'
-#'
-#' @srrstats {G2.7} Most tabular forms are accepted and converted to data frame
-#' @srrstats {G2.9} Diagnostic message when column names not specified
-#'
-#'
-#' @srrstats {G2.11} All columns are checked to be numeric, without explicit
-#' conversion.
-#'
-#' @srrstats {G2.12} list columns are checked to be numeric, otherwise
-#' an error is thrown
-#'
-#'
-#' @srrstats {G2.13} Checks are implemented to look for missing values.
-#' default is to be removed
-#' @srrstats {G2.14} Following are done:
-#' @srrstats {G2.14a} Option to get error via na_action
-#' @srrstats {G2.14b} option to be removed from data with message
-#' @srrstats {G2.14c} option to be imputed with the column mean
-#'
-#' @srrstats {G2.16} undefined and infinite values converted to NA values.
-#' They can therefore be removed or imputed via na_action
-#'
-#' @srrstats {G2.15} Top level function makes provision for non-missingness.
-#'
 #' @return A named list of class \code{bipl5} with the following attributes
 #' \item{x}{A data frame which is the original input data}
 #'
@@ -154,7 +121,6 @@ PCAbiplot<-function(x,group=NULL,scale=TRUE,basis=1:2,symbol="circle",
   if(length(group)!=nrow(x))
     stop(paste("\n","Length of group differes from the number of rows in x"))
   col_not_numeric<-NULL
-  n<-nrow(x)
   p<-ncol(x)
   for (i in 1:p){
     if(!is(x[,i],"numeric"))
@@ -181,10 +147,9 @@ PCAbiplot<-function(x,group=NULL,scale=TRUE,basis=1:2,symbol="circle",
   if(na_action=="remove" & length(obs_to_remove)>0){
     x<-x[-obs_to_remove,]
     group<-group[-obs_to_remove]
-    message("\nThe following observations were removed due to missing values",
-            unique(obs_to_remove))
+    message("Observations were removed due to missing values")
   }
-
+  n<-nrow(x)
   #get all the attributes ready before the constructer is invoked
   if(length(basis)>rank)
     basis<-basis[1:rank]
@@ -263,8 +228,6 @@ PCAbiplot<-function(x,group=NULL,scale=TRUE,basis=1:2,symbol="circle",
 #' @param m gradients of loadings
 #' @param quads quadrants of the loadings
 #'
-#' @srrstats {G2.8} All functions are executed via method dispatch on the object
-#' of class bipl5
 #'
 #' @noRd
 #' @return bipl5 object

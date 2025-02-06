@@ -80,9 +80,9 @@ TDAbiplot<-function(x,dist=NULL,inflate=1,alpha=0.95,
 #' @srrstats {G1.1} Algorithm is first of its kind. Stated in documentation
 #' @srrstats {G2.0} Assertions on length documented
 #'
-#' @srrstatsTODO {G2.1} Assertions implemented below
-#' @srrstatsTODO {G2.1a} all vector types appropriately documented
-#' @srrstatsTODO {G2.2} multivariate arguments prohibited with error
+#' @srrstats {G2.1} Assertions implemented below
+#' @srrstats {G2.1a} all vector types appropriately documented
+#' @srrstats {G2.2} multivariate arguments prohibited with error
 #'
 #' @details
 #' This function produces a PCA biplot with translated calibrated axes. The
@@ -231,8 +231,6 @@ TDAbiplot.bipl5<-function(x,dist=NULL,inflate=1,alpha=0.95,
              )
            )
     )
-  p_ly$elementId<-"mydiv"
-
 
   #---------Dist argument
   if(is.null(dist)){

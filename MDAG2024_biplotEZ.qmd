@@ -1,0 +1,197 @@
+---
+title: "**bipl5**"
+subtitle: "An R Package for Reactive Biplots R<br><br><br><br><p style='color:white;'> <b> Ruan Buys <br> Carel van der Merwe <br> Sugnet Lubbe </b> </p> <br <p style='color:white;'>**SASA 2024**</p>"
+#author: <a href="https://github.com/MuViSU" target="_blank">https://github.com/MuViSU</a>
+format: 
+  revealjs:
+    self-contained: true
+    theme: [serif, MDAG_biplotEZ.scss]
+    slide-number: true
+title-slide-attributes: 
+  data-background-color: rgb(255,255,255)
+  data-background-image: "background.jpg"
+  data-background-size: cover
+  data-background-opacity: "1"
+  data-background-position: 15% 90%
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup}
+#| include: false
+
+library(knitr)
+options(htmltools.dir.version = FALSE, tibble.width = 45)
+opts_chunk$set(
+  echo = TRUE, 
+  warning = FALSE, 
+  message = FALSE, 
+  error=FALSE, 
+  comment = "#",
+  fig.align = 'center', 
+  fig.retina = 5,
+  out.width = "80%",
+  fig.show = 'hold',
+  cache = FALSE
+)
+
+# libraries
+library(biplotEZ)
+library(tibble)
+library(plotly)
+library(devtools)
+load_all()
+```
+
+
+
+## PCA Biplots in bipl5
+
+```{r, echo = F, eval = TRUE}
+#| out-width: 100%
+x<-PCAbiplot(iris[,-5],group=iris[,5],scale=TRUE)
+x$bipl
+```
+
+
+## Enhancing the PCA biplot
+
+```{r, echo = FALSE, eval = TRUE}
+#| out-width: 100%
+x<-PCAbiplot(iris[,-5],group=iris[,5],scale=TRUE)|>
+    TDAbiplot(dist=1,inflate=1,symbol=c("circle","diamond","square"))
+x$bipl
+```
+
+## PCA with biplotEZ
+
+```{r}
+#| output-location: fragment
+#| fig-height: 6
+x<- biplot(data = iris, group.aes = iris[,5],
+       Title = "My first biplot") |> 
+  PCA() |> 
+  plot()
+```
+
+## PCA -> bipl5
+
+```{r, echo = F, eval = TRUE}
+#| out-width: 100%
+plot_bipl5(x)
+```
+
+
+## CVA with biplotEZ
+
+```{r}
+#| output-location: fragment
+#| fig-height: 6
+y<- biplot(state.x77) |> 
+  CVA(classes = state.region) |> 
+  plot()
+```
+
+## CVA -> bipl5
+
+```{r, echo = F, eval = TRUE}
+#| out-width: 100%
+plot_bipl5(y)
+```
+
+
+## PCO with biplotEZ (linear axes)
+
+```{r}
+#| output-location: fragment
+#| fig-height: 6
+x<- biplot(rock) |> 
+  regress(Z = MASS::sammon(dist(scale(rock), method="manhattan"))$points) |> 
+  plot()
+```
+
+
+## PCO with biplotEZ (spline axes)
+
+```{r}
+#| output-location: fragment
+#| fig-height: 6
+z<- biplot(rock, scale = TRUE) |> PCO(axes = "splines") |> plot()
+```
+
+
+## PCO (spline axes) -> bipl5
+
+```{r, echo = F, eval = TRUE}
+#| out-width: 100%
+plot_bipl5(z)
+```
+
+
+## biplotEZ Enhancements: Alpha-bag
+
+```{r, eval=FALSE}
+sunspots <- matrix (sunspot.month[1:(264*12)], ncol = 12, byrow = TRUE)
+years <- 1749:2012
+rownames(sunspots) <- years
+colnames(sunspots) <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+century <-paste(floor((years-1)/100)+1, ifelse (floor((years-1)/100)+1<21, "th","st"), sep = "-")
+
+x<- biplot(sunspots, group.aes=century) |> PCA() |>
+        axes (label.dir = "Hor", label.line = c(0.8, rep(0,10), 0.8)) |>
+        alpha.bags () |> 
+        legend.type(bags = TRUE)  |> plot()
+```
+
+## biplotEZ Enhancements: Alpha-bag
+
+```{r, eval=TRUE, echo=FALSE}
+#| fig-height: 6
+sunspots <- matrix (sunspot.month[1:(264*12)], ncol = 12, byrow = TRUE)
+years <- 1749:2012
+rownames(sunspots) <- years
+colnames(sunspots) <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+century <-paste(floor((years-1)/100)+1, ifelse (floor((years-1)/100)+1<21, "th","st"), sep = "-")
+
+a<- biplot(sunspots, group.aes=century) |> PCA() |>
+        axes (label.dir = "Hor", label.line = c(0.8, rep(0,10), 0.8)) |>
+        alpha.bags () |> 
+        legend.type(bags = TRUE)  |> plot()
+```
+
+## Alpha-bags -> bipl5
+
+```{r, echo = F, eval = TRUE}
+#| out-width: 100%
+plot_bipl5(a)
+```
+
+## Ellipses
+
+```{r, eval=FALSE}
+x<- biplot(sunspots, group.aes=century) |> PCA() |>
+        axes (label.dir = "Hor", label.line = c(0.8, rep(0,10), 0.8)) |>
+        samples (which = NULL) |>
+        ellipses (alpha = c(0.9, 0.95), lty = c(1,3,5), opacity = 0.1) |> 
+        legend.type(ellipses = TRUE)  |> plot()
+```
+
+## Ellipses
+
+```{r, eval=TRUE, echo=FALSE}
+p<- biplot(sunspots, group.aes=century) |> PCA() |>
+        axes (label.dir = "Hor", label.line = c(0.8, rep(0,10), 0.8)) |>
+        samples (which = NULL) |>
+        ellipses (alpha = c(0.9, 0.95), lty = c(1,3,5), opacity = 0.1) |> 
+        legend.type(ellipses = TRUE)  |> plot()
+```
+
+## Ellipses -> bipl5
+
+```{r, echo = F, eval = TRUE}
+#| out-width: 100%
+plot_bipl5(p)
+```

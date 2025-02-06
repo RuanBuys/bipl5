@@ -8,9 +8,15 @@
 #' @srrstats {G1.4a} Internal functions documented
 #'
 #' @noRd
-InsertAxisDeets<-function(p_ly,x){
-  pred_deets<-axis_predictivities(x)
-  ColNames<-c(colnames(x$x),"Weighted mean = Quality")
+InsertAxisDeets<-function(p_ly,x,EZ=FALSE){
+  if(EZ){
+    pred_deets<-axis_predictivities_EZ(x)
+    ColNames<-c(colnames(x$X),"Weighted mean = Quality")
+  }
+  else{
+    pred_deets<-axis_predictivities(x)
+    ColNames<-c(colnames(x$x),"Weighted mean = Quality")
+  }
   p<-x$p
   linetipe<-"dashdot"
   lwidth<-2

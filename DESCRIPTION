@@ -1,6 +1,6 @@
 Package: bipl5
 Title: Construct Reactive Calibrated Axes Biplots
-Version: 1.0.2
+Version: 1.1.0
 Authors@R: 
     c(person(given = "Ruan",
            family = "Buys",
@@ -33,6 +33,7 @@ Roxygen: list(markdown = TRUE,
               roclets = c ("namespace", "rd", "srr::srr_stats_roclet"))
 RoxygenNote: 7.2.3
 Imports: 
+    biplotEZ (>= 2.0),
     cluster,
     crayon (>= 1.5.2),
     htmlwidgets (>= 1.6.2),

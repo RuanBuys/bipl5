@@ -1,0 +1,40 @@
+---
+title: "Testers123"
+format: revealjs
+editor: visual
+---
+
+
+```{r setup, include=FALSE}
+library(devtools)
+library(biplotEZ)
+load_all()
+```
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished presentation. To learn more about Quarto presentations see <https://quarto.org/docs/presentations/>.
+
+## Bullets
+
+When you click the **Render** button a document will be generated that includes:
+
+-   Content authored with markdown
+-   Output from executable code
+
+## Code
+
+When you click the **Render** button a presentation will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+biplot(data = iris) |> PCA() |> plot_bipl5()
+```
+
+
+## Dala
+
+Check this piece of art
+
+```{r}
+biplot(data = iris) |> PCA() |> plot_bipl5()
+```
