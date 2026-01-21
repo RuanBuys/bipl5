@@ -732,7 +732,7 @@ add_TDA<-function(z.axes,x,p_ly=NULL,Z,group,Col){
       lab<-paste("<b> &#129028; ",colnames(x$X)[i]," </b>",sep="")
       lab2<-"&#11164;"
     }
-    print(AxName)
+
     angles[[i]]<-list(x=-10*sin(atan(x$m[i])),y=10*cos(atan(x$m[i])))
     p_ly<-p_ly |>
       add_trace(x=shift$ends[[i]][,1],
@@ -743,7 +743,8 @@ add_TDA<-function(z.axes,x,p_ly=NULL,Z,group,Col){
                                           width=1,simplify=FALSE),
                 name=colnames(x$X)[i],textposition='top',
                 legendgroup=paste("ExpAx",i,sep=""),
-                meta='ExpAx',xaxis="x",yaxis="y",customdata=i,
+                meta='ExpAx',xaxis="x",yaxis="y",
+                customdata=shift$ends[[i]][,3],
                 hoverinfo='name',visible=visible,
                 legendgrouptitle=list(text=titles[i]))|>
 
@@ -816,13 +817,9 @@ add_TDA<-function(z.axes,x,p_ly=NULL,Z,group,Col){
 #' @examples
 get_quads_axes<-function(z.axes){
   quads<-numeric(length(z.axes))
-  print(quads)
   for(i in 1:length(z.axes)){
     max_entry<-which(z.axes[[i]][,3]==max(z.axes[[i]][,3]))
-    print(i)
-    print(max_entry)
     m<-z.axes[[i]][max_entry,2]/z.axes[[i]][max_entry,1]
-    print(m)
     if((m>0) && (z.axes[[i]][max_entry,1]>0))
       quads[i]<-1
     if (m>0 && (z.axes[[i]][max_entry,1]<0))
@@ -862,6 +859,11 @@ shorten_axes<-function(z.axes,ellip){
   Ranges<-matrix(nrow=2,ncol=2)
   axes<-list()
   for(i in 1:p){
+    eliptest<-ellip%*%RotationConstructor(thetas[i])
+    x_min<-min(eliptest[,1])
+    x_max<-max(eliptest[,1])
+    lilmat<-rbind(c(x_min,0),c(x_max,0))
+    zhatters<-lilmat%*%RotationConstructor(-thetas[i])
     Ranges[1,]<-c(min(RotatedElip[,2*i-1]),0)
     Ranges[2,]<-c(max(RotatedElip[,2*i-1]),0)
     Z_ranges<-Ranges%*%RotationConstructor(-thetas[i])
@@ -880,6 +882,8 @@ shorten_axes<-function(z.axes,ellip){
   }
   return(axes)
 }
+
+
 
 #' Title
 #'
@@ -901,23 +905,6 @@ obtain_zhat<-function(Z_ranges,z.axis){
   Z_hat2<-Z_hat2 * (z.axis[nrow(z.axis),3]-z.axis[1,3])+z.axis[1,3]
 
   return(c(Z_hat1,Z_hat2))
-
-  # Z_ranges <- as.matrix(Z_ranges)
-  # z.axis   <- as.matrix(z.axis)
-  #
-  # a <- z.axis[1, 1:2]
-  # b <- z.axis[nrow(z.axis), 1:2]
-  # vA <- z.axis[1, 3]
-  # vB <- z.axis[nrow(z.axis), 3]
-  #
-  # u <- b - a
-  # denom <- sum(u^2)
-  # if (denom == 0) stop("Axis endpoints coincide.")
-  #
-  # # lambda is position along the axis from a to b
-  # lambda <- ((Z_ranges[,1:2, drop=FALSE] - matrix(a, nrow(Z_ranges), 2, byrow=TRUE)) %*% u) / denom
-  # as.numeric(vA + lambda * (vB - vA))
-
 }
 
 
@@ -1661,13 +1648,13 @@ insert_linear_axes<-function(z.axes,x,p_ly){
                       text=as.character(z.axes[[i]][,3]),
                       showarrow=FALSE,textangle=-atan(m)*180/pi,
                       visible=TRUE,yshift=-12*cos(atan(m)),
-                      xshift=12*sin(atan(m)),meta='axis',
+                      xshift=12*sin(atan(m)),meta='Ax',
                       xaxis="x",yaxis="y",customdata=i,
                       font=list(size=10,color=x$axes$tick.label.col[i]))|>
       add_annotations(x=z.axes[[i]][,1],y=z.axes[[i]][,2],
                       text="&#124;",
                       showarrow=FALSE,textangle=-atan(m)*180/pi,
-                      visible=TRUE,meta='axis',
+                      visible=TRUE,meta='Ax',
                       xaxis="x",yaxis="y",customdata=i,
                       font=list(size=8,color=x$axes$tick.col[i]))|>
       add_trace(x=radius*cos(angle),y=radius*sin(angle),

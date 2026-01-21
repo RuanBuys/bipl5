@@ -15,7 +15,7 @@
       but_names: ["PC", "AxisStats", "TransAxes", "vecload"],
     };
 
-    console.log(el.data);
+
     function metaTag(tr) {
       if (Array.isArray(tr.meta)) return tr.meta[0];
       if (typeof tr.meta === "string") return tr.meta;
@@ -26,6 +26,7 @@
       if (i === -1) return null;
       el.bipl5.rel_but[i] = 1 - el.bipl5.rel_but[i];
     }
+
     function RemovePredictions() {
       if (!el.bipl5.clicked) return false;
       var remove = [];
@@ -251,7 +252,7 @@
             }
           }
           //take out all axis tickmarks - ExpAx stays
-          searchAnnot("axis",false);
+          searchAnnot("Ax",false);
           //make arrows vect_visible
           searchAnnot("vecload",true);
 
@@ -292,7 +293,7 @@
               }
             }
             //dan net vecload annotations
-            searchAnnot('axis',true);
+            searchAnnot('Ax',true);
 
           }
           for (let i = 0; i < el.data.length; i++) {
@@ -365,28 +366,74 @@
 
 //------------LEGENDCLICK--------------------
 
+
+    function hasLegendgroup(tr) {
+      return tr && typeof tr.legendgroup === "string" && tr.legendgroup.length > 0;
+    }
+
+    function axisNameFromLegendgroup(lg) {
+      // expects "Ax<number>"
+      if (typeof lg !== "string") return null;
+      const m = lg.match(/^(ExpAx|Ax)(\d+)$/);
+      return m ? { axis: lg, num: Number(m[2]), type: m[1]} : null;
+    }
+
+    function customAxisRef(tr) {
+      // you use: tr.customdata[0] === axis
+      // so guard for array-like customdata
+      if (!tr || !Array.isArray(tr.customdata)) return null;
+      return tr.customdata[0] ?? null;
+    }
+
+    function toggleAxisAnnot(num,type) {
+      const anns = el?.layout?.annotations;
+      if (!Array.isArray(anns)) return 0;
+
+      let changed = 0;
+
+      for (let i = 0; i < anns.length; i++) {
+        const ann = anns[i];
+
+        if (ann && ann.customdata === num && metaTag(ann)===type) {
+          ann.visible = !ann.visible;
+          changed++;
+        }
+      }
+      return changed;
+    }
+
+    function toggleLegendOnly(tr) {
+      const isShown = (tr.visible === true || tr.visible === undefined); // undefined behaves like visible
+    return { visible: isShown ? "legendonly" : true };
+    }
+
     el.on("plotly_legendclick", function (dat) {
       if (dat.event.detail === 2) {
         return false;
       }
 
+      const tr = dat?.data?.[dat.curveNumber];
+        if (!tr) return false;
       // Delete predictive lines
-      // NOTE: this must come first before rest otherwise error
-      if (dat.data[dat.curveNumber].meta === "predict") {
-        var remove = [];
-        el.data.forEach(function (item, index, arr) {
-          if (arr[index].meta === "predict") {
-            remove.push(index);
-          }
-        });
-        //remove prediction lines annotations as well
+      if (metaTag(tr) === "predict") {
+        RemovePredictions()
         removeAnnotation('predict');
-        Plotly.deleteTraces(el.id, remove);
         el.bipl5.clicked = false;
         return false;
       }
 
-      if (dat.data[dat.curveNumber].meta[0] === "data") {
+      if (metaTag(tr) === "data") {
+        var a = ["legendonly", true].indexOf(tr.visible);
+        var update = {
+          visible: [true, "legendonly"][a],
+        };
+        Plotly.restyle(el.id, update, dat.curveNumber);
+        return false;
+      }
+      if (metaTag(tr) === "density") {
+        return false;
+      }
+      if (metaTag(tr) === "polygon") {
         var a = ["legendonly", true].indexOf(dat.data[dat.curveNumber].visible);
         var update = {
           visible: [true, "legendonly"][a],
@@ -394,56 +441,34 @@
         Plotly.restyle(el.id, update, dat.curveNumber);
         return false;
       }
-      if (dat.data[dat.curveNumber].meta[0] === "density") {
+
+      if (metaTag(tr) === "axis_pred") {
         return;
       }
-      if (dat.data[dat.curveNumber].meta[0] === "polygon") {
-        var a = ["legendonly", true].indexOf(dat.data[dat.curveNumber].visible);
-        var update = {
-          visible: [true, "legendonly"][a],
-        };
-        Plotly.restyle(el.id, update, dat.curveNumber);
-        return false;
+      // all that remains now are the axes!
+      // remove
+      if (!hasLegendgroup(tr)) return false;
+      const axisInfo = axisNameFromLegendgroup(tr.legendgroup);
+      if (!axisInfo) return false;
+      const { axis, num ,type} = axisInfo;
+
+       // Collect trace indices to update/hide/show
+      const indices = [];
+      for (let i = 0; i < el.data.length; i++) {
+        const t = el.data[i];
+        // Same legendgroup
+        if (t && t.legendgroup === axis) indices.push(i);
+        // Or customdata[0] points to the axis group
+        if (customAxisRef(t) === axis) indices.push(i);
       }
 
-      if (dat.data[dat.curveNumber].meta[0] === "axis_pred") {
-        return;
-      }
 
-      // REMOVE AXES
 
-      var axis = dat.data[dat.curveNumber].legendgroup;
-      var num = Number(axis.replace("Ax", ""));
-      var indeces = [];
+      toggleAxisAnnot(num,type);
 
-      el.data.forEach(function (item, idx, arr) {
-        if (arr[idx].legendgroup === undefined) {
-          return;
-        }
-        if (arr[idx].legendgroup === axis) {
-          indeces.push(idx);
-        }
-        if (arr[idx].customdata === undefined) {
-          return;
-        }
-        if (arr[idx].customdata[0] === axis) {
-          indeces.push(idx);
-        }
-      });
+      var update = toggleLegendOnly(tr);
 
-      var old_annotations = el.layout.annotations;
-      old_annotations.forEach(function (item, idx, arr) {
-        if (arr[idx].customdata === num) {
-          old_annotations[idx].visible = !old_annotations[idx].visible;
-        }
-      });
-
-      hidden = el.bipl5.arr1[num - 1];
-      var update = { visible: ["legendonly", true][hidden] };
-      hidden = [1, 0][hidden];
-      el.bipl5.arr1[num - 1] = hidden;
-      var new_annot = { annotations: old_annotations };
-      Plotly.update(el.id, update, new_annot, indeces);
+      Plotly.restyle(el.id, update, indices);
 
       return false;
     });
@@ -452,7 +477,36 @@
 
 //-------------------POINTS CLICK--------------
 
+    function searchAxes(item){
+        var idx = []
+        el.data.forEach((arr, index) => {
+          if(metaTag(arr) === item && arr.mode === 'lines'){
+            idx.push(index);
+          }
+        });
+        return(idx)
+    }
 
+    function obtain_projection(d,idx){
+      var x = el.data[idx].x;
+      var y = el.data[idx].y;
+      var z_hats = el.data[idx].customdata;
+
+      //right now we need to obtain the equation of this axis
+      var slope = (y[0]-y[y.length-1])/(x[0]-x[x.length-1]);
+      var c = y[0]-slope*x[0];
+      //next equation of orthogonal axis going through p
+      var slope_perp = -1/slope;
+      var c_perp = d.points[0].y-slope_perp*d.points[0].x;
+      //solve simultaneously
+      var x_cross = (c_perp - c)/(slope-slope_perp);
+      var y_cross = slope*x_cross+c;
+      //next we linearly interpolate to obtain zhat
+      var zhat = (x_cross-x[0])/(x[x.length-1]-x[0])*(z_hats[z_hats.length-1]-z_hats[0])+z_hats[0];
+
+      return([x_cross,y_cross,zhat,slope])
+
+    }
 
     el.on("plotly_click", function (d) {
       if (d.points[0].meta === "density") {
@@ -467,33 +521,27 @@
 
       //-----------------PREDICTION LINES--------------
 
-      if (el.bipl5.clicked) {
-        var remove = [];
-        el.data.forEach(function (item, index, arr) {
-          if (arr[index].meta === "predict") {
-            remove.push(index);
-          }
-        });
-        Plotly.deleteTraces(el.id, remove);
-        removeAnnotation('predict');
-      }
-      var X = [];
-      var Y = [];
+      RemovePredictions();
+      if(el.bipl5.clicked) removeAnnotation('predict');
 
+      //obtain the indeces of the relevant axes onto which pred. lines
+      // must be drawn
+      if(el.bipl5.rel_but[el.bipl5.but_names.indexOf("TransAxes")] === 0){
+        var indeces = searchAxes('axis')
+      } else {
+        var indeces = searchAxes('ExpAx')
+      }
       var traces_to_be_added = [];
-      for (let i = 0; i < data.p; i++) {
-        var c = d.points[0].y + (1 / data.m[i]) * d.points[0].x;
-        var x_new = c / (data.m[i] + 1 / data.m[i]);
-        var y_new = data.m[i] * x_new;
+      for (let i = 0; i < indeces.length; i++) {
+        var idx = indeces[i];
+        var coordinates = obtain_projection(d,idx);
         var showleg = false;
-        if (i === data.p - 1) {
+        if (i === indeces.length - 1) {
           showleg = true;
         }
-        X.push(x_new);
-        Y.push(y_new);
         var newtrace = {
-          x: [d.points[0].x, x_new],
-          y: [d.points[0].y, y_new],
+          x: [d.points[0].x, coordinates[0]],
+          y: [d.points[0].y, coordinates[1]],
           mode: "lines+markers",
           xaxis: "x",
           yaxis: "y",
@@ -509,17 +557,19 @@
           },
           marker: {
             color: "gray",
-            size: [1, 6],
+            size: [1, 6]
           },
+          hoverinfo: 'text',
+          hovertext: d.points[0].hovertext
         };
         var newAnnotation = {
-          x: x_new,
-          y: y_new,
-          text: data.Xhat[d.points[0].customdata - 1][i].toFixed(2),
+          x: coordinates[0],
+          y: coordinates[1],
+          text: coordinates[2].toFixed(2),
           showarrow: false,
-          textangle: (-Math.atan(data.m[i]) * 180) / Math.PI,
-          xshift: -10 * Math.sin(Math.atan(data.m[i])),
-          yshift: 10 * Math.cos(Math.atan(data.m[i])),
+          textangle: (-Math.atan(coordinates[3]) * 180) / Math.PI,
+          xshift: -10 * Math.sin(Math.atan(coordinates[3])),
+          yshift: 10 * Math.cos(Math.atan(coordinates[3])),
           name: "Predicted Value",
           meta: "predict",
           visible: [true, false][el.bipl5.arr1[i]],
