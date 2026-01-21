@@ -894,29 +894,29 @@ obtain_zhat<-function(Z_ranges,z.axis){
   #simply going to linearly interpolate the two endpoints
   #can do so by projecting coorindates with their ticks on x-axis
 
-  # Z_hat1<-(Z_ranges[1,1]-z.axis[1,1])/(z.axis[nrow(z.axis),1]-z.axis[1,1])
-  # Z_hat1<-Z_hat1 * (z.axis[nrow(z.axis),3]-z.axis[1,3])+z.axis[1,3]
+  Z_hat1<-(Z_ranges[1,1]-z.axis[1,1])/(z.axis[nrow(z.axis),1]-z.axis[1,1])
+  Z_hat1<-Z_hat1 * (z.axis[nrow(z.axis),3]-z.axis[1,3])+z.axis[1,3]
+
+  Z_hat2<-(Z_ranges[2,1]-z.axis[1,1])/(z.axis[nrow(z.axis),1]-z.axis[1,1])
+  Z_hat2<-Z_hat2 * (z.axis[nrow(z.axis),3]-z.axis[1,3])+z.axis[1,3]
+
+  return(c(Z_hat1,Z_hat2))
+
+  # Z_ranges <- as.matrix(Z_ranges)
+  # z.axis   <- as.matrix(z.axis)
   #
-  # Z_hat2<-(Z_ranges[2,1]-z.axis[1,1])/(z.axis[nrow(z.axis),1]-z.axis[1,1])
-  # Z_hat2<-Z_hat2 * (z.axis[nrow(z.axis),3]-z.axis[1,3])+z.axis[1,3]
+  # a <- z.axis[1, 1:2]
+  # b <- z.axis[nrow(z.axis), 1:2]
+  # vA <- z.axis[1, 3]
+  # vB <- z.axis[nrow(z.axis), 3]
   #
-  # return(c(Z_hat1,Z_hat2))
-
-  Z_ranges <- as.matrix(Z_ranges)
-  z.axis   <- as.matrix(z.axis)
-
-  a <- z.axis[1, 1:2]
-  b <- z.axis[nrow(z.axis), 1:2]
-  vA <- z.axis[1, 3]
-  vB <- z.axis[nrow(z.axis), 3]
-
-  u <- b - a
-  denom <- sum(u^2)
-  if (denom == 0) stop("Axis endpoints coincide.")
-
-  # lambda is position along the axis from a to b
-  lambda <- ((Z_ranges[,1:2, drop=FALSE] - matrix(a, nrow(Z_ranges), 2, byrow=TRUE)) %*% u) / denom
-  as.numeric(vA + lambda * (vB - vA))
+  # u <- b - a
+  # denom <- sum(u^2)
+  # if (denom == 0) stop("Axis endpoints coincide.")
+  #
+  # # lambda is position along the axis from a to b
+  # lambda <- ((Z_ranges[,1:2, drop=FALSE] - matrix(a, nrow(Z_ranges), 2, byrow=TRUE)) %*% u) / denom
+  # as.numeric(vA + lambda * (vB - vA))
 
 }
 
@@ -1642,9 +1642,9 @@ insert_linear_axes<-function(z.axes,x,p_ly){
       pos<-"left"
       angle<-angle-pi
     }
-    zhats<-obtain_zhat(rbind(c(radius*cos(atan(m)),radius*cos(atan(m)-pi)),
-                             c(radius*sin(atan(m)),radius*sin(atan(m)-pi))),
-                       z.axes[[i]])
+    mat<-t(rbind(c(radius*cos(atan(m)),radius*cos(atan(m)-pi)),
+               c(radius*sin(atan(m)),radius*sin(atan(m)-pi))))
+    zhats<-obtain_zhat(mat,z.axes[[i]])
     titles<-c("<b>Axes</b>",rep("",p-1))
     p_ly<-p_ly |>
       add_trace(x=c(radius*cos(atan(m)),radius*cos(atan(m)-pi)),
