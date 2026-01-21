@@ -139,7 +139,8 @@ insert_Z_coo<-function(p_ly,x,p_ly_pch,Col,visible=TRUE){
       add_trace(data=x$Z,x=x$Z[x$group==levels(x$group)[i],1],
                 y=x$Z[x$group==levels(x$group)[i],2],name=levels(x$group)[i],
                 type = "scatter", mode = "markers",
-                hovertext=rownames(x$x)[x$group==levels(x$group)[i]],
+               # hovertext=rownames(x$x)[x$group==levels(x$group)[i]],
+                hovertext=hovertext_generator(x,i),
                 hoverinfo="text+name",
                 customdata=(1:x$n)[x$group==levels(x$group)[i]],
                 meta="data",xaxis="x",yaxis="y",visible=visible,
@@ -148,6 +149,33 @@ insert_Z_coo<-function(p_ly,x,p_ly_pch,Col,visible=TRUE){
                 legendgrouptitle=list(text="<b>Data</b>"))
   }
   return(p_ly)
+}
+
+#' Title
+#'
+#' @param x
+#' @param i
+#'
+#' @return
+#' @export
+#'
+#' @examples
+hovertext_generator<-function(x,i){
+  if(is.null(x$XHat))
+    return(rownames(x$x)[x$group==levels(x$group)[i]])
+  obs<-paste0("Observation: ",rownames(x$x))
+  #iterate over all observations in the group
+  longvector<-NULL
+  for(j in (1:x$n)[x$group==levels(x$group)[i]]){
+    lil_mat<-data.frame(Actual=as.vector(x$x[j,]),Pred=x$XHat[j,])
+    rownames(lil_mat)<-colnames(x$x)
+    kable_mat<-paste0(kable(lil_mat,format="pipe",
+                             digits=4,align="c"),"\n")
+    vec<-Reduce(paste0,kable_mat)
+    vec<-paste0(obs[j],"\n\n",vec)
+    longvector<-c(longvector,vec)
+  }
+  return(longvector)
 }
 
 #' Check if tick mark is inside bounding circle

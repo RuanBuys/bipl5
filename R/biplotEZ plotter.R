@@ -35,8 +35,9 @@ plot_bipl5<-function(x){
 plot_bipl5.PCA<-function(x){
   if(is.null(x$samples))
     x<-biplotEZ::samples(x)
-  if(is.null(x$axes))
-    x<-biplotEZ::axes(x)
+  #if(is.null(x$axes))
+  #for now all the default settings of axes is supported. Might change later on
+  x<-biplotEZ::axes(x)
 
   color<-x$samples$col
   scale<-x$scaled
@@ -77,10 +78,10 @@ plot_bipl5.PCA<-function(x){
                         round((eigval[basis[2]]/sum(eigval)) * 100, digits = 2),
                         "% (PC",basis[2],")")
 
-  #build scaffolding
-  p_ly<-plot_scaffolding(fit.quality,basis,FALSE,TRUE,TRUE,TRUE)
+  #build scaffolding ->biplotEZ helper
+  p_ly<-plot_scaffolding(fit.quality,basis,TRUE,TRUE,TRUE,TRUE)
 
-  #Insert any polygons to the plot
+  #Insert any polygons to the plot -> EZ plotly layers
 
   if(!is.null(x$alpha.bags)){
     p_ly<-insert_polygon_EZ(p_ly,x$alpha.bags,x$alpha.bag.aes)
@@ -99,9 +100,9 @@ plot_bipl5.PCA<-function(x){
   if (x$scaled) Xhat <- scale(Xhat, center=FALSE, scale=1/x$sd)
   if (x$center) Xhat <- scale(Xhat, center=-1*x$means, scale=FALSE)
 
-  z.axes <- lapply(1:p, biplotEZ:::.calibrate.axis, Xhat, x$means,
-                   x$sd, x$ax.one.unit, 1:p,
-                   ax.aes$ticks, ax.aes$orthogx, ax.aes$orthogy)
+  #z.axes <- lapply(1:p, biplotEZ:::.calibrate.axis, Xhat, x$means,
+                   #x$sd, x$ax.one.unit, 1:p,
+                   #ax.aes$ticks, ax.aes$orthogx, ax.aes$orthogy)
   z.axes<- biplotEZ::axes_coordinates(x)
 
   # for(i in 1:p){
@@ -109,8 +110,8 @@ plot_bipl5.PCA<-function(x){
   # }
 
 
-  #insert Z coordinates
-  obj<-list(Z=Z,group=group,n=n,x=x$X)
+  #insert Z coordinates ->PCAbiplot_Helper
+  obj<-list(Z=Z,group=group,n=n,x=x$X,XHat=Xhat)
   p_ly<-insert_Z_coo(p_ly,obj,symbol,color,TRUE)
 
 
@@ -144,10 +145,14 @@ plot_bipl5.PCA<-function(x){
   temp<-list(V=x$Vr,x=x$X,p=x$p)
   p_ly<-insert_vector_annots(p_ly,temp,NULL,NULL)
 
+  #insert Translated Density Axes
+  p_ly<-add_TDA(z.axes,x,Z=Z,group=group,p_ly=p_ly,Col=color)
 
 
 
-  p_ly<-insert_linear_js(p_ly,Xhat=Xhat,m=grads,p=p,cols=x$axes$tick.label.col)
+
+  p_ly<-insert_linear_js_v1(p_ly,Xhat=Xhat,
+                         m=grads,p=p,cols=x$axes$tick.label.col)
 
   return(p_ly)
 

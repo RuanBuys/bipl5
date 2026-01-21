@@ -15,7 +15,8 @@ insert_polygon_EZ<-function(p_ly,coors,aes,leg_group="Alpha Bags"){
       Elip<-cluster::ellipsoidhull(coors[[i]])
       coors[[i]]<-cluster::predict.ellipsoid(Elip,n.out=101)
     }
-
+    #ensure the coordinates are circular
+    coors[[i]]<-rbind(coors[[i]],coors[[i]][1,])
     p_ly<-p_ly |> add_trace(x=coors[[i]][,1],
                             y=coors[[i]][,2],
                             mode="lines",
