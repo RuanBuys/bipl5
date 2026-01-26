@@ -85,7 +85,36 @@ plot_scaffolding<-function(dpquality,basis,PC_toggle=TRUE,
 }
 
 
+#' Add unit circle to the plot for vector representation
+#'
+#' @param p_ly plotly object
+#' @param n number of datapoints the circle should contain
+#' @param visible whether it should immediately be visible. Always false
+#' @param color color of the circle
+#' @param width linewidth
+#'
+#' @return Updated plotly object
+#' @noRd
+insert_unit_circle <- function(p_ly, n = 200, visible = FALSE,
+                               color = "red", width = 1.2) {
+  theta <- seq(0, 2*pi, length.out = n)
 
+  p_ly |>
+    plotly::add_trace(
+      x = cos(theta),
+      y = sin(theta),
+      type = "scatter",
+      mode = "lines",
+      line = list(color = color, width = width),
+      name = "Unit Circle",
+      showlegend = FALSE,
+      meta = "veccircle",
+      xaxis = "x",
+      yaxis = "y",
+      hoverinfo = "name",
+      visible = visible
+    )
+}
 
 
 #' Insert class means
@@ -653,16 +682,17 @@ make_biplot_EZ<-function(pc12,colorpalete=NULL,symbol="circle"){
 }
 
 
-#' Title
+#' Add translated density axes to the plotly graph
 #'
-#' @param z.axes
-#' @param x
-#' @param p_ly
+#' @param z.axes List containing the coordinates of the tickmarks per axis
+#' @param x object from biplotEZ package
+#' @param p_ly current plotly graph to be updated
+#' @param Z Coordinates of the observations
+#' @param group factor variable indicating group membership of the observations
+#' @param Col Color per group
 #'
-#' @return
-#' @export
-#'
-#' @examples
+#' @return an updated plotly graph
+#' @noRd
 add_TDA<-function(z.axes,x,p_ly=NULL,Z,group,Col){
   r1<-range(x$Z[,1])
   r2<-range(x$Z[,2])
@@ -786,14 +816,21 @@ add_TDA<-function(z.axes,x,p_ly=NULL,Z,group,Col){
 
   for(i in 1:num_groups){
     Dens<-DensCoors[[i]]
+    index_color<-which(levels(group)==unique(group)[i])
+    p_ly<-p_ly |>
+      add_trace(x=0,y=0,mode="lines",type="scatter",
+                line=list(dash="dot",color=Col[index_color],width=0.95),
+                legendgroup=unique(group)[i], showlegend=TRUE,
+                name=unique(group)[i], meta='density', xaxis="x",
+                yaxis="y",hoverinfo="skip",customdata="legendentry",
+                visible=FALSE)
+
     for(j in 1:p){
-      showleg<-FALSE #show legend... only true for first iteration
-      if(j==1) showleg<-TRUE
-      index_color<-which(levels(group)==unique(group)[i])
+
       p_ly<-p_ly|>
         add_trace(x=Dens[,2*j-1],y=Dens[,2*j],mode="lines",type="scatter",
                   line=list(dash="dot",color=Col[index_color],width=0.95),
-                  legendgroup=unique(group)[i], showlegend=showleg,
+                  legendgroup=unique(group)[i], showlegend=FALSE,
                   name=unique(group)[i], meta='density', xaxis="x",
                   yaxis="y",hoverinfo="skip",customdata=paste("ExpAx",j,sep=""),
                   visible=visible)
@@ -807,14 +844,12 @@ add_TDA<-function(z.axes,x,p_ly=NULL,Z,group,Col){
 }
 
 
-#' Title
+#' Get the quadrants each axis will fall into
 #'
-#' @param z.axes
+#' @param z.axes List containing the coordinates of the tickmarks per axis
 #'
-#' @return
-#' @export
-#'
-#' @examples
+#' @return vector indicating quadrants
+#' @noRd
 get_quads_axes<-function(z.axes){
   quads<-numeric(length(z.axes))
   for(i in 1:length(z.axes)){
@@ -833,15 +868,13 @@ get_quads_axes<-function(z.axes){
 }
 
 
-#' Title
+#' Convenience function to shorten the TDA biplot axes
 #'
-#' @param z.axes
-#' @param ellip
+#' @param z.axes List containing the coordinates of the tickmarks per axis
+#' @param ellip coordinates of an ellipse
 #'
-#' @return
-#' @export
-#'
-#' @examples
+#' @return trimmed z.axes
+#' @noRd
 shorten_axes<-function(z.axes,ellip){
   #first need to construct rotation matrix to determine upper and lower bounds
   #of each line segment
@@ -885,15 +918,13 @@ shorten_axes<-function(z.axes,ellip){
 
 
 
-#' Title
+#' Linearly interpolate between tickmarks
 #'
-#' @param Z_ranges
-#' @param z.axis
+#' @param Z_ranges Z ranges for which tickmarks are desired
+#' @param z.axis details on the current axis. i'th element in z.axes
 #'
-#' @return
-#' @export
-#'
-#' @examples
+#' @return Vector containing tickmarks
+#' @noRd
 obtain_zhat<-function(Z_ranges,z.axis){
   #simply going to linearly interpolate the two endpoints
   #can do so by projecting coorindates with their ticks on x-axis
@@ -907,7 +938,34 @@ obtain_zhat<-function(Z_ranges,z.axis){
   return(c(Z_hat1,Z_hat2))
 }
 
+#' Test if the current biplot is a correlation biplot
+#'
+#' @param x A PCA object from the biplotEZ package
+#'
+#' @return True or False
+#' @noRd
+is_correlation<-function(x){
+  basis<-x$e.vects
+  new_x<-biplotEZ::biplot(x$raw.X,scaled = x$scaled,center = x$center)|>
+    biplotEZ::PCA(e.vects=basis)
+  #test in the ax.one.unit if they are the same
+  diff<-sum(x$ax.one.unit-new_x$ax.one.unit)
+  return(diff!=0)
 
+}
+
+fit_quality<-function(eigval,basis){
+  fit.quality <- paste0("Quality of display = ",
+                        round(
+                          ((eigval[basis[1]]+eigval[basis[2]])/sum(eigval))*100,
+                          digits = 2),
+                        "%", " = ", round((eigval[basis[1]]/sum(eigval)) * 100,
+                                          digits = 2),
+                        "% (PC",basis[1],") + ",
+                        round((eigval[basis[2]]/sum(eigval)) * 100, digits = 2),
+                        "% (PC",basis[2],")")
+  return(fit.quality)
+}
 
 #' Insert JS code for spline axes
 #'

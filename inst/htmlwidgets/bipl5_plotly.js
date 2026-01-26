@@ -1,21 +1,20 @@
 (function () {
   window.bipl5Attach = function (el, x, data) {
     el.bipl5 = {
-      clicked: false,
+      clicked: false, //helps keep trac if an observation is clicked
       unit_circle: 0,
-      arr1: new Array(data.p).fill(0),
       active: 0,
-      rel_but: [0, 0, 0, 0],
+      rel_but: [0, 0, 0, 0], //flags to keep track which buttons have been clicked
       is_visible: 0,
       selected: 0,
       bip_domain: [0, 1],
       table_visible: 0,
       table2_visible: 1,
       vect_visible: 0,
-      but_names: ["PC", "AxisStats", "TransAxes", "vecload"],
+      but_names: ["PC", "AxisStats", "TransAxes", "vecload"]
     };
-
-
+    console.log(data);
+    console.log(el.data)
     function metaTag(tr) {
       if (Array.isArray(tr.meta)) return tr.meta[0];
       if (typeof tr.meta === "string") return tr.meta;
@@ -39,13 +38,6 @@
       }
       el.bipl5.clicked = false;
       return true;
-    }
-
-    var All_annot = el.layout.annotations;
-    function myFunction() {
-      for (let i = 0; i < All_annot.length; i++) {
-        All_annot[i].visible = !All_annot[i].visible;
-      }
     }
 
     function searchAnnot(item, vis){
@@ -72,11 +64,47 @@
       }
     }
 
+    function deepClone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
 
+    el.bipl5 = el.bipl5 || {};
+    el.bipl5.currentPCKey = el.bipl5.currentPCKey || "PC 1 & 2";
 //-------------- UPDATEMENU-----------------
 
     el.on("plotly_buttonclicked", function (d) {
+      console.log(d)
       // toggle selectibility
+      if(d.menu.type==="dropdown"){
+
+        // new selection
+        var newKey = d.button && (d.button.name || d.button.label);
+        console.log(newKey)
+        if (!newKey) return;
+
+        // ignore if user re-clicks same dropdown option
+        var oldKey = el.bipl5.currentPCKey || "PC 1 & 2";
+        if (newKey === oldKey) return;
+        console.log("Tot hier gekom")
+        data.payloads = data.payloads || {};
+
+        // 1) Save CURRENT state into payloads[oldKey]
+        // (this is where "PC 1 & 2" gets created the first time)
+        data.payloads[oldKey] = { trace_data: deepClone(el.data), layout: deepClone(el.layout) };
+
+        // 2) Load the NEW payload
+        var nextPayload = data.payloads[newKey];
+        if (!nextPayload) return; // nothing to switch to
+
+        var newTraces = deepClone(nextPayload.trace_data || []);
+        var newLayout = deepClone(nextPayload.layout || {});
+
+        // 3) Switch the plot
+        Plotly.react(el, newTraces, newLayout);
+
+        // 4) Update current key
+        el.bipl5.currentPCKey = newKey;
+      }
 
       var rel_but_sel =
         el.bipl5.rel_but[el.bipl5.but_names.indexOf(d.button.name)];
@@ -160,12 +188,12 @@
           //simultaneously sommer visible the ExpAxes
           var ax_hide = [];
           var exp_ax_hide = [];
+          var old_axes_visible = []
           for (let i = 0; i < el.data.length; i++) {
             let tag = metaTag(el.data[i]);
             if (tag === "axis" || tag === "OuterCircle") ax_hide.push(i);
             if (tag === "ExpAx" || tag === 'density') exp_ax_hide.push(i);
           }
-
           var ax_update = {
             visible: false,
           };
@@ -307,7 +335,6 @@
           el.bipl5.vect_visible = 0;
 
           Plotly.restyle(el.id, update, tr_index);
-          el.bipl5.arr1.fill(0);
           toggleButton(d.button.name);
 
 
@@ -398,6 +425,10 @@
           ann.visible = !ann.visible;
           changed++;
         }
+
+        if(ann && metaTag(ann) === 'predict' && ann.customdata === num){
+          ann.visible =!ann.visible;
+        }
       }
       return changed;
     }
@@ -431,6 +462,38 @@
         return false;
       }
       if (metaTag(tr) === "density") {
+        const legend_group = tr.legendgroup;
+        const indices = [];
+        const ax_counter = [];
+        const ax_visible =[];
+        let j = 1;
+        for (let i = 0; i < el.data.length; i++) {
+          const t = el.data[i];
+          // Same legendgroup
+          if(metaTag(t) === "ExpAx"){
+            ax_counter.push("ExpAx"+j);
+            ax_visible.push(t.visible === true);
+            j++;
+          }
+
+          if (t && t.legendgroup === legend_group) {
+            //if this trace's lg == lg of density chosen (its data class is the same)
+            //first check if the axis is on plot, if not = need not worry about it
+            //also when unclick this helps
+            if(customAxisRef(t)==='legendentry'){
+              indices.push(i);
+              continue;
+            }
+
+            if(ax_visible[ax_counter.indexOf(customAxisRef(t))]){
+              indices.push(i);
+            }
+
+          }
+          if (customAxisRef(t) === legend_group) indices.push(i);
+        }
+        var update = toggleLegendOnly(tr);
+        Plotly.restyle(el.id, update, indices);
         return false;
       }
       if (metaTag(tr) === "polygon") {
@@ -454,12 +517,31 @@
 
        // Collect trace indices to update/hide/show
       const indices = [];
+      const group_counter = [];
+      const group_visible =[];
+      // we reverse the order sothat hit density traces before axes traces
       for (let i = 0; i < el.data.length; i++) {
         const t = el.data[i];
         // Same legendgroup
+        if(customAxisRef(t) === 'legendentry'){
+          group_counter.push(t.legendgroup);
+          group_visible.push(t.visible);
+          continue;
+        }
+        //now we check the customdata of densities
+        if (customAxisRef(t) === axis){
+          if(group_visible[group_counter.indexOf(t.legendgroup)]===true){
+            indices.push(i)
+
+          }
+          continue;
+        }
         if (t && t.legendgroup === axis) indices.push(i);
+
         // Or customdata[0] points to the axis group
-        if (customAxisRef(t) === axis) indices.push(i);
+
+        if (customAxisRef(t) === axis) indices.push(i)
+
       }
 
 
@@ -531,24 +613,36 @@
       } else {
         var indeces = searchAxes('ExpAx')
       }
-      var traces_to_be_added = [];
+      const PRED_GROUP = "Pred";
+      var predLegendTrace = {
+        x: [0],
+        y: [0],
+        mode: "lines",
+        xaxis: "x",
+        yaxis: "y",
+        name: "Predicted Value",
+        showlegend: true,
+        visible: true,     // only a legend entry
+        legendgroup: PRED_GROUP,
+        meta: "predict",
+        hoverinfo: "skip",
+        line: { dash: "dot", color: "gray", width: 1 }
+      };
+
+      var traces_to_be_added = [predLegendTrace];
       for (let i = 0; i < indeces.length; i++) {
         var idx = indeces[i];
         var coordinates = obtain_projection(d,idx);
-        var showleg = false;
-        if (i === indeces.length - 1) {
-          showleg = true;
-        }
         var newtrace = {
           x: [d.points[0].x, coordinates[0]],
           y: [d.points[0].y, coordinates[1]],
           mode: "lines+markers",
           xaxis: "x",
           yaxis: "y",
-          showlegend: showleg,
-          visible: [true, "legendonly"][el.bipl5.arr1[i]],
+          showlegend: false,
+          visible: el.data[idx].visible,
           name: "Predicted Value",
-          legendgroup: "Ax" + (i + 1),
+          legendgroup: el.data[idx].legendgroup,
           meta: "predict",
           line: {
             dash: "dot",
@@ -572,7 +666,7 @@
           yshift: 10 * Math.cos(Math.atan(coordinates[3])),
           name: "Predicted Value",
           meta: "predict",
-          visible: [true, false][el.bipl5.arr1[i]],
+          visible: el.data[idx].visible===true,
           customdata: i + 1,
           font: {
             size: 10,

@@ -151,16 +151,15 @@ insert_Z_coo<-function(p_ly,x,p_ly_pch,Col,visible=TRUE){
   return(p_ly)
 }
 
-#' Title
+#' Format the hovertext of the observations in the biplot
 #'
-#' @param x
-#' @param i
+#' @param x An object from biplotEZ package, updated to include Xhat
+#' @param i Current class group to be added
+#' @param linebreak Character indicating the linebreak to be used.
 #'
-#' @return
-#' @export
-#'
-#' @examples
-hovertext_generator<-function(x,i){
+#' @return Character string containing formated table to be displayd on hover
+#' @noRd
+hovertext_generator<-function(x,i,linebreak="\n"){
   if(is.null(x$XHat))
     return(rownames(x$x)[x$group==levels(x$group)[i]])
   obs<-paste0("Observation: ",rownames(x$x))
@@ -170,9 +169,9 @@ hovertext_generator<-function(x,i){
     lil_mat<-data.frame(Actual=as.vector(x$x[j,]),Pred=x$XHat[j,])
     rownames(lil_mat)<-colnames(x$x)
     kable_mat<-paste0(kable(lil_mat,format="pipe",
-                             digits=4,align="c"),"\n")
+                             digits=4,align="c"),linebreak)
     vec<-Reduce(paste0,kable_mat)
-    vec<-paste0(obs[j],"\n\n",vec)
+    vec<-paste0(obs[j],linebreak,linebreak,vec)
     longvector<-c(longvector,vec)
   }
   return(longvector)

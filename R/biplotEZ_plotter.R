@@ -6,6 +6,7 @@
 #' @export plot_bipl5
 #'
 #' @examples
+#' library(biplotEZ)
 #' x<-biplot(data = iris) |> PCA() |> plot_bipl5()
 #' x<-biplot(iris[,1:4]) |> CVA(classes=iris[,5]) |> plot_bipl5()
 #' x<-biplot(iris[,1:4]) |> PCO(dist.func = sqrtManhattan) |> plot_bipl5()
@@ -39,6 +40,17 @@ plot_bipl5.PCA<-function(x){
   #for now all the default settings of axes is supported. Might change later on
   x<-biplotEZ::axes(x)
 
+  #next we need to obtain the coordinates of the other PC's
+  #we first test if the current display is a correlation biplot:
+  corr<-is_correlation(x)
+
+  PC13<-biplotEZ::biplot(x$raw.X, center = x$center, scaled = x$scaled) |>
+      biplotEZ::PCA(e.vects = c(1,3),correlation.biplot = corr)
+  PC23<-biplotEZ::biplot(x$raw.X, center = x$center, scaled = x$scaled) |>
+    biplotEZ::PCA(e.vects = c(2,3),correlation.biplot = corr)
+
+
+
   color<-x$samples$col
   scale<-x$scaled
   symbol<-pch_to_plotly(x$samples$pch)
@@ -50,36 +62,17 @@ plot_bipl5.PCA<-function(x){
   p<-x$p
   basis<-x$e.vects
   ax.aes<-x$axes
-
-  d<-sqrt(x$eigenvalues)
   n<-x$n
-  mu<-x$means
-  stddev<-x$sd
-  V<-x$Lmat
-  D<-diag(d)[basis,basis]
-
-  #V.mat <- x$V.mat
-
-  stddev.mat <- diag(d)
-  eigval <- d^2
-  lambda.mat <- diag(eigval)
-  lambda.r.mat <- diag(eigval[basis])
-  # fit.predictivity.mat <- diag(diag(V %*%lambda.r.mat %*% t(V))) %*% solve(
-  #   diag(diag(V.mat %*%lambda.mat %*% t(V.mat))))
-  # fit.predictivity <- round(diag(fit.predictivity.mat),digits = 3)
-  # names(fit.predictivity) <- colnames(x$X)
-  fit.quality <- paste0("Quality of display = ",
-                        round(
-                          ((eigval[basis[1]]+eigval[basis[2]])/sum(eigval))*100,
-                          digits = 2),
-                        "%", " = ", round((eigval[basis[1]]/sum(eigval)) * 100,
-                                          digits = 2),
-                        "% (PC",basis[1],") + ",
-                        round((eigval[basis[2]]/sum(eigval)) * 100, digits = 2),
-                        "% (PC",basis[2],")")
+  eigval <- x$eigenvalues
+  fit.quality <- fit_quality(eigval,basis)
 
   #build scaffolding ->biplotEZ helper
   p_ly<-plot_scaffolding(fit.quality,basis,TRUE,TRUE,TRUE,TRUE)
+
+  payl_13 <- payload_new()
+  payl_13$fit_qual<-fit_quality(PC13$eigenvales,PC13$e.vects)
+  payl_13 <- plot_scaffolding_payload(payl_13, dpquality = fit.quality, basis = basis,
+                                      PC_toggle = TRUE, ax_pred = TRUE, TDA = TRUE, vec_dis = TRUE)
 
   #Insert any polygons to the plot -> EZ plotly layers
 
@@ -100,19 +93,16 @@ plot_bipl5.PCA<-function(x){
   if (x$scaled) Xhat <- scale(Xhat, center=FALSE, scale=1/x$sd)
   if (x$center) Xhat <- scale(Xhat, center=-1*x$means, scale=FALSE)
 
-  #z.axes <- lapply(1:p, biplotEZ:::.calibrate.axis, Xhat, x$means,
-                   #x$sd, x$ax.one.unit, 1:p,
-                   #ax.aes$ticks, ax.aes$orthogx, ax.aes$orthogy)
+
   z.axes<- biplotEZ::axes_coordinates(x)
 
-  # for(i in 1:p){
-  #   z.axes[[i]]<-z.axes[[i]][[1]]
-  # }
-
-
   #insert Z coordinates ->PCAbiplot_Helper
-  obj<-list(Z=Z,group=group,n=n,x=x$X,XHat=Xhat)
+  obj<-list(Z=Z,group=group,n=x$n,x=as.matrix(x$X),XHat=Xhat)
   p_ly<-insert_Z_coo(p_ly,obj,symbol,color,TRUE)
+
+  payl_13 <- insert_Z_coo_payload(payl_13,
+                                  obj, p_ly_pch = symbol,
+                                  Col = color, visible = TRUE)
 
 
   #insert class means if any
@@ -121,6 +111,10 @@ plot_bipl5.PCA<-function(x){
       x<-biplotEZ::means(x)
     Mean_symbol<-pch_to_plotly(x$means.aes$pch)
     p_ly<-insert_class_means(p_ly,x$Zmeans,Mean_symbol,x$means.aes$col)
+    payl_13<-insert_class_means_payload(payl_13,
+                                        x$Zmeans,
+                                        Mean_symbol,
+                                        x$means.aes$col)
   }
 
   #insert Linear Axes
@@ -128,31 +122,36 @@ plot_bipl5.PCA<-function(x){
   p_ly<-update[[1]]
   grads<-update[[2]]
 
+  out <- insert_linear_axes_payload(payl_13, z.axes, x)
+  payl_13 <- out$payload
+  grads <- out$grads
+
+
   #Unit circle
-  p_ly<-p_ly|>
-    add_trace(x=cos(seq(0,2*pi,length.out=200)),
-              y=sin(seq(0,2*pi,length.out=200)), type="scatter",
-              mode="lines",line = list(color = 'red',width=1.2),
-              name="Unit Circle",showlegend=FALSE,
-              meta='veccircle',xaxis="x",yaxis="y",
-              hoverinfo='name',visible=FALSE)
+  p_ly <- insert_unit_circle(p_ly, visible = FALSE)
+  payl_13 <- insert_unit_circle_payload(payl_13, visible = FALSE)
 
   #insert axis details table
   p_ly<-InsertAxisDeets(p_ly,x,EZ=TRUE)
-
+  payl_13<-InsertAxisDeets_payload(payl_13,x,EZ=TRUE)
   #insert vector representation
 
   temp<-list(V=x$Vr,x=x$X,p=x$p)
   p_ly<-insert_vector_annots(p_ly,temp,NULL,NULL)
+  payl_13<-insert_vector_annots_payload(payl_13,temp)
 
   #insert Translated Density Axes
   p_ly<-add_TDA(z.axes,x,Z=Z,group=group,p_ly=p_ly,Col=color)
+  payl_13<-add_TDA_payload(payload=payl_13,
+                           z.axes=z.axes,
+                           x=x,
+                           Z=Z,
+                           group=group,
+                           Col=color)
 
-
-
-
-  p_ly<-insert_linear_js_v1(p_ly,Xhat=Xhat,
-                         m=grads,p=p,cols=x$axes$tick.label.col)
+  p_ly<-insert_linear_js_v1(p_ly,
+                         m=grads,p=p,cols=x$axes$tick.label.col,
+                         payload=payl_13$payload)
 
   return(p_ly)
 
@@ -171,7 +170,8 @@ plot_bipl5.PCA<-function(x){
 #' @import biplotEZ
 #'
 #' @examples
-#' x<-biplot(iris[,1:4]) |> biplotEZ::CVA(classes=iris[,5]) |> plot_bipl5()
+#' library(biplotEZ)
+#' x<-biplotEZ::biplot(iris[,1:4]) |> biplotEZ::CVA(classes=iris[,5]) |> plot_bipl5()
 plot_bipl5.CVA<-function(x){
   if(is.null(x$samples))
     x<-biplotEZ::samples(x)
@@ -225,7 +225,7 @@ plot_bipl5.CVA<-function(x){
 
 
   #insert Z coordinates
-  obj<-list(Z=Z,group=group,n=n,x=x$X)
+  obj<-list(Z=Z,group=group,n=x$n,x=x$X)
   #p_ly<-insert_Z_coo(p_ly,obj,symbol,color,TRUE)
 
   num_groups<-length(levels(group))
@@ -239,7 +239,7 @@ plot_bipl5.CVA<-function(x){
                 hovertext=paste(rownames(x$X)[group==levels(group)[i]],
                                 "\n","Predictivity:",fit[group==levels(group)[i]]),
                 hoverinfo="text+name",
-                customdata=(1:n)[group==levels(group)[i]],
+                customdata=(1:x$n)[group==levels(group)[i]],
                 meta="data",xaxis="x",yaxis="y",visible=TRUE,
                 marker=list(symbol=symbol[i],color=color[i],opacity=1),
                 legendgroup="data",
@@ -268,7 +268,7 @@ plot_bipl5.CVA<-function(x){
 
 
 
-  p_ly<-insert_linear_js(p_ly,Xhat=Xhat,m=grads,p=p,cols=x$axes$tick.label.col)
+  p_ly<-insert_linear_js_v1(p_ly,m=grads,p=p,cols=x$axes$tick.label.col,payload=NULL)
 
   return(p_ly)
 }

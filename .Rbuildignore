@@ -10,3 +10,4 @@
 ^codemeta\.json$
 ^\.github$
 ^codecov\.yml$
+^bipl5_junk$

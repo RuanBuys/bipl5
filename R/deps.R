@@ -34,19 +34,16 @@ bipl5_dependency <- function() {
 }
 
 
-#' Title
+#' Add the neccesary javascript dependency to the graph
 #'
-#' @param p_ly
-#' @param Xhat
-#' @param p
-#' @param m
-#' @param cols
+#' @param p_ly Plotly graph
+#' @param p number of axes in the display
+#' @param m vector of gradients
+#' @param cols colors of the axes
 #'
-#' @return
-#' @export
-#'
-#' @examples
-insert_linear_js_v1 <- function(p_ly, Xhat, p, m, cols){
+#' @return plotly graph with dependencies attached
+#' @noRd
+insert_linear_js_v1 <- function(p_ly, p, m, cols,payload){
 
   dep <- bipl5_dependency()
 
@@ -68,8 +65,9 @@ insert_linear_js_v1 <- function(p_ly, Xhat, p, m, cols){
     }
   }
   ",
-    data = list(m=m, Xhat=Xhat, p=p,
-                cols=cols, class_mean_hover=FALSE)
+    data = list(m=m, p=p,
+                cols=cols, class_mean_hover=FALSE,
+                payloads=list("PC 1 & 3"=payload))
   )
 
   p_ly
