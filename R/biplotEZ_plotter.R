@@ -39,7 +39,8 @@ plot_bipl5.PCA<-function(x){
   #if(is.null(x$axes))
   #for now all the default settings of axes is supported. Might change later on
   x<-biplotEZ::axes(x)
-
+  x$X<-scale(x$X,center=FALSE,scale=1/x$sd)
+  x$X<-scale(x$X,-x$means,scale=FALSE)
   #next we need to obtain the coordinates of the other PC's
   #we first test if the current display is a correlation biplot:
   corr<-is_correlation(x)
@@ -50,8 +51,8 @@ plot_bipl5.PCA<-function(x){
   PC23<-biplotEZ::biplot(x$raw.X, center = x$center, scaled = x$scaled) |>
     biplotEZ::PCA(e.vects = c(2,3),correlation.biplot = corr) |>
     biplotEZ::axes()
-
-
+  PC13$X<-x$X
+  PC23$X<-x$X
 
   color<-x$samples$col
   scale<-x$scaled
