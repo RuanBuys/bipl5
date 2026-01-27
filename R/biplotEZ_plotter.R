@@ -45,9 +45,11 @@ plot_bipl5.PCA<-function(x){
   corr<-is_correlation(x)
 
   PC13<-biplotEZ::biplot(x$raw.X, center = x$center, scaled = x$scaled) |>
-      biplotEZ::PCA(e.vects = c(1,3),correlation.biplot = corr)
+      biplotEZ::PCA(e.vects = c(1,3),correlation.biplot = corr) |>
+      biplotEZ::axes()
   PC23<-biplotEZ::biplot(x$raw.X, center = x$center, scaled = x$scaled) |>
-    biplotEZ::PCA(e.vects = c(2,3),correlation.biplot = corr)
+    biplotEZ::PCA(e.vects = c(2,3),correlation.biplot = corr) |>
+    biplotEZ::axes()
 
 
 
@@ -57,22 +59,23 @@ plot_bipl5.PCA<-function(x){
   group<-x$group.aes
   if(length(levels(x$group.aes))==1)
     group<-factor(rep("Data",x$n))
-  Z<-x$Z
-  n<-x$n
-  p<-x$p
-  basis<-x$e.vects
-  ax.aes<-x$axes
-  n<-x$n
-  eigval <- x$eigenvalues
-  fit.quality <- fit_quality(eigval,basis)
+  fit.quality <- fit_quality(x$eigenvalues,x$e.vects)
 
   #build scaffolding ->biplotEZ helper
-  p_ly<-plot_scaffolding(fit.quality,basis,TRUE,TRUE,TRUE,TRUE)
+  p_ly<-plot_scaffolding(fit.quality,x$e.vects,TRUE,TRUE,TRUE,TRUE)
 
   payl_13 <- payload_new()
-  payl_13$fit_qual<-fit_quality(PC13$eigenvales,PC13$e.vects)
-  payl_13 <- plot_scaffolding_payload(payl_13, dpquality = fit.quality, basis = basis,
-                                      PC_toggle = TRUE, ax_pred = TRUE, TDA = TRUE, vec_dis = TRUE)
+  payl_13$fit_qual<-fit_quality(PC13$eigenvalues,PC13$e.vects)
+  payl_13 <- plot_scaffolding_payload(payl_13, dpquality = payl_13$fit_qual,
+                                      basis = PC13$e.vects,
+                                      PC_toggle = TRUE, ax_pred = TRUE,
+                                      TDA = TRUE, vec_dis = TRUE)
+  payl_23 <- payload_new()
+  payl_23$fit_qual<-fit_quality(PC23$eigenvalues,PC23$e.vects)
+  payl_23 <- plot_scaffolding_payload(payl_23, dpquality = payl_23$fit_qual,
+                                      basis = PC23$e.vects,
+                                      PC_toggle = TRUE, ax_pred = TRUE,
+                                      TDA = TRUE, vec_dis = TRUE)
 
   #Insert any polygons to the plot -> EZ plotly layers
 
@@ -84,24 +87,26 @@ plot_bipl5.PCA<-function(x){
                             x$conc.ellipse.aes,"Con. Ellipses")
   }
 
-  if (!is.null(x$Lmat))
-    if (nrow(x$Lmat) == ncol(x$Lmat))
-      Xhat <- x$Z %*% solve(x$Lmat)[x$e.vects,]
-  else Xhat <- x$X
-  else
-    Xhat <- x$X
-  if (x$scaled) Xhat <- scale(Xhat, center=FALSE, scale=1/x$sd)
-  if (x$center) Xhat <- scale(Xhat, center=-1*x$means, scale=FALSE)
-
+  Xhat<-obtain_xhat(x)
+  Xhat_13<-obtain_xhat(PC13)
+  Xhat_23<-obtain_xhat(PC23)
 
   z.axes<- biplotEZ::axes_coordinates(x)
-
+  z.axes13<-biplotEZ::axes_coordinates(PC13)
+  z.axes23<-biplotEZ::axes_coordinates(PC23)
   #insert Z coordinates ->PCAbiplot_Helper
-  obj<-list(Z=Z,group=group,n=x$n,x=as.matrix(x$X),XHat=Xhat)
+  obj<-list(Z=x$Z,group=group,n=x$n,x=as.matrix(x$X),XHat=Xhat)
+  obj13<-list(Z=PC13$Z,group=group,n=PC13$n,x=as.matrix(PC13$X),XHat=Xhat_13)
+  obj23<-list(Z=PC23$Z,group=group,n=PC23$n,x=as.matrix(PC23$X),XHat=Xhat_23)
+
+
   p_ly<-insert_Z_coo(p_ly,obj,symbol,color,TRUE)
 
   payl_13 <- insert_Z_coo_payload(payl_13,
-                                  obj, p_ly_pch = symbol,
+                                  obj13, p_ly_pch = symbol,
+                                  Col = color, visible = TRUE)
+  payl_23 <- insert_Z_coo_payload(payl_23,
+                                  obj23, p_ly_pch = symbol,
                                   Col = color, visible = TRUE)
 
 
@@ -122,36 +127,51 @@ plot_bipl5.PCA<-function(x){
   p_ly<-update[[1]]
   grads<-update[[2]]
 
-  out <- insert_linear_axes_payload(payl_13, z.axes, x)
-  payl_13 <- out$payload
-  grads <- out$grads
+  out1 <- insert_linear_axes_payload(payl_13, z.axes13, PC13)
+  payl_13 <- out1$payload
+  grads_13 <- out1$grads
+
+  out2 <- insert_linear_axes_payload(payl_23, z.axes23, PC23)
+  payl_23 <- out2$payload
+  grads_23 <- out2$grads
 
 
   #Unit circle
   p_ly <- insert_unit_circle(p_ly, visible = FALSE)
   payl_13 <- insert_unit_circle_payload(payl_13, visible = FALSE)
+  payl_23 <- insert_unit_circle_payload(payl_23, visible = FALSE)
 
   #insert axis details table
   p_ly<-InsertAxisDeets(p_ly,x,EZ=TRUE)
-  payl_13<-InsertAxisDeets_payload(payl_13,x,EZ=TRUE)
+  payl_13<-InsertAxisDeets_payload(payl_13,PC13,EZ=TRUE)
+  payl_23<-InsertAxisDeets_payload(payl_23,PC23,EZ=TRUE)
   #insert vector representation
 
   temp<-list(V=x$Vr,x=x$X,p=x$p)
+  temp13<-list(V=PC13$Vr,x=PC13$X,p=PC13$p)
+  temp23<-list(V=PC23$Vr,x=PC23$X,p=PC23$p)
   p_ly<-insert_vector_annots(p_ly,temp,NULL,NULL)
-  payl_13<-insert_vector_annots_payload(payl_13,temp)
+  payl_13<-insert_vector_annots_payload(payl_13,temp13)
+  payl_23<-insert_vector_annots_payload(payl_23,temp23)
 
   #insert Translated Density Axes
-  p_ly<-add_TDA(z.axes,x,Z=Z,group=group,p_ly=p_ly,Col=color)
+  p_ly<-add_TDA(z.axes,x,Z=x$Z,group=group,p_ly=p_ly,Col=color)
   payl_13<-add_TDA_payload(payload=payl_13,
-                           z.axes=z.axes,
-                           x=x,
-                           Z=Z,
+                           z.axes=z.axes13,
+                           x=PC13,
+                           Z=PC13$Z,
+                           group=group,
+                           Col=color)
+  payl_23<-add_TDA_payload(payload=payl_23,
+                           z.axes=z.axes23,
+                           x=PC23,
+                           Z=PC23$Z,
                            group=group,
                            Col=color)
 
   p_ly<-insert_linear_js_v1(p_ly,
-                         m=grads,p=p,cols=x$axes$tick.label.col,
-                         payload=payl_13$payload)
+                         m=grads,p=x$p,cols=x$axes$tick.label.col,
+                         payload=list("PC 1 & 3"=payl_13$payload,"PC 2 & 3"=payl_23$payload))
 
   return(p_ly)
 

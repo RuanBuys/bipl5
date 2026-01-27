@@ -13,7 +13,14 @@
       vect_visible: 0,
       but_names: ["PC", "AxisStats", "TransAxes", "vecload"]
     };
-    console.log(data);
+
+    Object.keys(data.payloads).forEach(k => {
+      data.payloads[k].bipl5 = deepClone(el.bipl5)
+
+    });
+
+    console.log(data.payloads)
+    console.log("next actual traces")
     console.log(el.data)
     function metaTag(tr) {
       if (Array.isArray(tr.meta)) return tr.meta[0];
@@ -79,31 +86,37 @@
 
         // new selection
         var newKey = d.button && (d.button.name || d.button.label);
-        console.log(newKey)
         if (!newKey) return;
 
         // ignore if user re-clicks same dropdown option
         var oldKey = el.bipl5.currentPCKey || "PC 1 & 2";
         if (newKey === oldKey) return;
-        console.log("Tot hier gekom")
         data.payloads = data.payloads || {};
 
         // 1) Save CURRENT state into payloads[oldKey]
         // (this is where "PC 1 & 2" gets created the first time)
-        data.payloads[oldKey] = { trace_data: deepClone(el.data), layout: deepClone(el.layout) };
+        data.payloads[oldKey] = { trace_data: deepClone(el.data),
+                                  layout: deepClone(el.layout),
+                                  bipl5:deepClone(el.bipl5)};
+
+
 
         // 2) Load the NEW payload
         var nextPayload = data.payloads[newKey];
         if (!nextPayload) return; // nothing to switch to
-
+        el.bipl5=deepClone(nextPayload.bipl5);
         var newTraces = deepClone(nextPayload.trace_data || []);
-        var newLayout = deepClone(nextPayload.layout || {});
-
+        var newLayout = Object.assign({}, el.layout || {});
+        newLayout.annotations = deepClone((nextPayload.layout && nextPayload.layout.annotations) || []);
+        newLayout.xaxis.title = deepClone((nextPayload.layout && nextPayload.layout.xaxis.title) || []);
+        newLayout.xaxis.autorange=true;
+        newLayout.yaxis.autorange=true;
         // 3) Switch the plot
         Plotly.react(el, newTraces, newLayout);
 
         // 4) Update current key
         el.bipl5.currentPCKey = newKey;
+        return;
       }
 
       var rel_but_sel =
@@ -463,6 +476,8 @@
       }
       if (metaTag(tr) === "density") {
         const legend_group = tr.legendgroup;
+        console.log(legend_group)
+        console.log(el.data)
         const indices = [];
         const ax_counter = [];
         const ax_visible =[];

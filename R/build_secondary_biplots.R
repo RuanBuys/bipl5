@@ -129,8 +129,8 @@ plot_scaffolding_payload <- function(payload, dpquality, basis,
 #' @param Col Colors of the observations to be plotted
 #' @param visible Whether points should be visible on graph. True by default
 #'
-#' @return
-#' @noRd updated payload
+#' @return updated payload
+#' @noRd
 insert_Z_coo_payload <- function(payload, x, p_ly_pch, Col, visible = TRUE) {
 
   groups <- levels(x$group)
@@ -541,7 +541,7 @@ add_TDA_payload <- function(payload, z.axes, x, Z, group, Col, inflate = 1) {
 
     # legend entry (hidden initially; you can turn on later)
     traces[[length(traces) + 1]] <- list(
-      x = 0, y = 0,
+      x = list(0), y = list(0),
       type = "scatter",
       mode = "lines",
       line = list(dash = "dot", color = Col[gidx], width = 0.95),
@@ -552,7 +552,7 @@ add_TDA_payload <- function(payload, z.axes, x, Z, group, Col, inflate = 1) {
       xaxis = "x",
       yaxis = "y",
       hoverinfo = "skip",
-      customdata = "legendentry",
+      customdata = list("legendentry"),
       visible = FALSE
     )
 
@@ -571,7 +571,7 @@ add_TDA_payload <- function(payload, z.axes, x, Z, group, Col, inflate = 1) {
         xaxis = "x",
         yaxis = "y",
         hoverinfo = "skip",
-        customdata = paste0("ExpAx", j),
+        customdata = list(paste0("ExpAx", j)),
         visible = visible_axes
       )
     }
@@ -694,9 +694,10 @@ insert_linear_axes_payload <- function(payload, z.axes, x) {
     }
 
     # ---- axis name text trace ----
+    print(AxName)
     traces[[length(traces) + 1]] <- list(
-      x = radius * cos(angle),
-      y = radius * sin(angle),
+      x = list(radius * cos(angle)),
+      y = list(radius * sin(angle)),
       text = AxName,
       type = "scatter",
       mode = "text",

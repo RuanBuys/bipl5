@@ -954,6 +954,13 @@ is_correlation<-function(x){
 
 }
 
+#' Calculate the quality of fit for a PC biplot
+#'
+#' @param eigval eigenvalues returned from prcomp analysis
+#' @param basis basis of display - pc pair
+#'
+#' @return Character vector
+#' @noRd
 fit_quality<-function(eigval,basis){
   fit.quality <- paste0("Quality of display = ",
                         round(
@@ -966,6 +973,25 @@ fit_quality<-function(eigval,basis){
                         "% (PC",basis[2],")")
   return(fit.quality)
 }
+
+#' Obtain predicted values for PCA biplot
+#'
+#' @param x An object of class biplotEZ::PCA
+#'
+#' @return matrix n x p containing predicted values
+#' @noRd
+obtain_xhat<-function(x){
+  if (!is.null(x$Lmat))
+    if (nrow(x$Lmat) == ncol(x$Lmat))
+      Xhat <- x$Z %*% solve(x$Lmat)[x$e.vects,]
+  else Xhat <- x$X
+  else
+    Xhat <- x$X
+  if (x$scaled) Xhat <- scale(Xhat, center=FALSE, scale=1/x$sd)
+  if (x$center) Xhat <- scale(Xhat, center=-1*x$means, scale=FALSE)
+  return(Xhat)
+}
+
 
 #' Insert JS code for spline axes
 #'

@@ -67,7 +67,7 @@ insert_linear_js_v1 <- function(p_ly, p, m, cols,payload){
   ",
     data = list(m=m, p=p,
                 cols=cols, class_mean_hover=FALSE,
-                payloads=list("PC 1 & 3"=payload))
+                payloads=payload)
   )
 
   p_ly
