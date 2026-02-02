@@ -19,9 +19,6 @@
 
     });
 
-    console.log(data.payloads)
-    console.log("next actual traces")
-    console.log(el.data)
     function metaTag(tr) {
       if (Array.isArray(tr.meta)) return tr.meta[0];
       if (typeof tr.meta === "string") return tr.meta;
@@ -77,14 +74,9 @@
 
     el.bipl5 = el.bipl5 || {};
     el.bipl5.currentPCKey = el.bipl5.currentPCKey || "PC 1 & 2";
-//-------------- UPDATEMENU-----------------
 
-    el.on("plotly_buttonclicked", function (d) {
-      console.log(d)
-      // toggle selectibility
-      if(d.menu.type==="dropdown"){
-
-        // new selection
+    function togglePC(d){
+      // new selection
         var newKey = d.button && (d.button.name || d.button.label);
         if (!newKey) return;
 
@@ -116,7 +108,30 @@
 
         // 4) Update current key
         el.bipl5.currentPCKey = newKey;
-        return;
+    }
+
+    function toggleFit(d){
+      const key = el.bipl5.currentPCKey || "PC 1 & 2";
+      const payload = data.payloads[key];
+      const tableTraces = payload.fit_table;
+      console.log(payload);
+      console.log(tableTraces)
+      Plotly.addTraces(el, tableTraces);
+      return;
+    }
+//-------------- UPDATEMENU-----------------
+
+    el.on("plotly_buttonclicked", function (d) {
+      // toggle selectibility
+      if(d.menu.type==="dropdown"){
+        if(d.menu.name==="PC_toggle"){
+          togglePC(d);
+          return;
+        }
+        if(d.menu.name==="Fit_toggle"){
+          toggleFit(d);
+        }
+
       }
 
       var rel_but_sel =
@@ -144,6 +159,11 @@
           yaxis: ["y3", "y"][el.bipl5.is_visible],
         };
         el.bipl5.is_visible = [1, 0][el.bipl5.is_visible];
+
+        //maak tweede set dropdowns visible/invisible
+        const visibility = !el.layout.updatemenus[2].visible;
+        el.layout.updatemenus[2].visible=visibility;
+
         Plotly.restyle(el.id, plot_update, update_traces);
         toggleButton(d.button.name);
         Plotly.relayout(el.id, update);
@@ -227,7 +247,10 @@
           el.bipl5.exp_ax_hide = exp_ax_hide;
 
           // Sit Exploding asse in
-
+          //voor einde maak label van die knop na teenoorgestelde
+          const index = d.button._index;
+          el.layout.updatemenus[0].buttons[index].label = "Centered Axes";
+          // Sit Exploding asse in
           Plotly.restyle(el.id, ax_update, ax_hide);
           Plotly.restyle(el.id, exp_ax_update, exp_ax_hide);
 
@@ -267,6 +290,9 @@
           var ax_update = {
             visible: true,
           };
+          //voor einde maak label van die knop na teenoorgestelde
+          const index = d.button._index;
+          el.layout.updatemenus[0].buttons[index].label = "Translated Axes";
 
           Plotly.restyle(el.id, exp_ax_update, el.bipl5.exp_ax_hide);
           Plotly.restyle(el.id, ax_update, el.bipl5.ax_hide);
@@ -457,16 +483,17 @@
       }
 
       const tr = dat?.data?.[dat.curveNumber];
-        if (!tr) return false;
+      if (!tr) return false;
+      const tag = metaTag(tr);
       // Delete predictive lines
-      if (metaTag(tr) === "predict") {
+      if (tag === "predict") {
         RemovePredictions()
         removeAnnotation('predict');
         el.bipl5.clicked = false;
         return false;
       }
-
-      if (metaTag(tr) === "data") {
+      //purely toggle a trace
+      if (tag === "data" || tag === "axis_pred" || tag === "polygon") {
         var a = ["legendonly", true].indexOf(tr.visible);
         var update = {
           visible: [true, "legendonly"][a],
@@ -511,18 +538,7 @@
         Plotly.restyle(el.id, update, indices);
         return false;
       }
-      if (metaTag(tr) === "polygon") {
-        var a = ["legendonly", true].indexOf(dat.data[dat.curveNumber].visible);
-        var update = {
-          visible: [true, "legendonly"][a],
-        };
-        Plotly.restyle(el.id, update, dat.curveNumber);
-        return false;
-      }
 
-      if (metaTag(tr) === "axis_pred") {
-        return;
-      }
       // all that remains now are the axes!
       // remove
       if (!hasLegendgroup(tr)) return false;

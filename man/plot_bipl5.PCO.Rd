@@ -16,5 +16,6 @@ A plotly graph
 Plot a PCO biplot from the biplotEZ package
 }
 \examples{
+library(biplotEZ)
 x<-biplot(iris[,1:4]) |> PCO(dist.func = sqrtManhattan) |> plot_bipl5()
 }

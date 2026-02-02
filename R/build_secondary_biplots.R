@@ -765,3 +765,49 @@ insert_unit_circle_payload <- function(payload, n = 200, visible = FALSE,
 
   payload_add_traces(payload, list(trace))
 }
+
+
+#' Add fit measures to the payload
+#'
+#' @param payload List containing data and layout attributes for a plotly graph
+#' @param x object of class biplot
+#' @param domain_x domain of the table
+#' @param domain_y range of the table
+#' @param visible Logical
+#'
+#' @return updated payload
+#' @noRd
+add_table_payload <- function(payload,
+                              x,
+                              domain_x = c(0.5, 1),
+                              domain_y = c(0.15, 0.85),
+                              visible  = TRUE) {
+
+  stopifnot(is.list(payload))
+  stopifnot(!is.null(x$X))
+
+  p <- ncol(x$X)
+  vars <- colnames(x$X) %||% paste0("V", seq_len(p))
+
+  # placeholders (you'll populate later)
+  adequacy     <- rep("", p)
+  predictivity <- rep("", p)
+
+  table_trace <- list(
+    type = "table",
+    domain = list(x = domain_x, y = domain_y),
+    header = list(
+      values = list("Variable", "Adequacy", "predictivity"),
+      align  = "left"
+    ),
+    cells = list(
+      values = list(vars, adequacy, predictivity),
+      align  = "left"
+    ),
+    meta = list("FitTable"),   # optional tag for your JS metaTag()
+    showlegend = FALSE,
+    visible = visible
+  )
+  payload$payload$fit_table <- list(table_trace)  # IMPORTANT: list-of-traces for Plotly.addTraces
+  payload
+}

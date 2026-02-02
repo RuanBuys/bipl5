@@ -32,6 +32,7 @@ plot_bipl5<-function(x){
 #' @S3method plot_bipl5 PCA
 #'
 #' @examples
+#' library(biplotEZ)
 #' x<-biplot(data = iris) |> PCA() |> plot_bipl5()
 plot_bipl5.PCA<-function(x){
   if(is.null(x$samples))
@@ -82,6 +83,7 @@ plot_bipl5.PCA<-function(x){
 
   if(!is.null(x$alpha.bags)){
     p_ly<-insert_polygon_EZ(p_ly,x$alpha.bags,x$alpha.bag.aes)
+    #p_ly<-insert_polygon_EZ_payload(payl_13)
   }
   if(!is.null(x$conc.ellipses)){
     p_ly<-insert_polygon_EZ(p_ly,x$conc.ellipses,
@@ -170,6 +172,11 @@ plot_bipl5.PCA<-function(x){
                            group=group,
                            Col=color)
 
+  #finally we add the fit measure table to the payloads
+  payl_13<-add_table_payload(payl_13,x=x)
+  payl_13<<-payl_13
+
+
   p_ly<-insert_linear_js_v1(p_ly,
                          m=grads,p=x$p,cols=x$axes$tick.label.col,
                          payload=list("PC 1 & 3"=payl_13$payload,"PC 2 & 3"=payl_23$payload))
@@ -196,8 +203,8 @@ plot_bipl5.PCA<-function(x){
 plot_bipl5.CVA<-function(x){
   if(is.null(x$samples))
     x<-biplotEZ::samples(x)
-  if(is.null(x$axes))
-    x<-biplotEZ::axes(x)
+  #currently only the default aesthetics for the axes are supported
+  x<-biplotEZ::axes(x)
   if(is.null(x$means.aes))
     x<-biplotEZ::means(x)
 
@@ -235,14 +242,9 @@ plot_bipl5.CVA<-function(x){
   if (x$scaled) Xhat <- scale(Xhat, center=FALSE, scale=1/x$sd)
   if (x$center) Xhat <- scale(Xhat, center=-1*x$means, scale=FALSE)
 
-  z.axes <- lapply(1:p, biplotEZ:::.calibrate.axis, Xhat, x$means,
-                   x$sd, x$ax.one.unit, 1:p,
-                   ax.aes$ticks, ax.aes$orthogx, ax.aes$orthogy)
   z.axes<- biplotEZ::axes_coordinates(x)
 
-  # for(i in 1:p){
-  #   z.axes[[i]]<-z.axes[[i]][[1]]
-  # }
+
 
 
   #insert Z coordinates
@@ -307,6 +309,7 @@ plot_bipl5.CVA<-function(x){
 #' @S3method plot_bipl5 PCO
 #'
 #' @examples
+#' library(biplotEZ)
 #' x<-biplot(iris[,1:4]) |> PCO(dist.func = sqrtManhattan) |> plot_bipl5()
 plot_bipl5.PCO<-function(x){
   if(is.null(x$samples))
@@ -336,10 +339,11 @@ plot_bipl5.PCO<-function(x){
   if (x$center) Xhat <- scale(Xhat, center=-1*x$means, scale=FALSE)
 
   if(x$PCOaxes == "splines"){
-      z.axes <- spsUtil::quiet(lapply(1:p,
-                                      biplotEZ:::biplot.spline.axis, Z, Xhat,
-                                      means=x$means, sd=x$sd, n.int=ax.aes$ticks,
-                                      spline.control=x$spline.control))
+      # z.axes <- spsUtil::quiet(lapply(1:p,
+      #                                 biplotEZ:::biplot.spline.axis, Z, Xhat,
+      #                                 means=x$means, sd=x$sd, n.int=ax.aes$ticks,
+      #                                 spline.control=x$spline.control))
+  z.axes<-biplotEZ::axes_coordinates(x)
 
   #build scaffolding
   p_ly<-plot_scaffolding("",basis,FALSE,FALSE,FALSE,FALSE)
@@ -416,14 +420,7 @@ plot_bipl5.PCO<-function(x){
 
 
   if(x$PCOaxes == "regression"){
-    z.axes <- lapply(1:p, biplotEZ:::.calibrate.axis, Xhat, x$means,
-                     x$sd, x$ax.one.unit, 1:p,
-                     ax.aes$ticks, ax.aes$orthogx, ax.aes$orthogy)
-
-
-    for(i in 1:p){
-      z.axes[[i]]<-z.axes[[i]][[1]]
-    }
+    z.axes<-biplotEZ::axes_coordinates(x)
      Xhat<-x$Z %*% solve(t(x$Z) %*% x$Z) %*% t(x$Z) %*% x$X
      if (x$scaled) Xhat <- scale(Xhat, center=FALSE, scale=1/x$sd)
      if (x$center) Xhat <- scale(Xhat, center=-1*x$means, scale=FALSE)
@@ -442,11 +439,6 @@ plot_bipl5.PCO<-function(x){
     p_ly<-insert_linear_js(p_ly,Xhat=Xhat,m=grads,p=p,cols=x$axes$tick.label.col)
 
     }
-
-
-
-
-
   return(p_ly)
 }
 

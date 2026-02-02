@@ -16,5 +16,6 @@ A plotly graph
 Plot a PCA biplot from the biplotEZ package
 }
 \examples{
+library(biplotEZ)
 x<-biplot(data = iris) |> PCA() |> plot_bipl5()
 }

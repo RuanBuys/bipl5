@@ -39,7 +39,7 @@ plot_scaffolding<-function(dpquality,basis,PC_toggle=TRUE,
                buttons = list(
                  list(method="skip",
                       args=list("type", "scatter"),
-                      label="Axis Predictivity",
+                      label="Measures of Fit",
                       name="AxisStats",
                       visible=ax_pred,
                       execute=FALSE
@@ -66,6 +66,7 @@ plot_scaffolding<-function(dpquality,basis,PC_toggle=TRUE,
                type = "dropdown",
                x = 0,
                visible=PC_toggle,
+               name="PC_toggle",
                buttons = list(
                  list(method = "skip",
                       args = list("type", "scatter"),
@@ -76,6 +77,21 @@ plot_scaffolding<-function(dpquality,basis,PC_toggle=TRUE,
                  list(method = "skip",
                       args = list("type", "histogram"),
                       label = "PC 2 & 3")
+               )
+             ),
+             list(
+               type = "dropdown",
+               x = 0.5,
+               visible=FALSE,
+               name="Fit_toggle",
+               xanchor="left",
+               buttons = list(
+                 list(method = "skip",
+                      args = list("type", "scatter"),
+                      label = "Cum. Predictivity"),
+                 list(method = "skip",
+                      args = list("type", "histogram"),
+                      label = "Summary Table")
                )
              )
            )
