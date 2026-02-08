@@ -298,13 +298,170 @@ InsertAxisDeets_payload <- function(payload, x, EZ = FALSE) {
       showlegend = TRUE,
       name = ColNames[i],
       visible = FALSE,
-      meta = list("axis_pred"),
+      meta = list("FitPanel","axis_pred"),
       legendgroup = "AxPred",
       legendgrouptitle = list(text = "<b> Axis Predictivity <b>")
     )
   }
 
   payload_add_traces(payload, traces)
+}
+
+
+#' Insert axis predictivity graph to the payload
+#'
+#' @param payload List containing data and layout attributes for a plotly graph
+#' @param x Object from biplotEZ package
+#' @param EZ Legacy, keep TRUE
+#'
+#' @return updated payload
+#' @noRd
+add_axis_adeq_payload <- function(payload, x, EZ = FALSE) {
+  if (EZ) {
+    pred_deets <- axis_predictivities_EZ(x)
+    ColNames <- c(colnames(x$X), "Weighted mean = Quality")
+  } else {
+    pred_deets <- axis_predictivities(x)
+    ColNames <- c(colnames(x$x), "Weighted mean = Quality")
+  }
+
+  p <- x$p
+  n <- nrow(pred_deets)
+
+  traces <- vector("list", n)
+
+  for (i in seq_len(n)) {
+    linetype <- if (i == n) "solid" else "dashdot"
+    lwidth   <- if (i == n) 3 else 2
+
+    traces[[i]] <- list(
+      x = seq_len(p),
+      y = as.numeric(pred_deets[i, ]),
+      type = "scatter",
+      mode = "lines+markers",
+      line = list(dash = linetype, width = lwidth),
+      xaxis = "x3",
+      yaxis = "y3",
+      hoverinfo = "skip",
+      showlegend = TRUE,
+      name = ColNames[i],
+      visible = TRUE,
+      meta = list("FitPanel","Cum. Adequacy"),
+      legendgroup = "AxPred",
+      legendgrouptitle = list(text = "<b> Axis Adequacy <b>")
+    )
+  }
+
+  return(list(traces))
+}
+
+
+
+#' Insert axis predictivity graph to the payload
+#'
+#' @param payload List containing data and layout attributes for a plotly graph
+#' @param x Object from biplotEZ package
+#' @param EZ Legacy, keep TRUE
+#'
+#' @return updated payload
+#' @noRd
+add_axis_pred_payload <- function(payload, x, EZ = FALSE) {
+  if (EZ) {
+    pred_deets <- axis_predictivities_EZ(x)
+    ColNames <- c(colnames(x$X), "Weighted mean = Quality")
+  } else {
+    pred_deets <- axis_predictivities(x)
+    ColNames <- c(colnames(x$x), "Weighted mean = Quality")
+  }
+
+  p <- x$p
+  n <- nrow(pred_deets)
+
+  traces <- vector("list", n)
+
+  for (i in seq_len(n)) {
+    linetype <- if (i == n) "solid" else "dashdot"
+    lwidth   <- if (i == n) 3 else 2
+
+    traces[[i]] <- list(
+      x = seq_len(p),
+      y = as.numeric(pred_deets[i, ]),
+      type = "scatter",
+      mode = "lines+markers",
+      line = list(dash = linetype, width = lwidth),
+      xaxis = "x3",
+      yaxis = "y3",
+      hoverinfo = "skip",
+      showlegend = TRUE,
+      name = ColNames[i],
+      visible = TRUE,
+      meta = list("FitPanel","Cum. Predictivity"),
+      legendgroup = "AxPred",
+      legendgrouptitle = list(text = "<b> Axis Predictivity <b>")
+    )
+  }
+
+  return(list(traces))
+}
+
+
+add_prop_variance_payload<-function(x,
+                                    axis = "x3", yaxis = "y3",
+                                    title = "Proportion of variance",
+                                    meta_key = "Variance Explained",
+                                    line_color = "black") {
+
+  eig <- x$eigenvalues
+
+  k <- length(eig)
+  pcs <- seq_len(k)
+
+  ind <- 100 * eig / sum(eig)     # % individual
+  cum <- cumsum(ind)              # % cumulative
+
+  #right so we get the individual axis predictivities. see p92 of UB
+  preds<-axis_predictivities_EZ(x)[1:x$p,]
+  V.mat <- x$Lmat
+  eigval <- x$eigenvalues
+  lambda.mat <- diag(eigval)
+  V_ii<-diag(V.mat%*%lambda.mat%*%t(V.mat))
+  w<-V_ii/sum(diag(lambda.mat))
+
+  # line: % Individual
+  tr_ind <- list(
+    type = "scatter",
+    mode = "lines+markers",
+    x = pcs,
+    y = ind,
+    name = "% Individual",
+    xaxis = axis,
+    yaxis = yaxis,
+    meta = list("FitPanel", meta_key),
+    hoverinfo = "text",
+    text = sprintf("PC %d<br>Individual: %.2f%%", pcs, ind),
+    line = list(color = line_color),
+    marker = list(color = line_color)
+  )
+  data<-list()
+  for(i in 1:x$p){
+    data[[i]] <- list(
+      type = "bar",
+      x = pcs,
+      y = preds[i,]*w[i],
+      name = rownames(preds)[i],
+      xaxis = axis,
+      yaxis = yaxis,
+      meta = list("FitPanel", rownames(preds)[i]),
+      textposition = "outside",
+      hoverinfo = "text",
+      hovertext = sprintf("PC %d<br>Cumulative: %.2f%%", pcs, cum),
+      legendgroup="VarExplained",
+      legendgrouptitle=list(text="<b> Variance Contribution <b>"),
+      marker = list(opacity = 0.7)
+    )
+  }
+
+  return(list(data))
 }
 
 
@@ -804,7 +961,7 @@ add_table_payload <- function(payload,
       values = list(vars, adequacy, predictivity),
       align  = "left"
     ),
-    meta = list("FitTable"),   # optional tag for your JS metaTag()
+    meta = list("FitPanel", "Summary Table"),
     showlegend = FALSE,
     visible = visible
   )

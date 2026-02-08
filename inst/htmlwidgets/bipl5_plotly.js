@@ -13,12 +13,13 @@
       vect_visible: 0,
       but_names: ["PC", "AxisStats", "TransAxes", "vecload"]
     };
+    console.log(data.payloads);
 
     Object.keys(data.payloads).forEach(k => {
       data.payloads[k].bipl5 = deepClone(el.bipl5)
 
     });
-
+    console.log(data)
     function metaTag(tr) {
       if (Array.isArray(tr.meta)) return tr.meta[0];
       if (typeof tr.meta === "string") return tr.meta;
@@ -87,9 +88,13 @@
 
         // 1) Save CURRENT state into payloads[oldKey]
         // (this is where "PC 1 & 2" gets created the first time)
-        data.payloads[oldKey] = { trace_data: deepClone(el.data),
-                                  layout: deepClone(el.layout),
-                                  bipl5:deepClone(el.bipl5)};
+        const prev = data.payloads[oldKey] || {};
+
+        data.payloads[oldKey] = Object.assign({}, prev, {
+          trace_data: deepClone(el.data),
+          layout: deepClone(el.layout),
+          bipl5: deepClone(el.bipl5)
+        });
 
 
 
@@ -110,14 +115,74 @@
         el.bipl5.currentPCKey = newKey;
     }
 
+
+
+    function isFitPanelTrace(tr) {
+      // meta can be ["FitPanel", "..."] or "FitPanel"
+      if (!tr) return false;
+      if (Array.isArray(tr.meta)) return tr.meta[0] === "FitPanel";
+      return tr.meta === "FitPanel";
+    }
+
+    function fitPanelIndices() {
+      const idx = [];
+      for (let i = 0; i < el.data.length; i++) {
+        if (isFitPanelTrace(el.data[i])) idx.push(i);
+      }
+      return idx;
+    }
+
+    function removeFitPanelTraces() {
+      const idx = fitPanelIndices();
+      if (!idx.length) return Promise.resolve();
+      // delete from highest -> lowest is safest
+      idx.sort((a, b) => b - a);
+      return Plotly.deleteTraces(el, idx);
+    }
+
+    function getFitTracesByKey(key) {
+      const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+      const payload = data.payloads?.[pcKey];
+
+      // pick the right source
+      if (key === "Cum. Predictivity") return data.fm_payload.CumPred;
+      if (key === "Cum. Adequacy")     return data.fm_payload.CumAd;
+      if (key === "Scree Plot")        return data.fm_payload.Scree;
+      if (key === "Variance Explained")return data.fm_payload.VarExp;
+      if (key === "Summary Table")     return payload?.fit_table;
+
+      return null;
+    }
+
+
+
     function toggleFit(d){
-      const key = el.bipl5.currentPCKey || "PC 1 & 2";
-      const payload = data.payloads[key];
-      const tableTraces = payload.fit_table;
-      console.log(payload);
-      console.log(tableTraces)
-      Plotly.addTraces(el, tableTraces);
-      return;
+
+      const newKey = d.button && (d.button.name || d.button.label);
+        if (!newKey) return;
+
+      // ignore if user re-clicks same dropdown option
+      var oldKey = el.bipl5.currentFMKey || "Cum. Predictivity";
+      if (newKey === oldKey) return;
+
+      const tracesToAdd = deepClone(getFitTracesByKey(newKey));
+      console.log(tracesToAdd)
+      if (!tracesToAdd || !tracesToAdd.length) return;
+
+      removeFitPanelTraces().then(() => {
+    // If you're using the right-side panel, make sure non-table plots use x3/y3
+    // and the table uses domain.x (it will ignore xaxis anyway)
+    //tracesToAdd.forEach(tr => {
+     // if (tr.type !== "table") {
+       // tr.xaxis = "x3";
+      //  tr.yaxis = "y3";
+    //  }
+    //});
+
+        return Plotly.addTraces(el, tracesToAdd);
+      }).then(() => {
+        el.bipl5.currentFMKey = newKey;
+      });
     }
 //-------------- UPDATEMENU-----------------
 
@@ -148,7 +213,7 @@
         el.bipl5.bip_domain[1] = [0.5, 1][el.bipl5.is_visible];
         var update_traces = [];
         el.data.forEach(function (item, index, arr) {
-          if (arr[index].meta[0] === "axis_pred") {
+          if (arr[index].meta[1] === "axis_pred") {
             update_traces.push(index);
           }
         });
@@ -166,47 +231,6 @@
 
         Plotly.restyle(el.id, plot_update, update_traces);
         toggleButton(d.button.name);
-        Plotly.relayout(el.id, update);
-        return;
-      }
-
-      if (d.button.name === "regmaak") {
-        // that is the fit measures table needs to be inserted
-        var idx = el.bipl5.table_visible + el.bipl5.table2_visible;
-        el.bipl5.table2_visible = [1, 0][el.bipl5.table2_visible];
-        var update = {
-          "updatemenus[2].active": [0, 1][rel_but_sel],
-          "yaxis.domain": [
-            [0, 1],
-            [0.3, 1],
-            [0.3, 1],
-          ][idx],
-          "yaxis2.domain": [
-            [0.15, 0.85],
-            [0.3, 1],
-            [0.3, 1],
-          ][idx],
-          "yaxis3.domain": [
-            [0.15, 0.85],
-            [0.3, 1],
-            [0.3, 1],
-          ][idx],
-          "legend.y": [0.82, 0.92, 0.92][idx],
-        };
-        if (rel_but_sel === 0) {
-          Plotly.addTraces(el.id, [pred12, pred13, pred23][el.bipl5.selected]);
-        }
-        if (rel_but_sel === 1) {
-          var update_traces = [];
-          el.data.forEach(function (item, index, arr) {
-            if (arr[index].meta[0] === "PredTable") {
-              update_traces.push(index);
-            }
-          });
-          Plotly.deleteTraces(el.id, update_traces);
-        }
-
-        el.bipl5.rel_but[d.menu._index - 1] = [1, 0][rel_but_sel];
         Plotly.relayout(el.id, update);
         return;
       }

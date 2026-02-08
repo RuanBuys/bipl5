@@ -173,13 +173,26 @@ plot_bipl5.PCA<-function(x){
                            Col=color)
 
   #finally we add the fit measure table to the payloads
-  payl_13<-add_table_payload(payl_13,x=x)
-  payl_13<<-payl_13
+  payl_12<-payload_new()
+  payl_12<-add_table_payload(payl_12,x=x)
+  payl_13<-add_table_payload(payl_13,x=PC13)
+  payl_23<-add_table_payload(payl_23,x=PC23)
 
+  #create new payload specifically for for the fit measures
+  fm_payl<-list()
+  print(fm_payl)
+  fm_payl["CumPred"]<-add_axis_pred_payload(fm_payl,x,EZ=TRUE)
+
+  fm_payl["CumAd"]<-add_axis_adeq_payload(fm_payl,x,EZ=TRUE)
+  fm_payl["VarExp"]<-add_prop_variance_payload(x)
+  print(fm_payl["VarExp"])
 
   p_ly<-insert_linear_js_v1(p_ly,
                          m=grads,p=x$p,cols=x$axes$tick.label.col,
-                         payload=list("PC 1 & 3"=payl_13$payload,"PC 2 & 3"=payl_23$payload))
+                         payload=list("PC 1 & 2"=payl_12$payload,
+                                      "PC 1 & 3"=payl_13$payload,
+                                      "PC 2 & 3"=payl_23$payload),
+                         fm_payload=fm_payl)
 
   return(p_ly)
 
