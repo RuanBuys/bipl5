@@ -416,7 +416,7 @@ add_prop_variance_payload<-function(x,
   k <- length(eig)
   pcs <- seq_len(k)
 
-  ind <- 100 * eig / sum(eig)     # % individual
+  ind <- eig / sum(eig)     # % individual
   cum <- cumsum(ind)              # % cumulative
 
   #right so we get the individual axis predictivities. see p92 of UB
@@ -438,6 +438,7 @@ add_prop_variance_payload<-function(x,
     yaxis = yaxis,
     meta = list("FitPanel", meta_key),
     hoverinfo = "text",
+    visible=TRUE,
     text = sprintf("PC %d<br>Individual: %.2f%%", pcs, ind),
     line = list(color = line_color),
     marker = list(color = line_color)
@@ -454,14 +455,55 @@ add_prop_variance_payload<-function(x,
       meta = list("FitPanel", rownames(preds)[i]),
       textposition = "outside",
       hoverinfo = "text",
+      visible=TRUE,
       hovertext = sprintf("PC %d<br>Cumulative: %.2f%%", pcs, cum),
       legendgroup="VarExplained",
       legendgrouptitle=list(text="<b> Variance Contribution <b>"),
       marker = list(opacity = 0.7)
     )
   }
+  data[[i+1]]<-tr_ind
 
   return(list(data))
+}
+
+
+add_scree_payload <- function(x,
+                              axis = "x3",
+                              yaxis = "y3",
+                              meta_key = "Scree Plot",
+                              line_color = "black") {
+  stopifnot(!is.null(x$eigenvalues), !is.null(x$p))
+
+  pcs <- seq_len(x$p)
+  eig <- as.numeric(x$eigenvalues)
+
+  # guard if eigenvalues vector length differs
+  if (length(eig) != length(pcs)) {
+    pcs <- seq_len(length(eig))
+  }
+
+  tr_scree <- list(
+    type = "scatter",
+    mode = "lines+markers",
+    x = pcs,
+    y = eig,
+    name = "Eigenvalue",
+    xaxis = axis,
+    yaxis = yaxis,
+    meta = list("FitPanel", meta_key),
+    visible = TRUE,
+
+    hoverinfo = "text",
+    text = sprintf("PC %d<br>Eigenvalue: %s",
+                   pcs, formatC(eig, format = "f", digits = 4)),
+
+    line = list(color = line_color),
+    marker = list(color = line_color)
+  )
+
+  # Return as list-of-traces for Plotly.addTraces in JS
+  list(list(tr_scree))
 }
 
 

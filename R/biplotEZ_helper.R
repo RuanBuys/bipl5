@@ -27,7 +27,7 @@ plot_scaffolding<-function(dpquality,basis,PC_toggle=TRUE,
                        anchor="y3",dtick=1,title="Dimension of Subspace"),
            yaxis3=list(zeroline=TRUE,side="left",position=0.65,
                        showgrid=TRUE,domain=c(0.15,0.85),layer="below traces",
-                       title=Title),
+                       title=Title, range=c(0,1)),
            hoverlabel = list(font = list(family = "Courier New, monospace")),
            barmode="stack",
            updatemenus = list(

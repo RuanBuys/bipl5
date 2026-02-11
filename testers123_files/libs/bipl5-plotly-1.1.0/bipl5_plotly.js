@@ -520,8 +520,8 @@
         return false;
       }
       //purely toggle a trace
-
-      if (tag === "data" || hasMeta(tr,"FitPanel") || tag === "polygon") {
+      console.log(tr)
+      if (tag === "data" || hasMeta("FitPanel") || tag === "polygon") {
         var a = ["legendonly", true].indexOf(tr.visible);
         var update = {
           visible: [true, "legendonly"][a],

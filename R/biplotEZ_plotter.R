@@ -144,10 +144,7 @@ plot_bipl5.PCA<-function(x){
   payl_13 <- insert_unit_circle_payload(payl_13, visible = FALSE)
   payl_23 <- insert_unit_circle_payload(payl_23, visible = FALSE)
 
-  #insert axis details table
-  p_ly<-InsertAxisDeets(p_ly,x,EZ=TRUE)
-  payl_13<-InsertAxisDeets_payload(payl_13,PC13,EZ=TRUE)
-  payl_23<-InsertAxisDeets_payload(payl_23,PC23,EZ=TRUE)
+
   #insert vector representation
 
   temp<-list(V=x$Vr,x=x$X,p=x$p)
@@ -180,12 +177,12 @@ plot_bipl5.PCA<-function(x){
 
   #create new payload specifically for for the fit measures
   fm_payl<-list()
-  print(fm_payl)
   fm_payl["CumPred"]<-add_axis_pred_payload(fm_payl,x,EZ=TRUE)
 
   fm_payl["CumAd"]<-add_axis_adeq_payload(fm_payl,x,EZ=TRUE)
   fm_payl["VarExp"]<-add_prop_variance_payload(x)
-  print(fm_payl["VarExp"])
+  fm_payl["Scree"]<-add_scree_payload(x)
+  print(fm_payl["Scree"])
 
   p_ly<-insert_linear_js_v1(p_ly,
                          m=grads,p=x$p,cols=x$axes$tick.label.col,
