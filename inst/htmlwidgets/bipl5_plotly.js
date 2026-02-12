@@ -118,9 +118,7 @@
 
     function isFitPanelTrace(tr) {
       // meta can be ["FitPanel", "..."] or "FitPanel"
-      if (!tr) return false;
-      if (Array.isArray(tr.meta)) return tr.meta[0] === "FitPanel";
-      return tr.meta === "FitPanel";
+      return hasMeta(tr, "FitPanel");
     }
 
     function fitPanelIndices() {
@@ -158,20 +156,36 @@
     function toggleFit(d){
 
       const newKey = d.button && (d.button.name || d.button.label);
-        if (!newKey) return;
+        if (!newKey) return false;
 
       // ignore if user re-clicks same dropdown option
       var oldKey = el.bipl5.currentFMKey || "Cum. Predictivity";
-      if (newKey === oldKey) return;
+      if (newKey === oldKey) return false;
 
+
+      // 1) Remove existing FitPanel traces from CURRENT plot state
+      const baseData = el.data.filter(tr => !isFitPanelTrace(tr));
+
+      // 2) Prepare new traces
       const tracesToAdd = deepClone(getFitTracesByKey(newKey));
-      if (!tracesToAdd || !tracesToAdd.length) return;
+      if (!tracesToAdd || !tracesToAdd.length) return false;
 
-      removeFitPanelTraces().then(() => {
-        return Plotly.addTraces(el, tracesToAdd);
-      }).then(() => {
-        el.bipl5.currentFMKey = newKey;
-      });
+      // 3) Build new data + layout for react (single redraw)
+      const newData = baseData.concat(tracesToAdd);
+
+      const newLayout = deepClone(el.layout);
+
+
+      // yaxis3 scaling rule: fixed [0,1] except Scree Plot (autorange)
+      if (newKey === "Scree Plot") {
+        newLayout.yaxis3 = Object.assign({}, newLayout.yaxis3, { autorange: true });
+      } else {
+        newLayout.yaxis3 = Object.assign({}, newLayout.yaxis3, { autorange: false, range: [0, 1] });
+      }
+
+      return Plotly.react(el, newData, newLayout).then(() => {
+              el.bipl5.currentFMKey = newKey;
+              });
     }
 
     function hasMeta(tr, tag) {
