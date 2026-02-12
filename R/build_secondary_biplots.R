@@ -404,7 +404,17 @@ add_axis_pred_payload <- function(payload, x, EZ = FALSE) {
   return(list(traces))
 }
 
-
+#' Build traces for proportion of variance explained
+#'
+#' @param x A `bipl5` object containing eigenvalues, loadings, and dimensions
+#' @param axis Plotly x-axis id for the secondary panel
+#' @param yaxis Plotly y-axis id for the secondary panel
+#' @param title Legacy argument retained for compatibility
+#' @param meta_key Metadata tag used by client-side panel switching logic
+#' @param line_color Colour applied to the `% Individual` line trace
+#'
+#' @return A list containing stacked bar and line traces for variance components
+#' @noRd
 add_prop_variance_payload<-function(x,
                                     axis = "x3", yaxis = "y3",
                                     title = "Proportion of variance",
@@ -468,6 +478,16 @@ add_prop_variance_payload<-function(x,
 }
 
 
+#' Build scree-plot traces for the secondary panel
+#'
+#' @param x A `bipl5` object with `eigenvalues` and `p` populated
+#' @param axis Plotly x-axis id for the secondary panel
+#' @param yaxis Plotly y-axis id for the secondary panel
+#' @param meta_key Metadata tag used by client-side panel switching logic
+#' @param line_color Colour applied to the scree line trace
+#'
+#' @return A list containing a single scree trace in Plotly.addTraces format
+#' @noRd
 add_scree_payload <- function(x,
                               axis = "x3",
                               yaxis = "y3",
