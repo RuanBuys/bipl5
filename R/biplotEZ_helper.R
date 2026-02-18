@@ -1,5 +1,3 @@
-
-
 #' Initialise plotly plot with layout in place
 #'
 #' @param dpquality Quality of display. Text string
@@ -7,104 +5,197 @@
 #' @param ax_pred Include axis predictivity button
 #' @param FM include fit measures button
 #' @param vec_dis include vector display button
+#' @param n Number of slider steps
+#' @param x_colnames Character vector of axis/variable names for AxisNames dropdown
 #' @noRd
-plot_scaffolding<-function(dpquality,basis,PC_toggle=TRUE,
-                           ax_pred=TRUE,TDA=TRUE,vec_dis=TRUE){
-
-  Title<-"Overall quality and axis predictivities (cumulative)"
-    p_ly<-plot_ly() |>
-    layout(legend=list(tracegroupgap=0,xref="container",
-                       yref="container",x=1,y=0.82,
-                       groupclick="toggleitem"
-                       ),
-           xaxis=list(title=dpquality,showticklabels = FALSE,
-                      zeroline=FALSE,showgrid = FALSE,domain=c(0,1)),
-           yaxis=list(showticklabels = FALSE,zeroline=FALSE,
-                      scaleanchor={'x'}, scaleratio=1,showgrid = FALSE),
-           xaxis2=list(domain=c(0,0.15),zeroline=TRUE),
-           yaxis2=list(zeroline=TRUE,side="left",position=0),
-           xaxis3=list(domain=c(0.65,1),zeroline=TRUE,showgrid=TRUE,
-                       anchor="y3",dtick=1,title="Dimension of Subspace"),
-           yaxis3=list(zeroline=TRUE,side="left",position=0.65,
-                       showgrid=TRUE,domain=c(0.15,0.85),layer="below traces",
-                       title=Title, range=c(0,1)),
-           hoverlabel = list(font = list(family = "Courier New, monospace")),
-           barmode="stack",
-           updatemenus = list(
-             list(
-               y = 0.8,
-               type="buttons",
-               x =0,
-               showactive=F,
-               active=c(0,1),
-               buttons = list(
-                 list(method="skip",
-                      args=list("type", "scatter"),
-                      label="Measures of Fit",
-                      name="AxisStats",
-                      visible=ax_pred,
-                      execute=FALSE
-                 ),
-                 list(method="skip",
-                      args=list("type", "scatter"),
-                      label="Translated Axes",
-                      name="TransAxes",
-                      visible=TDA,
-                      execute=FALSE
-
-                 ),
-                 list(method="skip",
-                      args=list("type", "scatter"),
-                      label="Vector Display",
-                      name="vecload",
-                      visible=vec_dis,
-                      execute=FALSE
-
-                 )
-               )
-             ),
-             list(
-               type = "dropdown",
-               x = 0,
-               visible=PC_toggle,
-               name="PC_toggle",
-               buttons = list(
-                 list(method = "skip",
-                      args = list("type", "scatter"),
-                      label = "PC 1 & 2"),
-                 list(method = "skip",
-                      args = list("type", "histogram"),
-                      label = "PC 1 & 3"),
-                 list(method = "skip",
-                      args = list("type", "histogram"),
-                      label = "PC 2 & 3")
-               )
-             ),
-             list(
-               type = "dropdown",
-               x = 0.5,
-               visible=FALSE,
-               name="Fit_toggle",
-               xanchor="left",
-               buttons = list(
-                 list(method = "skip",
-                      args = list("type", "scatter"),
-                      label = "Cum. Predictivity"),
-                 list(method = "skip",
-                      args = list("type", "scatter"),
-                      label = "Cum. Adequacy"),
-                 list(method = "skip",
-                      args = list("type", "scatter"),
-                      label = "Scree Plot"),
-                 list(method = "skip",
-                      args = list("type", "scatter"),
-                      label = "Variance Explained"),
-                 list(method = "skip",
-                      args = list("type", "histogram"),
-                      label = "Summary Table")
-               )
-             )
-           )
+plot_scaffolding <- function(
+  dpquality,
+  basis,
+  PC_toggle = TRUE,
+  ax_pred = TRUE,
+  TDA = TRUE,
+  vec_dis = TRUE,
+  n = 14,
+  x_colnames = character(0)
+) {
+  Title <- "Overall quality and axis predictivities (cumulative)"
+  x_colnames <- as.character(x_colnames)
+  slider_steps <- lapply(seq_len(n), function(i) {
+    list(
+      label = "",
+      value = i,
+      method = "skip",
+      args = list()
+    )
+  })
+  axis_name_buttons <- lapply(seq_along(x_colnames), function(i) {
+    list(
+      method = "skip",
+      label = x_colnames[i]
+    )
+  })
+  p_ly <- plot_ly() |>
+    layout(
+      legend = list(
+        tracegroupgap = 0,
+        xref = "container",
+        yref = "container",
+        x = 1,
+        y = 0.82,
+        groupclick = "toggleitem"
+      ),
+      xaxis = list(
+        title = dpquality,
+        showticklabels = FALSE,
+        zeroline = FALSE,
+        showgrid = FALSE,
+        domain = c(0, 1)
+      ),
+      yaxis = list(
+        showticklabels = FALSE,
+        zeroline = FALSE,
+        scaleanchor = {
+          'x'
+        },
+        scaleratio = 1,
+        showgrid = FALSE
+      ),
+      xaxis2 = list(domain = c(0, 0.15), zeroline = TRUE),
+      yaxis2 = list(zeroline = TRUE, side = "left", position = 0),
+      xaxis3 = list(
+        domain = c(0.65, 1),
+        zeroline = TRUE,
+        showgrid = TRUE,
+        anchor = "y3",
+        dtick = 1,
+        title = "Dimension of Subspace"
+      ),
+      yaxis3 = list(
+        zeroline = TRUE,
+        side = "left",
+        position = 0.65,
+        showgrid = TRUE,
+        domain = c(0.15, 0.85),
+        layer = "below traces",
+        title = Title,
+        range = c(0, 1)
+      ),
+      hoverlabel = list(font = list(family = "Courier New, monospace")),
+      barmode = "stack",
+      updatemenus = list(
+        list(
+          y = 0.8,
+          type = "buttons",
+          x = 0,
+          showactive = F,
+          active = c(0, 1),
+          buttons = list(
+            list(
+              method = "skip",
+              args = list("type", "scatter"),
+              label = "Measures of Fit",
+              name = "AxisStats",
+              visible = ax_pred,
+              execute = FALSE
+            ),
+            list(
+              method = "skip",
+              args = list("type", "scatter"),
+              label = "Translated Axes",
+              name = "TransAxes",
+              visible = TDA,
+              execute = FALSE
+            ),
+            list(
+              method = "skip",
+              args = list("type", "scatter"),
+              label = "Vector Display",
+              name = "vecload",
+              visible = vec_dis,
+              execute = FALSE
+            )
+          )
+        ),
+        list(
+          type = "dropdown",
+          x = 0,
+          visible = PC_toggle,
+          name = "PC_toggle",
+          buttons = list(
+            list(
+              method = "skip",
+              args = list("type", "scatter"),
+              label = "PC 1 & 2"
+            ),
+            list(
+              method = "skip",
+              args = list("type", "histogram"),
+              label = "PC 1 & 3"
+            ),
+            list(
+              method = "skip",
+              args = list("type", "histogram"),
+              label = "PC 2 & 3"
+            )
+          )
+        ),
+        list(
+          type = "dropdown",
+          x = 0.5,
+          visible = FALSE,
+          name = "Fit_toggle",
+          xanchor = "left",
+          buttons = list(
+            list(
+              method = "skip",
+              args = list("type", "scatter"),
+              label = "Cum. Predictivity"
+            ),
+            list(
+              method = "skip",
+              args = list("type", "scatter"),
+              label = "Cum. Adequacy"
+            ),
+            list(
+              method = "skip",
+              args = list("type", "scatter"),
+              label = "Scree Plot"
+            ),
+            list(
+              method = "skip",
+              args = list("type", "scatter"),
+              label = "Variance Explained"
+            ),
+            list(
+              method = "skip",
+              args = list("type", "histogram"),
+              label = "Summary Table"
+            )
+          )
+        ),
+        list(
+          type = "dropdown",
+          visible = TRUE,
+          x = 0,
+          y = 0,
+          xanchor = "right",
+          yanchor = "bottom",
+          name = "Slider_toggle",
+          direction = "up",
+          buttons = axis_name_buttons
+        )
+      ),
+      sliders = list(
+        list(
+          currentvalue = list(prefix = "Axis 1"),
+          active = 6,
+          x = 0.0,
+          y = -0.15,
+          xanchor = "left",
+          yanchor = "bottom",
+          steps = slider_steps
+        )
+      )
     )
 
   return(p_ly)
@@ -121,9 +212,14 @@ plot_scaffolding<-function(dpquality,basis,PC_toggle=TRUE,
 #'
 #' @return Updated plotly object
 #' @noRd
-insert_unit_circle <- function(p_ly, n = 200, visible = FALSE,
-                               color = "red", width = 1.2) {
-  theta <- seq(0, 2*pi, length.out = n)
+insert_unit_circle <- function(
+  p_ly,
+  n = 200,
+  visible = FALSE,
+  color = "red",
+  width = 1.2
+) {
+  theta <- seq(0, 2 * pi, length.out = n)
 
   p_ly |>
     plotly::add_trace(
@@ -151,23 +247,29 @@ insert_unit_circle <- function(p_ly, n = 200, visible = FALSE,
 #' @param color color of point
 #'
 #' @noRd
-insert_class_means<-function(p_ly,Z,symbol,color){
-  for(i in 1:nrow(Z)){
-    p_ly<-p_ly |> add_trace(x=Z[i,1],
-                            y=Z[i,2],name=rownames(Z)[i],
-                            type = "scatter", mode = "markers",
-                            hovertext="Class Mean",
-                            hoverinfo="text+name",
-                            customdata=i-1,
-                            meta="ClassMean",xaxis="x",yaxis="y",visible=TRUE,
-                            showlegend=FALSE,
-                            marker=list(symbol=symbol[i],color=color[i]),
-                            legendgroup="ClassMean"
-                            )
+insert_class_means <- function(p_ly, Z, symbol, color) {
+  for (i in 1:nrow(Z)) {
+    p_ly <- p_ly |>
+      add_trace(
+        x = Z[i, 1],
+        y = Z[i, 2],
+        name = rownames(Z)[i],
+        type = "scatter",
+        mode = "markers",
+        hovertext = "Class Mean",
+        hoverinfo = "text+name",
+        customdata = i - 1,
+        meta = "ClassMean",
+        xaxis = "x",
+        yaxis = "y",
+        visible = TRUE,
+        showlegend = FALSE,
+        marker = list(symbol = symbol[i], color = color[i]),
+        legendgroup = "ClassMean"
+      )
   }
   return(p_ly)
 }
-
 
 
 #' Create a biplot with vector loadings and calibrated axes.
@@ -178,54 +280,69 @@ insert_class_means<-function(p_ly,Z,symbol,color){
 #'
 #' @return plotly graph
 #' @noRd
-make_biplot_EZ<-function(pc12,colorpalete=NULL,symbol="circle"){
+make_biplot_EZ <- function(pc12, colorpalete = NULL, symbol = "circle") {
+  p_ly <- plot_scaffolding(
+    pc12$DisplQuality,
+    pc12$basis,
+    x_colnames = colnames(pc12$x)
+  )
 
-  p_ly<-plot_scaffolding(pc12$DisplQuality,pc12$basis)
+  addpc12 <- add_vector_biplot(
+    p_ly = p_ly,
+    x = pc12,
+    symbol = symbol,
+    color = colorpalete,
+    visible = TRUE
+  )
+  p_ly <- addpc12[[1]]
 
-  addpc12<-add_vector_biplot(p_ly=p_ly,x=pc12,symbol=symbol,
-                             color=colorpalete,visible=TRUE)
-  p_ly<-addpc12[[1]]
+  pc13 <- list(NULL)
+  pc23 <- list(NULL)
 
+  addpc13 <- list(NULL, NULL, NULL, NULL, NULL)
+  addpc23 <- list(NULL, NULL, NULL, NULL, NULL)
 
-  pc13<-list(NULL)
-  pc23<-list(NULL)
-
-  addpc13<-list(NULL,NULL,NULL,NULL,NULL)
-  addpc23<-list(NULL,NULL,NULL,NULL,NULL)
-
-  Xhat<-list(addpc12[[3]],addpc13[[3]],addpc23[[3]])
-  Xhat2<-list(t(addpc12[[3]]),NULL,NULL)
-  df<-list(addpc12[[2]],addpc13[[2]],addpc23[[2]])
+  Xhat <- list(addpc12[[3]], addpc13[[3]], addpc23[[3]])
+  Xhat2 <- list(t(addpc12[[3]]), NULL, NULL)
+  df <- list(addpc12[[2]], addpc13[[2]], addpc23[[2]])
 
   #need to count the annotations as these are tick marks.
   #JS should toggle visibility
-  counter<-c(addpc12[[4]],addpc13[[4]],addpc23[[4]])
+  counter <- c(addpc12[[4]], addpc13[[4]], addpc23[[4]])
 
   #also need the angles of all the tick marks as annotation for
   #new predict lines
 
-  angles<-list(addpc12[[5]],addpc13[[5]],addpc23[[5]])
-  numtraces<-length(levels(pc12$group))+3*pc12$p +1
-  Dispquality<-c(pc12$DisplQuality,pc13$DisplQuality,pc23$DisplQuality)
+  angles <- list(addpc12[[5]], addpc13[[5]], addpc23[[5]])
+  numtraces <- length(levels(pc12$group)) + 3 * pc12$p + 1
+  Dispquality <- c(pc12$DisplQuality, pc13$DisplQuality, pc23$DisplQuality)
 
+  p_ly <- p_ly |>
+    add_trace(
+      x = cos(seq(0, 2 * pi, length.out = 200)),
+      y = sin(seq(0, 2 * pi, length.out = 200)),
+      type = "scatter",
+      mode = "lines",
+      line = list(color = 'red', width = 1.2),
+      name = "Unit Circle",
+      showlegend = FALSE,
+      meta = 'veccircle',
+      xaxis = "x",
+      yaxis = "y",
+      hoverinfo = 'name',
+      visible = FALSE
+    )
 
+  p_ly <- InsertAxisDeets(p_ly, pc12)
+  FitMeasures <- InsertFitMeasures(p_ly, pc12)
+  p_ly <- FitMeasures[[1]]
 
-  p_ly<-p_ly|>
-    add_trace(x=cos(seq(0,2*pi,length.out=200)),
-              y=sin(seq(0,2*pi,length.out=200)), type="scatter",
-              mode="lines",line = list(color = 'red',width=1.2),
-              name="Unit Circle",showlegend=FALSE,
-              meta='veccircle',xaxis="x",yaxis="y",
-              hoverinfo='name',visible=FALSE)
+  p_ly <- insert_vector_annots(p_ly, pc12, pc13, pc23)
+  counter <- c(counter, rep(pc12$p, 3))
 
-  p_ly<-InsertAxisDeets(p_ly,pc12)
-  FitMeasures<-InsertFitMeasures(p_ly,pc12)
-  p_ly<-FitMeasures[[1]]
-
-  p_ly<-insert_vector_annots(p_ly,pc12,pc13,pc23)
-  counter<-c(counter,rep(pc12$p,3))
-
-  p_ly<- p_ly|> htmlwidgets::onRender("
+  p_ly <- p_ly |>
+    htmlwidgets::onRender(
+      "
 
      function(el,x,data) {
      var clicked = false;
@@ -700,11 +817,20 @@ make_biplot_EZ<-function(pc12,colorpalete=NULL,symbol="circle"){
 
 }
 
-   ",data=list(a=df,Xhat=Xhat,Xhat2=Xhat2,colnames=colnames(pc12$x),
-               num=numtraces,DP=Dispquality,counts=c(0,cumsum(counter)),
-               Angles=angles))
+   ",
+      data = list(
+        a = df,
+        Xhat = Xhat,
+        Xhat2 = Xhat2,
+        colnames = colnames(pc12$x),
+        num = numtraces,
+        DP = Dispquality,
+        counts = c(0, cumsum(counter)),
+        Angles = angles
+      )
+    )
 
-  return(list(p_ly,FitMeasures[[2]],FitMeasures[[3]]))
+  return(list(p_ly, FitMeasures[[2]], FitMeasures[[3]]))
 }
 
 
@@ -719,18 +845,18 @@ make_biplot_EZ<-function(pc12,colorpalete=NULL,symbol="circle"){
 #'
 #' @return an updated plotly graph
 #' @noRd
-add_TDA<-function(z.axes,x,p_ly=NULL,Z,group,Col){
-  r1<-range(x$Z[,1])
-  r2<-range(x$Z[,2])
-  len<-sqrt((r1[1]-r1[2])^2+(r2[1]-r2[2])^2)
-  dist<-len/8
-  inflate=1
+add_TDA <- function(z.axes, x, p_ly = NULL, Z, group, Col) {
+  r1 <- range(x$Z[, 1])
+  r2 <- range(x$Z[, 2])
+  len <- sqrt((r1[1] - r1[2])^2 + (r2[1] - r2[2])^2)
+  dist <- len / 8
+  inflate = 1
   #start of by drawing an ellipse over all the data... used to determine
   #how far axes shifted
-  bigElip<-cluster::ellipsoidhull(Z)
-  bigElipcoords<-cluster::predict.ellipsoid(bigElip,n.out=101)
+  bigElip <- cluster::ellipsoidhull(Z)
+  bigElipcoords <- cluster::predict.ellipsoid(bigElip, n.out = 101)
 
-  elipcoords<-bigElipcoords
+  elipcoords <- bigElipcoords
 
   #----------Get equations of shifted axes for prediction lines---------
   # slope<-numeric()
@@ -742,131 +868,191 @@ add_TDA<-function(z.axes,x,p_ly=NULL,Z,group,Col){
   # }
   # df<-data.frame(m=slope,c=intercept)
 
-  quads<- get_quads_axes(z.axes)
-  m<-lapply(z.axes,FUN=function(x){
-    return(x[1,2]/x[1,1])
+  quads <- get_quads_axes(z.axes)
+  m <- lapply(z.axes, FUN = function(x) {
+    return(x[1, 2] / x[1, 1])
   })
-  m<-Reduce(c,m)
-  x$m<-m
-  p<-length(m)
+  m <- Reduce(c, m)
+  x$m <- m
+  p <- length(m)
   #--------Shift Axes and Densities-----------------
 
   ## First we shorten the lenght of each axis, and get new pretty tick marks
 
-  endpoints<-shorten_axes(z.axes,elipcoords)
+  endpoints <- shorten_axes(z.axes, elipcoords)
 
   #next we move them out of the data centroid along with their densities
-  shift<-MoveLines(elip=bigElipcoords,m=m,quadrant=quads,
-                   d=dist,initial_ends=endpoints,swop=FALSE,cols=colnames(x$x))
-  DensCoors<-MoveDensities(Z=Z,m=m,endpoints=shift$ends,
-                           dist=shift$ShiftDist,dinflation=inflate,
-                           group=group,densityargs=NULL)
-
+  shift <- MoveLines(
+    elip = bigElipcoords,
+    m = m,
+    quadrant = quads,
+    d = dist,
+    initial_ends = endpoints,
+    swop = FALSE,
+    cols = colnames(x$x)
+  )
+  DensCoors <- MoveDensities(
+    Z = Z,
+    m = m,
+    endpoints = shift$ends,
+    dist = shift$ShiftDist,
+    dinflation = inflate,
+    group = group,
+    densityargs = NULL
+  )
 
   #Finally, add the axes to the plot
-  angles<-list()
-  visible<-FALSE
-  titles<-c("<b>Axes</b>",rep("",p-1))
-  for(i in 1:p){
-    index<-which(shift$ends[[i]][,1]== max(shift$ends[[i]][,1]))
-    index2<-which(shift$ends[[i]][,3]== max(shift$ends[[i]][,3]))
-    if(index==index2){
-      AxName<-paste("  ",colnames(x$X)[i])
-      pos<-"right"
-    }
-    else{
-      index<-index2
-      AxName<-paste(colnames(x$X)[i],"  ")
-      pos<-"left"
+  angles <- list()
+  visible <- FALSE
+  titles <- c("<b>Axes</b>", rep("", p - 1))
+  for (i in 1:p) {
+    index <- which(shift$ends[[i]][, 1] == max(shift$ends[[i]][, 1]))
+    index2 <- which(shift$ends[[i]][, 3] == max(shift$ends[[i]][, 3]))
+    if (index == index2) {
+      AxName <- paste("  ", colnames(x$X)[i])
+      pos <- "right"
+    } else {
+      index <- index2
+      AxName <- paste(colnames(x$X)[i], "  ")
+      pos <- "left"
     }
     #AxName<-""
-    if(quads[i] %in% c(1,4)){
-      lab<-paste("<b>",colnames(x$X)[i]," &#129030; </b>",sep="")
-      lab2<-"&#11166;"
+    if (quads[i] %in% c(1, 4)) {
+      lab <- paste("<b>", colnames(x$X)[i], " &#129030; </b>", sep = "")
+      lab2 <- "&#11166;"
     }
-    if(quads[i] %in% c(2,3)){
-      lab<-paste("<b> &#129028; ",colnames(x$X)[i]," </b>",sep="")
-      lab2<-"&#11164;"
+    if (quads[i] %in% c(2, 3)) {
+      lab <- paste("<b> &#129028; ", colnames(x$X)[i], " </b>", sep = "")
+      lab2 <- "&#11164;"
     }
 
-    angles[[i]]<-list(x=-10*sin(atan(x$m[i])),y=10*cos(atan(x$m[i])))
-    p_ly<-p_ly |>
-      add_trace(x=shift$ends[[i]][,1],
-                y=shift$ends[[i]][,2],
-                text=as.character(shift$ends[[i]][,3]),
-                type="scatter",
-                mode="lines", line = list(color = x$axes$col[i],
-                                          width=1,simplify=FALSE),
-                name=colnames(x$X)[i],textposition='top',
-                legendgroup=paste("ExpAx",i,sep=""),
-                meta='ExpAx',xaxis="x",yaxis="y",
-                customdata=shift$ends[[i]][,3],
-                hoverinfo='name',visible=visible,
-                legendgrouptitle=list(text=titles[i]))|>
+    angles[[i]] <- list(x = -10 * sin(atan(x$m[i])), y = 10 * cos(atan(x$m[i])))
+    p_ly <- p_ly |>
+      add_trace(
+        x = shift$ends[[i]][, 1],
+        y = shift$ends[[i]][, 2],
+        text = as.character(shift$ends[[i]][, 3]),
+        type = "scatter",
+        mode = "lines",
+        line = list(color = x$axes$col[i], width = 1, simplify = FALSE),
+        name = colnames(x$X)[i],
+        textposition = 'top',
+        legendgroup = paste("ExpAx", i, sep = ""),
+        meta = 'ExpAx',
+        xaxis = "x",
+        yaxis = "y",
+        customdata = shift$ends[[i]][, 3],
+        hoverinfo = 'name',
+        visible = visible,
+        legendgrouptitle = list(text = titles[i])
+      ) |>
 
-      add_annotations(x=shift$ends[[i]][,1],y=shift$ends[[i]][,2],
-                      text=as.character(shift$ends[[i]][,3]),
-                      showarrow=FALSE,textangle=-atan(m[i])*180/pi,
-                      visible=visible,yshift=-12*cos(atan(m[i])),
-                      xshift=12*sin(atan(m[i])),meta='ExpAx',
-                      xaxis="x",yaxis="y",customdata=i,
-                      font=list(size=10,color=x$axes$tick.label.col[i]))|>
+      add_annotations(
+        x = shift$ends[[i]][, 1],
+        y = shift$ends[[i]][, 2],
+        text = as.character(shift$ends[[i]][, 3]),
+        showarrow = FALSE,
+        textangle = -atan(m[i]) * 180 / pi,
+        visible = visible,
+        yshift = -12 * cos(atan(m[i])),
+        xshift = 12 * sin(atan(m[i])),
+        meta = 'ExpAx',
+        xaxis = "x",
+        yaxis = "y",
+        customdata = i,
+        font = list(size = 10, color = x$axes$tick.label.col[i])
+      ) |>
 
-      add_annotations(x=shift$ends[[i]][,1],y=shift$ends[[i]][,2],
-                      text="&#124;",
-                      showarrow=FALSE,textangle=-atan(m[i])*180/pi,
-                      visible=visible,meta='ExpAx',
-                      xaxis="x",yaxis="y",customdata=i,
-                      font=list(size=8,color=x$axes$tick.col[i]))|>
+      add_annotations(
+        x = shift$ends[[i]][, 1],
+        y = shift$ends[[i]][, 2],
+        text = "&#124;",
+        showarrow = FALSE,
+        textangle = -atan(m[i]) * 180 / pi,
+        visible = visible,
+        meta = 'ExpAx',
+        xaxis = "x",
+        yaxis = "y",
+        customdata = i,
+        font = list(size = 8, color = x$axes$tick.col[i])
+      ) |>
 
-      add_annotations(x=mean(shift$ends[[i]][,1]),y=mean(shift$ends[[i]][,2]),
-                      text=paste("<b>",colnames(x$X)[i],"</b>"),
-                      showarrow=FALSE,
-                      textangle=-atan(m[i])*180/pi,
-                      visible=visible,yshift=-22*cos(atan(m[i])),
-                      xshift=22*sin(atan(m[i])),meta='ExpAx',xaxis="x",
-                      yaxis="y",customdata=i,
-                      font=list(size=12,color="gray"))|>
+      add_annotations(
+        x = mean(shift$ends[[i]][, 1]),
+        y = mean(shift$ends[[i]][, 2]),
+        text = paste("<b>", colnames(x$X)[i], "</b>"),
+        showarrow = FALSE,
+        textangle = -atan(m[i]) * 180 / pi,
+        visible = visible,
+        yshift = -22 * cos(atan(m[i])),
+        xshift = 22 * sin(atan(m[i])),
+        meta = 'ExpAx',
+        xaxis = "x",
+        yaxis = "y",
+        customdata = i,
+        font = list(size = 12, color = "gray")
+      ) |>
 
-      add_annotations(x=shift$ends[[i]][index2,1],y=shift$ends[[i]][index2,2],
-                      text=lab2, showarrow=FALSE,
-                      textangle=-atan(m[i])*180/pi,visible=visible,
-                      meta='ExpAx',xaxis="x",yaxis="y",customdata=i,
-                      font=list(size=18,color=x$axes$tick.label.col[i]))
-
-
-
+      add_annotations(
+        x = shift$ends[[i]][index2, 1],
+        y = shift$ends[[i]][index2, 2],
+        text = lab2,
+        showarrow = FALSE,
+        textangle = -atan(m[i]) * 180 / pi,
+        visible = visible,
+        meta = 'ExpAx',
+        xaxis = "x",
+        yaxis = "y",
+        customdata = i,
+        font = list(size = 18, color = x$axes$tick.label.col[i])
+      )
   }
 
-  num_groups<-length(levels(x$group))
+  num_groups <- length(levels(x$group))
 
-  for(i in 1:num_groups){
-    Dens<-DensCoors[[i]]
-    index_color<-which(levels(group)==unique(group)[i])
-    p_ly<-p_ly |>
-      add_trace(x=0,y=0,mode="lines",type="scatter",
-                line=list(dash="dot",color=Col[index_color],width=0.95),
-                legendgroup=unique(group)[i], showlegend=TRUE,
-                name=unique(group)[i], meta='density', xaxis="x",
-                yaxis="y",hoverinfo="skip",customdata="legendentry",
-                visible=FALSE)
+  for (i in 1:num_groups) {
+    Dens <- DensCoors[[i]]
+    index_color <- which(levels(group) == unique(group)[i])
+    p_ly <- p_ly |>
+      add_trace(
+        x = 0,
+        y = 0,
+        mode = "lines",
+        type = "scatter",
+        line = list(dash = "dot", color = Col[index_color], width = 0.95),
+        legendgroup = unique(group)[i],
+        showlegend = TRUE,
+        name = unique(group)[i],
+        meta = 'density',
+        xaxis = "x",
+        yaxis = "y",
+        hoverinfo = "skip",
+        customdata = "legendentry",
+        visible = FALSE
+      )
 
-    for(j in 1:p){
-
-      p_ly<-p_ly|>
-        add_trace(x=Dens[,2*j-1],y=Dens[,2*j],mode="lines",type="scatter",
-                  line=list(dash="dot",color=Col[index_color],width=0.95),
-                  legendgroup=unique(group)[i], showlegend=FALSE,
-                  name=unique(group)[i], meta='density', xaxis="x",
-                  yaxis="y",hoverinfo="skip",customdata=paste("ExpAx",j,sep=""),
-                  visible=visible)
+    for (j in 1:p) {
+      p_ly <- p_ly |>
+        add_trace(
+          x = Dens[, 2 * j - 1],
+          y = Dens[, 2 * j],
+          mode = "lines",
+          type = "scatter",
+          line = list(dash = "dot", color = Col[index_color], width = 0.95),
+          legendgroup = unique(group)[i],
+          showlegend = FALSE,
+          name = unique(group)[i],
+          meta = 'density',
+          xaxis = "x",
+          yaxis = "y",
+          hoverinfo = "skip",
+          customdata = paste("ExpAx", j, sep = ""),
+          visible = visible
+        )
     }
   }
 
-
-  return(p_ly)
-
-
+  return(list(p_ly = p_ly, m = m, shift = shift))
 }
 
 
@@ -876,19 +1062,23 @@ add_TDA<-function(z.axes,x,p_ly=NULL,Z,group,Col){
 #'
 #' @return vector indicating quadrants
 #' @noRd
-get_quads_axes<-function(z.axes){
-  quads<-numeric(length(z.axes))
-  for(i in 1:length(z.axes)){
-    max_entry<-which(z.axes[[i]][,3]==max(z.axes[[i]][,3]))
-    m<-z.axes[[i]][max_entry,2]/z.axes[[i]][max_entry,1]
-    if((m>0) && (z.axes[[i]][max_entry,1]>0))
-      quads[i]<-1
-    if (m>0 && (z.axes[[i]][max_entry,1]<0))
-      quads[i]<-3
-    if(m<0 && (z.axes[[i]][max_entry,1]<0))
-      quads[i]<-2
-    if(m<0 && (z.axes[[i]][max_entry,1]>0))
-      quads[i]<-4
+get_quads_axes <- function(z.axes) {
+  quads <- numeric(length(z.axes))
+  for (i in 1:length(z.axes)) {
+    max_entry <- which(z.axes[[i]][, 3] == max(z.axes[[i]][, 3]))
+    m <- z.axes[[i]][max_entry, 2] / z.axes[[i]][max_entry, 1]
+    if ((m > 0) && (z.axes[[i]][max_entry, 1] > 0)) {
+      quads[i] <- 1
+    }
+    if (m > 0 && (z.axes[[i]][max_entry, 1] < 0)) {
+      quads[i] <- 3
+    }
+    if (m < 0 && (z.axes[[i]][max_entry, 1] < 0)) {
+      quads[i] <- 2
+    }
+    if (m < 0 && (z.axes[[i]][max_entry, 1] > 0)) {
+      quads[i] <- 4
+    }
   }
   return(quads)
 }
@@ -901,47 +1091,49 @@ get_quads_axes<-function(z.axes){
 #'
 #' @return trimmed z.axes
 #' @noRd
-shorten_axes<-function(z.axes,ellip){
+shorten_axes <- function(z.axes, ellip) {
   #first need to construct rotation matrix to determine upper and lower bounds
   #of each line segment
-  p<-length(z.axes)
-  ticks<-rep(8,p)
+  p <- length(z.axes)
+  ticks <- rep(8, p)
   #need to use the gradient vector
-  gradient<-lapply(z.axes,FUN=function(x){
-    return(x[1,2]/x[1,1])
+  gradient <- lapply(z.axes, FUN = function(x) {
+    return(x[1, 2] / x[1, 1])
   })
-  thetas<-atan(Reduce(c,gradient))
-  RotMatrix<-RotationConstructor(thetas)
-  RotatedElip<-ellip%*%RotMatrix
+  thetas <- atan(Reduce(c, gradient))
+  RotMatrix <- RotationConstructor(thetas)
+  RotatedElip <- ellip %*% RotMatrix
 
   #now need to find min and max value of each x-coordinate
-  Ranges<-matrix(nrow=2,ncol=2)
-  axes<-list()
-  for(i in 1:p){
-    eliptest<-ellip%*%RotationConstructor(thetas[i])
-    x_min<-min(eliptest[,1])
-    x_max<-max(eliptest[,1])
-    lilmat<-rbind(c(x_min,0),c(x_max,0))
-    zhatters<-lilmat%*%RotationConstructor(-thetas[i])
-    Ranges[1,]<-c(min(RotatedElip[,2*i-1]),0)
-    Ranges[2,]<-c(max(RotatedElip[,2*i-1]),0)
-    Z_ranges<-Ranges%*%RotationConstructor(-thetas[i])
-    Zhats<-obtain_zhat(Z_ranges,z.axes[[i]])
+  Ranges <- matrix(nrow = 2, ncol = 2)
+  axes <- list()
+  for (i in 1:p) {
+    eliptest <- ellip %*% RotationConstructor(thetas[i])
+    x_min <- min(eliptest[, 1])
+    x_max <- max(eliptest[, 1])
+    lilmat <- rbind(c(x_min, 0), c(x_max, 0))
+    zhatters <- lilmat %*% RotationConstructor(-thetas[i])
+    Ranges[1, ] <- c(min(RotatedElip[, 2 * i - 1]), 0)
+    Ranges[2, ] <- c(max(RotatedElip[, 2 * i - 1]), 0)
+    Z_ranges <- Ranges %*% RotationConstructor(-thetas[i])
+    Zhats <- obtain_zhat(Z_ranges, z.axes[[i]])
     #okay get a pretty sequence of tickmarks and make sure lies on axis
-    interval<-pretty(Zhats,n=ticks[i])
-    ticks_x<-interpolate(interval,Ranges[,1],Zhats)
-    ticks_coors<-cbind(ticks_x,rep(0,length(ticks_x)))
+    interval <- pretty(Zhats, n = ticks[i])
+    ticks_x <- interpolate(interval, Ranges[, 1], Zhats)
+    ticks_coors <- cbind(ticks_x, rep(0, length(ticks_x)))
     #hos tokkelos rotate them back
 
-    if(Zhats[2]-Zhats[1]<0)
+    if (Zhats[2] - Zhats[1] < 0) {
       #need to reverse ordering cause pretty only ascending
-      interval<- interval[order(interval,decreasing = TRUE)]
-    axes[[i]]<-cbind(ticks_coors%*%RotationConstructor(-thetas[i]),interval)
-
+      interval <- interval[order(interval, decreasing = TRUE)]
+    }
+    axes[[i]] <- cbind(
+      ticks_coors %*% RotationConstructor(-thetas[i]),
+      interval
+    )
   }
   return(axes)
 }
-
 
 
 #' Linearly interpolate between tickmarks
@@ -951,17 +1143,19 @@ shorten_axes<-function(z.axes,ellip){
 #'
 #' @return Vector containing tickmarks
 #' @noRd
-obtain_zhat<-function(Z_ranges,z.axis){
+obtain_zhat <- function(Z_ranges, z.axis) {
   #simply going to linearly interpolate the two endpoints
   #can do so by projecting coorindates with their ticks on x-axis
 
-  Z_hat1<-(Z_ranges[1,1]-z.axis[1,1])/(z.axis[nrow(z.axis),1]-z.axis[1,1])
-  Z_hat1<-Z_hat1 * (z.axis[nrow(z.axis),3]-z.axis[1,3])+z.axis[1,3]
+  Z_hat1 <- (Z_ranges[1, 1] - z.axis[1, 1]) /
+    (z.axis[nrow(z.axis), 1] - z.axis[1, 1])
+  Z_hat1 <- Z_hat1 * (z.axis[nrow(z.axis), 3] - z.axis[1, 3]) + z.axis[1, 3]
 
-  Z_hat2<-(Z_ranges[2,1]-z.axis[1,1])/(z.axis[nrow(z.axis),1]-z.axis[1,1])
-  Z_hat2<-Z_hat2 * (z.axis[nrow(z.axis),3]-z.axis[1,3])+z.axis[1,3]
+  Z_hat2 <- (Z_ranges[2, 1] - z.axis[1, 1]) /
+    (z.axis[nrow(z.axis), 1] - z.axis[1, 1])
+  Z_hat2 <- Z_hat2 * (z.axis[nrow(z.axis), 3] - z.axis[1, 3]) + z.axis[1, 3]
 
-  return(c(Z_hat1,Z_hat2))
+  return(c(Z_hat1, Z_hat2))
 }
 
 #' Test if the current biplot is a correlation biplot
@@ -970,14 +1164,13 @@ obtain_zhat<-function(Z_ranges,z.axis){
 #'
 #' @return True or False
 #' @noRd
-is_correlation<-function(x){
-  basis<-x$e.vects
-  new_x<-biplotEZ::biplot(x$raw.X,scaled = x$scaled,center = x$center)|>
-    biplotEZ::PCA(e.vects=basis)
+is_correlation <- function(x) {
+  basis <- x$e.vects
+  new_x <- biplotEZ::biplot(x$raw.X, scaled = x$scaled, center = x$center) |>
+    biplotEZ::PCA(e.vects = basis)
   #test in the ax.one.unit if they are the same
-  diff<-sum(x$ax.one.unit-new_x$ax.one.unit)
-  return(diff!=0)
-
+  diff <- sum(x$ax.one.unit - new_x$ax.one.unit)
+  return(diff != 0)
 }
 
 #' Calculate the quality of fit for a PC biplot
@@ -987,16 +1180,24 @@ is_correlation<-function(x){
 #'
 #' @return Character vector
 #' @noRd
-fit_quality<-function(eigval,basis){
-  fit.quality <- paste0("Quality of display = ",
-                        round(
-                          ((eigval[basis[1]]+eigval[basis[2]])/sum(eigval))*100,
-                          digits = 2),
-                        "%", " = ", round((eigval[basis[1]]/sum(eigval)) * 100,
-                                          digits = 2),
-                        "% (PC",basis[1],") + ",
-                        round((eigval[basis[2]]/sum(eigval)) * 100, digits = 2),
-                        "% (PC",basis[2],")")
+fit_quality <- function(eigval, basis) {
+  fit.quality <- paste0(
+    "Quality of display = ",
+    round(
+      ((eigval[basis[1]] + eigval[basis[2]]) / sum(eigval)) * 100,
+      digits = 2
+    ),
+    "%",
+    " = ",
+    round((eigval[basis[1]] / sum(eigval)) * 100, digits = 2),
+    "% (PC",
+    basis[1],
+    ") + ",
+    round((eigval[basis[2]] / sum(eigval)) * 100, digits = 2),
+    "% (PC",
+    basis[2],
+    ")"
+  )
   return(fit.quality)
 }
 
@@ -1006,15 +1207,22 @@ fit_quality<-function(eigval,basis){
 #'
 #' @return matrix n x p containing predicted values
 #' @noRd
-obtain_xhat<-function(x){
-  if (!is.null(x$Lmat))
-    if (nrow(x$Lmat) == ncol(x$Lmat))
-      Xhat <- x$Z %*% solve(x$Lmat)[x$e.vects,]
-  else Xhat <- x$X
-  else
+obtain_xhat <- function(x) {
+  if (!is.null(x$Lmat)) {
+    if (nrow(x$Lmat) == ncol(x$Lmat)) {
+      Xhat <- x$Z %*% solve(x$Lmat)[x$e.vects, ]
+    } else {
+      Xhat <- x$X
+    }
+  } else {
     Xhat <- x$X
-  if (x$scaled) Xhat <- scale(Xhat, center=FALSE, scale=1/x$sd)
-  if (x$center) Xhat <- scale(Xhat, center=-1*x$means, scale=FALSE)
+  }
+  if (x$scaled) {
+    Xhat <- scale(Xhat, center = FALSE, scale = 1 / x$sd)
+  }
+  if (x$center) {
+    Xhat <- scale(Xhat, center = -1 * x$means, scale = FALSE)
+  }
   return(Xhat)
 }
 
@@ -1024,8 +1232,10 @@ obtain_xhat<-function(x){
 #' @param p_ly plotly graph
 #'
 #' @noRd
-insert_spline_js<-function(p_ly,p){
-  p_ly<- p_ly|> htmlwidgets::onRender("
+insert_spline_js <- function(p_ly, p) {
+  p_ly <- p_ly |>
+    htmlwidgets::onRender(
+      "
 
      function(el,x,data) {
         console.log(el);
@@ -1136,7 +1346,9 @@ insert_spline_js<-function(p_ly,p){
 
 }
 
-   ",data=list(p=p))
+   ",
+      data = list(p = p)
+    )
 
   return(p_ly)
 }
@@ -1149,8 +1361,10 @@ insert_spline_js<-function(p_ly,p){
 #' @param m gradient of axes
 #'
 #' @noRd
-insert_linear_js<-function(p_ly,Xhat,p,m,cols){
-  p_ly<- p_ly|> htmlwidgets::onRender("
+insert_linear_js <- function(p_ly, Xhat, p, m, cols) {
+  p_ly <- p_ly |>
+    htmlwidgets::onRender(
+      "
 
      function(el,x,data) {
 
@@ -1695,9 +1909,10 @@ insert_linear_js<-function(p_ly,Xhat,p,m,cols){
 
 }
 
-   ",data=list(m=m,Xhat=Xhat,p=p,cols=cols))
+   ",
+      data = list(m = m, Xhat = Xhat, p = p, cols = cols)
+    )
 }
-
 
 
 #' Get gradients at each point
@@ -1705,10 +1920,11 @@ insert_linear_js<-function(p_ly,Xhat,p,m,cols){
 #' @param z z axes coordinates
 #'
 #' @noRd
-get_gradients<-function(z){
-  p<-nrow(z)
-  m<-(z[2:(p-1)+1,2]-z[2:(p-1)-1,2])/(z[2:(p-1)+1,1]-z[2:(p-1)-1,1])
-  m<-c(NA,m,NA)
+get_gradients <- function(z) {
+  p <- nrow(z)
+  m <- (z[2:(p - 1) + 1, 2] - z[2:(p - 1) - 1, 2]) /
+    (z[2:(p - 1) + 1, 1] - z[2:(p - 1) - 1, 1])
+  m <- c(NA, m, NA)
   return(m)
 }
 
@@ -1721,70 +1937,109 @@ get_gradients<-function(z){
 #'
 #' @return list containing plotly object, and vector of gradients
 #' @noRd
-insert_linear_axes<-function(z.axes,x,p_ly){
-  p<-x$p
-  radius<-max(abs(x$Z))*1.2
-  theta<-seq(0,2*pi,length.out=200)
-  elipcoords<-cbind(radius*cos(theta),radius*sin(theta))
-  z.axes<-check_inside_circle(z.axes,radius,NULL)
-  grads<-numeric()
-  for(i in 1:p){
-    AxName<-paste("<b>",colnames(x$X)[i],"</b>")
-    endp<-z.axes[[i]][which.max(z.axes[[i]][,3]),1:2]
-    pos<-"right"
-    m<-(z.axes[[i]][2,2]-z.axes[[i]][1,2])/(z.axes[[i]][2,1]-z.axes[[i]][1,1])
-    grads[i]<-m
-    angle<-atan(m)
-    if(endp[1]<0){
-      pos<-"left"
-      angle<-angle-pi
+insert_linear_axes <- function(z.axes, x, p_ly) {
+  p <- x$p
+  radius <- max(abs(x$Z)) * 1.2
+  theta <- seq(0, 2 * pi, length.out = 200)
+  elipcoords <- cbind(radius * cos(theta), radius * sin(theta))
+  z.axes <- check_inside_circle(z.axes, radius, NULL)
+  grads <- numeric()
+  for (i in 1:p) {
+    AxName <- paste("<b>", colnames(x$X)[i], "</b>")
+    endp <- z.axes[[i]][which.max(z.axes[[i]][, 3]), 1:2]
+    pos <- "right"
+    m <- (z.axes[[i]][2, 2] - z.axes[[i]][1, 2]) /
+      (z.axes[[i]][2, 1] - z.axes[[i]][1, 1])
+    grads[i] <- m
+    angle <- atan(m)
+    if (endp[1] < 0) {
+      pos <- "left"
+      angle <- angle - pi
     }
-    mat<-t(rbind(c(radius*cos(atan(m)),radius*cos(atan(m)-pi)),
-               c(radius*sin(atan(m)),radius*sin(atan(m)-pi))))
-    zhats<-obtain_zhat(mat,z.axes[[i]])
-    titles<-c("<b>Axes</b>",rep("",p-1))
-    p_ly<-p_ly |>
-      add_trace(x=c(radius*cos(atan(m)),radius*cos(atan(m)-pi)),
-                y=c(radius*sin(atan(m)),radius*sin(atan(m)-pi)),
-                type="scatter",
-                mode="lines",line = list(color = x$axes$col[i],
-                                         width=1,simplify=FALSE),
-                name=colnames(x$X)[i],legendgroup=paste("Ax",i,sep=""),
-                meta='axis',xaxis="x",yaxis="y",customdata=zhats,
-                visible=TRUE,hoverinfo="name",
-                legendgrouptitle=list(text=titles[i]))|>
+    mat <- t(rbind(
+      c(radius * cos(atan(m)), radius * cos(atan(m) - pi)),
+      c(radius * sin(atan(m)), radius * sin(atan(m) - pi))
+    ))
+    zhats <- obtain_zhat(mat, z.axes[[i]])
+    titles <- c("<b>Axes</b>", rep("", p - 1))
+    p_ly <- p_ly |>
+      add_trace(
+        x = c(radius * cos(atan(m)), radius * cos(atan(m) - pi)),
+        y = c(radius * sin(atan(m)), radius * sin(atan(m) - pi)),
+        type = "scatter",
+        mode = "lines",
+        line = list(color = x$axes$col[i], width = 1, simplify = FALSE),
+        name = colnames(x$X)[i],
+        legendgroup = paste("Ax", i, sep = ""),
+        meta = 'axis',
+        xaxis = "x",
+        yaxis = "y",
+        customdata = zhats,
+        visible = TRUE,
+        hoverinfo = "name",
+        legendgrouptitle = list(text = titles[i])
+      ) |>
 
-      add_annotations(x=z.axes[[i]][,1],y=z.axes[[i]][,2],
-                      text=as.character(z.axes[[i]][,3]),
-                      showarrow=FALSE,textangle=-atan(m)*180/pi,
-                      visible=TRUE,yshift=-12*cos(atan(m)),
-                      xshift=12*sin(atan(m)),meta='Ax',
-                      xaxis="x",yaxis="y",customdata=i,
-                      font=list(size=10,color=x$axes$tick.label.col[i]))|>
-      add_annotations(x=z.axes[[i]][,1],y=z.axes[[i]][,2],
-                      text="&#124;",
-                      showarrow=FALSE,textangle=-atan(m)*180/pi,
-                      visible=TRUE,meta='Ax',
-                      xaxis="x",yaxis="y",customdata=i,
-                      font=list(size=8,color=x$axes$tick.col[i]))|>
-      add_trace(x=radius*cos(angle),y=radius*sin(angle),
-                text=AxName,type="scatter",mode="text",textposition=pos,
-                legendgroup=paste("Ax",i,sep=""),showlegend=FALSE,
-                textfont=list(size=12,color="gray"),
-                meta='axis',xaxis="x",yaxis="y",visible=TRUE)
+      add_annotations(
+        x = z.axes[[i]][, 1],
+        y = z.axes[[i]][, 2],
+        text = as.character(z.axes[[i]][, 3]),
+        showarrow = FALSE,
+        textangle = -atan(m) * 180 / pi,
+        visible = TRUE,
+        yshift = -12 * cos(atan(m)),
+        xshift = 12 * sin(atan(m)),
+        meta = 'Ax',
+        xaxis = "x",
+        yaxis = "y",
+        customdata = i,
+        font = list(size = 10, color = x$axes$tick.label.col[i])
+      ) |>
+      add_annotations(
+        x = z.axes[[i]][, 1],
+        y = z.axes[[i]][, 2],
+        text = "&#124;",
+        showarrow = FALSE,
+        textangle = -atan(m) * 180 / pi,
+        visible = TRUE,
+        meta = 'Ax',
+        xaxis = "x",
+        yaxis = "y",
+        customdata = i,
+        font = list(size = 8, color = x$axes$tick.col[i])
+      ) |>
+      add_trace(
+        x = radius * cos(angle),
+        y = radius * sin(angle),
+        text = AxName,
+        type = "scatter",
+        mode = "text",
+        textposition = pos,
+        legendgroup = paste("Ax", i, sep = ""),
+        showlegend = FALSE,
+        textfont = list(size = 12, color = "gray"),
+        meta = 'axis',
+        xaxis = "x",
+        yaxis = "y",
+        visible = TRUE
+      )
   }
 
+  p_ly <- p_ly |>
+    add_trace(
+      x = elipcoords[, 1],
+      y = elipcoords[, 2],
+      type = "scatter",
+      mode = "lines",
+      line = list(color = 'green', width = 0.6),
+      name = "OuterCircle",
+      showlegend = F,
+      meta = 'OuterCircle',
+      xaxis = "x",
+      yaxis = "y",
+      visible = TRUE,
+      hoverinfo = "none"
+    )
 
-  p_ly<-p_ly|> add_trace(x=elipcoords[,1],y=elipcoords[,2], type="scatter",
-                         mode="lines",line = list(color = 'green',width=0.6),
-                         name="OuterCircle",showlegend=F,
-                         meta='OuterCircle',xaxis="x",yaxis="y",
-                         visible=TRUE,hoverinfo="none")
-
-  return(list(p_ly,grads))
+  return(list(p_ly, grads))
 }
-
-
-
-
-

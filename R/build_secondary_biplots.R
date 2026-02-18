@@ -799,7 +799,7 @@ add_TDA_payload <- function(payload, z.axes, x, Z, group, Col, inflate = 1) {
   payload <- payload_add_traces(payload, traces)
   payload <- payload_add_layout(payload, list(annotations = annotations))
 
-  list(payload = payload, m = m, shift = shift, DensCoors = DensCoors)
+  list(payload = payload, m = m, shift = shift)
 }
 
 
@@ -913,7 +913,7 @@ insert_linear_axes_payload <- function(payload, z.axes, x) {
     }
 
     # ---- axis name text trace ----
-    print(AxName)
+
     traces[[length(traces) + 1]] <- list(
       x = list(radius * cos(angle)),
       y = list(radius * sin(angle)),
@@ -1016,7 +1016,7 @@ add_table_payload <- function(payload,
     type = "table",
     domain = list(x = domain_x, y = domain_y),
     header = list(
-      values = list("Variable", "Adequacy", "predictivity"),
+      values = list("Variable", "Adequacy", "Predictivity"),
       align  = "left"
     ),
     cells = list(
@@ -1028,5 +1028,45 @@ add_table_payload <- function(payload,
     visible = visible
   )
   payload$payload$fit_table <- list(table_trace)  # IMPORTANT: list-of-traces for Plotly.addTraces
+  payload
+}
+
+
+
+
+#' Add fit measures to the payload
+#'
+#' @param payload List containing data and layout attributes for a plotly graph
+#' @param x object of class biplot
+#' @param domain_x domain of the table
+#' @param domain_y range of the table
+#' @param visible Logical
+#'
+#' @return updated payload
+#' @noRd
+slider_control_payload <- function(payload,
+                              n_inside=11,
+                              n_outside=2) {
+
+  #vector of axis slopes; vector of intercept of equation
+  m<-payload$m
+  dist<-numeric(length(m))
+  for(i in 1:length(m)){
+    b<-payload$shift$ends[[i]][1,2]-m[i]*payload$shift$ends[[i]][1,1]
+    x_cross<--b/(1/m[i]+m[i])
+    y_cross<--1/m[i]*x_cross
+    dist[i]<-sign(x_cross)*sqrt(x_cross^2+y_cross^2)
+  }
+
+  radius<-max(abs(dist))
+  total_steps<-n_inside+n_outside
+  indiv_pos<-dist/radius
+
+  pos_shifted_slider<-round(indiv_pos*(n_inside-1)/2,0)
+  actual_pos<-pos_shifted_slider+(n_inside-1)/2+1+n_outside
+
+  step_size<-2*radius/n_inside
+
+  payload$payload$slider_info<-list("slider_pos"=actual_pos,"step_size"=step_size)
   payload
 }

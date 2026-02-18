@@ -43,7 +43,7 @@ bipl5_dependency <- function() {
 #'
 #' @return plotly graph with dependencies attached
 #' @noRd
-insert_linear_js_v1 <- function(p_ly, p, m, cols,payload,fm_payload){
+insert_linear_js_v1 <- function(p_ly, p, m, cols,payload,fm_payload,ax_slider=NULL){
 
   dep <- bipl5_dependency()
 
@@ -68,7 +68,8 @@ insert_linear_js_v1 <- function(p_ly, p, m, cols,payload,fm_payload){
     data = list(m=m, p=p,
                 cols=cols, class_mean_hover=FALSE,
                 payloads=payload,
-                fm_payload=fm_payload)
+                fm_payload=fm_payload,
+                ax_slider=ax_slider)
   )
 
   p_ly

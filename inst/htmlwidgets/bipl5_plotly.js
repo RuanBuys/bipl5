@@ -2,13 +2,8 @@
   window.bipl5Attach = function (el, x, data) {
     el.bipl5 = {
       clicked: false, //helps keep trac if an observation is clicked
-      unit_circle: 0,
-      active: 0,
       rel_but: [0, 0, 0, 0], //flags to keep track which buttons have been clicked
       is_visible: true,
-      selected: 0,
-      table_visible: 0,
-      table2_visible: 1,
       vect_visible: 0,
       but_names: ["PC", "AxisStats", "TransAxes", "vecload"]
     };
@@ -77,41 +72,83 @@
 
     function togglePC(d){
       // new selection
-        var newKey = d.button && (d.button.name || d.button.label);
+        const newKey = d.button && (d.button.name || d.button.label);
         if (!newKey) return;
 
         // ignore if user re-clicks same dropdown option
-        var oldKey = el.bipl5.currentPCKey || "PC 1 & 2";
+        const oldKey = el.bipl5.currentPCKey || "PC 1 & 2";
         if (newKey === oldKey) return;
         data.payloads = data.payloads || {};
 
-        // 1) Save CURRENT state into payloads[oldKey]
-        // (this is where "PC 1 & 2" gets created the first time)
+        // ---- A) capture CURRENT RHS (fit panel) state BEFORE we switch ----
+        const fitPanelActive =
+    !!(el.layout.updatemenus && el.layout.updatemenus[2] && el.layout.updatemenus[2].visible);
+
+        const fmKey = el.bipl5.currentFMKey || "Cum. Predictivity";
+        const showingSummary = fitPanelActive && (fmKey === "Summary Table");
+
+        // keep current RHS traces unless we are in the Summary Table corner case
+        const currentFitPanelTraces = deepClone(el.data.filter(isFitPanelTrace));
+
+
+        // ---- B) save CURRENT LHS (biplot) into payloads[oldKey]
         const prev = data.payloads[oldKey] || {};
+        const curBiplotTraces = deepClone(el.data.filter(tr => !isFitPanelTrace(tr)));
+
+
+        // Save CURRENT state into payloads[oldKey]
+        // (this is where "PC 1 & 2" gets created the first time)
+
 
         data.payloads[oldKey] = Object.assign({}, prev, {
-          trace_data: deepClone(el.data),
+          trace_data: curBiplotTraces,
           layout: deepClone(el.layout),
           bipl5: deepClone(el.bipl5)
         });
 
 
-
-        // 2) Load the NEW payload
-        var nextPayload = data.payloads[newKey];
+        // ----C) Load the NEW payload for LHS display
+        const nextPayload = data.payloads[newKey];
         if (!nextPayload) return; // nothing to switch to
-        el.bipl5=deepClone(nextPayload.bipl5);
-        var newTraces = deepClone(nextPayload.trace_data || []);
+
+        const next_bipl5=deepClone(nextPayload.bipl5);
+        next_bipl5.is_visible=deepClone(el.bipl5.is_visible);
+        next_bipl5.currentFMKey=deepClone(el.bipl5.currentFMKey || "Cum. Predictivity");
+        el.bipl5=next_bipl5;
+
+
+
+        const nextBiplotTraces = deepClone(nextPayload.trace_data || []);
+        // Build RHS traces to carry over
+        let nextFitPanelTraces = currentFitPanelTraces;
+
+        // Corner case: Summary Table must update when PC changes
+        if (showingSummary) {
+          const tableTraces = nextPayload.fit_table;
+          nextFitPanelTraces = deepClone(tableTraces);
+        }
+         // ---- D) merge layout: need to change title and button names
         var newLayout = Object.assign({}, el.layout || {});
         newLayout.annotations = deepClone((nextPayload.layout && nextPayload.layout.annotations) || []);
         newLayout.xaxis.title = deepClone((nextPayload.layout && nextPayload.layout.xaxis.title) || []);
         newLayout.xaxis.autorange=true;
         newLayout.yaxis.autorange=true;
+//        if(nextPayload.layout.updatemenus[0].buttons){
+//          console.log(nextPayload.layout.updatemenus[0].buttons)
+//          newLayout.updatemenus[0].buttons=deepClone(nextPayload.layout.updatemenus[0].buttons);
+//        } else {
+//          newLayout.updatemenus[0].buttons[1].label = "Translated Axes"
+//        }
+
+        // ---- E) one redraw ----
+        const newData = nextBiplotTraces.concat(nextFitPanelTraces);
+
         // 3) Switch the plot
-        Plotly.react(el, newTraces, newLayout);
+        Plotly.react(el, newData, newLayout);
 
         // 4) Update current key
         el.bipl5.currentPCKey = newKey;
+
     }
 
 
@@ -188,6 +225,84 @@
               });
     }
 
+function getButtonIndex(d) {
+  if (d && d.button && Number.isFinite(d.button._index)) return d.button._index;
+  if (d && d.menu && Number.isFinite(d.menu.active)) return d.menu.active;
+
+  const key = d.button && (d.button.name || d.button.label);
+  const btns = d.menu && d.menu.buttons;
+  if (!key || !Array.isArray(btns)) return -1;
+
+  for (let i = 0; i < btns.length; i++) {
+    const b = btns[i];
+    const k = b && (b.name || b.label);
+    if (k === key) return i;
+  }
+  return -1;
+}
+
+function ensureSliderInfo(payload, p, defaultActive) {
+  payload.slider_info = payload.slider_info || {};
+
+  const si = payload.slider_info;
+
+  if (!Array.isArray(si.slider_pos)) {
+    si.slider_pos = new Array(p).fill(defaultActive);
+  } else if (si.slider_pos.length !== p) {
+    const tmp = new Array(p).fill(defaultActive);
+    for (let i = 0; i < Math.min(p, si.slider_pos.length); i++) tmp[i] = si.slider_pos[i];
+    si.slider_pos = tmp;
+  }
+
+  if (!Number.isFinite(si.slider_axis_idx)) {
+    si.slider_axis_idx = 0;
+  }
+}
+
+function toggleSlider(d) {
+  const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+  data.payloads = data.payloads || {};
+  const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
+
+  const p = data.p;
+
+  const sliderActiveNow =
+    (el.layout.sliders && el.layout.sliders[0] && Number.isFinite(el.layout.sliders[0].active))
+      ? el.layout.sliders[0].active
+      : 0;
+
+  ensureSliderInfo(payload, p, sliderActiveNow);
+
+  const si = payload.slider_info;
+
+  // Selected axis name (button)
+  const axisName = d.button && (d.button.name || d.button.label);
+  if (!axisName) return false;
+
+  // Axis index in dropdown buttons (0-based)
+  const newAxisIdx = getButtonIndex(d);
+  if (newAxisIdx < 0 || newAxisIdx >= p) return false;
+
+  // 1) Save current slider step for previously selected axis
+  const oldAxisIdx = si.slider_axis_idx;
+  si.slider_pos[oldAxisIdx] = sliderActiveNow;
+
+  // 2) Switch selected axis
+  si.slider_axis_idx = newAxisIdx;
+
+  // 3) Load saved slider step for new axis
+  const nextActive = si.slider_pos[newAxisIdx];
+
+  // 4) Update slider UI
+  const relayoutPatch = {
+    "sliders[0].active": nextActive,
+    "sliders[0].currentvalue.prefix": `Axis: ${axisName}  `
+  };
+
+  return Plotly.relayout(el, relayoutPatch);
+}
+
+
     function hasMeta(tr, tag) {
       if (!tr) return false;
       const m = tr.meta;
@@ -214,6 +329,7 @@
 
         return false;
         } else {
+
           // hide: remove fitpanel traces from el.data yourself, then react
           const keep = el.data.filter(tr => !hasMeta(tr, "FitPanel"));
           const newLayout = Object.assign({}, el.layout, {
@@ -221,9 +337,11 @@
           });
           newLayout.updatemenus[2].visible=false;
           newLayout.yaxis3.zeroline=true;
+          newLayout.updatemenus[2].active=0;
 
           Plotly.react(el, keep, newLayout).then(() => {
           el.bipl5.is_visible = true;
+          el.bipl5.currentFMKey = "Cum. Predictivity";
         });
 
         return false;
@@ -240,6 +358,10 @@
         }
         if(d.menu.name==="Fit_toggle"){
           toggleFit(d);
+        }
+
+        if(d.menu.name==="Slider_toggle"){
+          toggleSlider(d);
         }
 
       }
@@ -628,7 +750,51 @@
       return false;
     });
 
-//-------------------Legend doubleclick pappa------------
+//-------------------Slider Change------------
+
+
+function unitNormalFromXY(x, y) {
+  const n = Math.min(x.length, y.length);
+  if (n < 2) return { nx: 0, ny: 0 };
+
+  const dx = x[n - 1] - x[0];
+  const dy = y[n - 1] - y[0];
+
+  const L = Math.hypot(dx, dy) || 1;
+  return { nx: -dy / L, ny: dx / L }; // rotate direction by +90°
+}
+
+    el.on("plotly_sliderchange", function(e) {
+      // Only do this when TransAxes is ON
+      const transOn = el.bipl5.rel_but[el.bipl5.but_names.indexOf("TransAxes")] === 1;
+      if (!transOn) return;
+
+      // current PC payload
+      const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+      data.payloads = data.payloads || {};
+      const payload = data.payloads[pcKey];
+      if (!payload || !payload.slider_info) return;
+
+      const si = payload.slider_info;
+
+      // which axis is selected in your axis dropdown?
+      const axisIdx0 = si.slider_axis_idx; // 0-based
+      if (!Number.isFinite(axisIdx0)) return;
+
+      const axisNum = axisIdx0 + 1;         // your annotations use customdata = 1..p
+      const axisKey = "ExpAx" + axisNum;    // your traces use legendgroup "ExpAx<i>"
+
+      const activeIdx = e && e.slider && Number.isFinite(e.slider.active) ? e.slider.active : null;
+      if (activeIdx == null) return;
+
+      // step size (distance per step)
+      const step = Number(si.step_size);
+      if (!Number.isFinite(step)) return;
+
+      // signed distance (negative left, positive right)
+      const dist = (activeIdx - e.previousActive) * step;
+
+    });
 
 //-------------------POINTS CLICK--------------
 

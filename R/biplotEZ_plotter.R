@@ -64,7 +64,15 @@ plot_bipl5.PCA<-function(x){
   fit.quality <- fit_quality(x$eigenvalues,x$e.vects)
 
   #build scaffolding ->biplotEZ helper
-  p_ly<-plot_scaffolding(fit.quality,x$e.vects,TRUE,TRUE,TRUE,TRUE)
+  p_ly<-plot_scaffolding(
+    fit.quality,
+    x$e.vects,
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    x_colnames = colnames(x$X)
+  )
 
   payl_13 <- payload_new()
   payl_13$fit_qual<-fit_quality(PC13$eigenvalues,PC13$e.vects)
@@ -155,7 +163,8 @@ plot_bipl5.PCA<-function(x){
   payl_23<-insert_vector_annots_payload(payl_23,temp23)
 
   #insert Translated Density Axes
-  p_ly<-add_TDA(z.axes,x,Z=x$Z,group=group,p_ly=p_ly,Col=color)
+  temp<-add_TDA(z.axes,x,Z=x$Z,group=group,p_ly=p_ly,Col=color)
+  p_ly<-temp$p_ly
   payl_13<-add_TDA_payload(payload=payl_13,
                            z.axes=z.axes13,
                            x=PC13,
@@ -169,8 +178,17 @@ plot_bipl5.PCA<-function(x){
                            group=group,
                            Col=color)
 
-  #finally we add the fit measure table to the payloads
+  #initialialise a hollow payload for PC1&2
   payl_12<-payload_new()
+  payl_12$m<-temp$m
+  payl_12$shift<-temp$shift
+
+  #next we add the slider controls to the payloads
+  payl_12<-slider_control_payload(payl_12,n_inside=11,n_outside=2)
+  payl_13<-slider_control_payload(payl_13,n_inside=11,n_outside=2)
+  payl_23<-slider_control_payload(payl_23,n_inside=11,n_outside=2)
+
+  #finally we add the fit measure table to the payloads
   payl_12<-add_table_payload(payl_12,x=x)
   payl_13<-add_table_payload(payl_13,x=PC13)
   payl_23<-add_table_payload(payl_23,x=PC23)
@@ -231,7 +249,15 @@ plot_bipl5.CVA<-function(x){
   ax.aes<-x$axes
 
   #build scaffolding
-  p_ly<-plot_scaffolding("",basis,FALSE,FALSE,FALSE,FALSE)
+  p_ly<-plot_scaffolding(
+    "",
+    basis,
+    FALSE,
+    FALSE,
+    FALSE,
+    FALSE,
+    x_colnames = colnames(x$X)
+  )
 
   #Insert any polygons to the plot
 
@@ -356,7 +382,15 @@ plot_bipl5.PCO<-function(x){
   z.axes<-biplotEZ::axes_coordinates(x)
 
   #build scaffolding
-  p_ly<-plot_scaffolding("",basis,FALSE,FALSE,FALSE,FALSE)
+  p_ly<-plot_scaffolding(
+    "",
+    basis,
+    FALSE,
+    FALSE,
+    FALSE,
+    FALSE,
+    x_colnames = colnames(x$X)
+  )
 
   #insert Z coordinates
   obj<-list(Z=Z,group=group,n=n,x=x$X)
@@ -435,7 +469,15 @@ plot_bipl5.PCO<-function(x){
      if (x$scaled) Xhat <- scale(Xhat, center=FALSE, scale=1/x$sd)
      if (x$center) Xhat <- scale(Xhat, center=-1*x$means, scale=FALSE)
     #build scaffolding
-    p_ly<-plot_scaffolding("",basis,FALSE,FALSE,FALSE,FALSE)
+    p_ly<-plot_scaffolding(
+      "",
+      basis,
+      FALSE,
+      FALSE,
+      FALSE,
+      FALSE,
+      x_colnames = colnames(x$X)
+    )
 
     #insert Z coordinates
     obj<-list(Z=Z,group=group,n=n,x=x$X)
@@ -451,5 +493,4 @@ plot_bipl5.PCO<-function(x){
     }
   return(p_ly)
 }
-
 
