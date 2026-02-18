@@ -320,7 +320,9 @@ function toggleSlider(d) {
         const newLayout = Object.assign({}, el.layout, {
           xaxis: Object.assign({}, el.layout.xaxis, { domain: [0, 0.5] })
         });
+
         newLayout.updatemenus[2].visible=true;
+        newLayout.sliders[0].len=0.5;
         newLayout.yaxis3.zeroline=true;
 
         Plotly.react(el, newData, newLayout).then(() => {
@@ -338,6 +340,7 @@ function toggleSlider(d) {
           newLayout.updatemenus[2].visible=false;
           newLayout.yaxis3.zeroline=true;
           newLayout.updatemenus[2].active=0;
+          newLayout.sliders[0].len=1;
 
           Plotly.react(el, keep, newLayout).then(() => {
           el.bipl5.is_visible = true;
@@ -404,6 +407,8 @@ function toggleSlider(d) {
               el.layout.annotations[i].visible = true;
             }
           }
+          el.layout.sliders[0].visible=true;
+          el.layout.updatemenus[3].visible=true;
           //searchAnnot("vecload",false);
           el.bipl5.ax_hide = ax_hide;
           el.bipl5.exp_ax_hide = exp_ax_hide;
@@ -444,6 +449,10 @@ function toggleSlider(d) {
               el.layout.annotations[i].visible = true;
             }
           }
+
+          el.layout.sliders[0].visible=false;
+          el.layout.updatemenus[3].visible=false;
+
           searchAnnot('vecload', false);
 
           var exp_ax_update = {

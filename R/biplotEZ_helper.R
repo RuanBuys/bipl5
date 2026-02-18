@@ -175,7 +175,7 @@ plot_scaffolding <- function(
         ),
         list(
           type = "dropdown",
-          visible = TRUE,
+          visible = FALSE,
           x = 0,
           y = 0,
           xanchor = "right",
@@ -193,7 +193,8 @@ plot_scaffolding <- function(
           y = -0.15,
           xanchor = "left",
           yanchor = "bottom",
-          steps = slider_steps
+          steps = slider_steps,
+          visible=FALSE
         )
       )
     )
