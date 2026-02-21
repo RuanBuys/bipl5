@@ -15,7 +15,7 @@ plot_scaffolding <- function(
   ax_pred = TRUE,
   TDA = TRUE,
   vec_dis = TRUE,
-  n = 14,
+  n = 21,
   x_colnames = character(0)
 ) {
   Title <- "Overall quality and axis predictivities (cumulative)"

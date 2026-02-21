@@ -1045,8 +1045,8 @@ add_table_payload <- function(payload,
 #' @return updated payload
 #' @noRd
 slider_control_payload <- function(payload,
-                              n_inside=11,
-                              n_outside=2) {
+                              n_inside=17,
+                              n_outside=4) {
 
   #vector of axis slopes; vector of intercept of equation
   m<-payload$m
@@ -1058,12 +1058,21 @@ slider_control_payload <- function(payload,
     dist[i]<-sign(x_cross)*sqrt(x_cross^2+y_cross^2)
   }
 
+
+  print(dist)
   radius<-max(abs(dist))
   total_steps<-n_inside+n_outside
   indiv_pos<-dist/radius
+  print(radius)
+
 
   pos_shifted_slider<-round(indiv_pos*(n_inside-1)/2,0)
-  actual_pos<-pos_shifted_slider+(n_inside-1)/2+1+n_outside
+
+  print(pos_shifted_slider)
+
+  actual_pos<-pos_shifted_slider+(n_inside-1)/2+1+n_outside/2 -1 # we minus 1 for javascript
+
+  print(actual_pos)
 
   step_size<-2*radius/n_inside
 

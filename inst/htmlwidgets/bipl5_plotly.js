@@ -5,7 +5,9 @@
       rel_but: [0, 0, 0, 0], //flags to keep track which buttons have been clicked
       is_visible: true,
       vect_visible: 0,
-      but_names: ["PC", "AxisStats", "TransAxes", "vecload"]
+      but_names: ["PC", "AxisStats", "TransAxes", "vecload"],
+      currentPCKey: "PC 1 & 2",
+      currentFMKey: "Cum. Predictivity"
     };
 
 
@@ -67,8 +69,7 @@
       return JSON.parse(JSON.stringify(obj));
     }
 
-    el.bipl5 = el.bipl5 || {};
-    el.bipl5.currentPCKey = el.bipl5.currentPCKey || "PC 1 & 2";
+
 
     function togglePC(d){
       // new selection

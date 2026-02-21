@@ -184,9 +184,9 @@ plot_bipl5.PCA<-function(x){
   payl_12$shift<-temp$shift
 
   #next we add the slider controls to the payloads
-  payl_12<-slider_control_payload(payl_12,n_inside=11,n_outside=2)
-  payl_13<-slider_control_payload(payl_13,n_inside=11,n_outside=2)
-  payl_23<-slider_control_payload(payl_23,n_inside=11,n_outside=2)
+  payl_12<-slider_control_payload(payl_12,n_inside=17,n_outside=4)
+  payl_13<-slider_control_payload(payl_13,n_inside=17,n_outside=4)
+  payl_23<-slider_control_payload(payl_23,n_inside=17,n_outside=4)
 
   #finally we add the fit measure table to the payloads
   payl_12<-add_table_payload(payl_12,x=x)
