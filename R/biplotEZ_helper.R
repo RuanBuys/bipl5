@@ -87,8 +87,8 @@ plot_scaffolding <- function(
           y = 0.8,
           type = "buttons",
           x = 0,
-          showactive = F,
-          active = c(0, 1),
+          showactive = TRUE,
+          active = -1,
           buttons = list(
             list(
               method = "skip",
@@ -112,6 +112,14 @@ plot_scaffolding <- function(
               label = "Vector Display",
               name = "vecload",
               visible = vec_dis,
+              execute = FALSE
+            ),
+            list(
+              method = "skip",
+              args = list("type", "scatter"),
+              label = "Edit: Axes",
+              name = "EditAxes",
+              visible = FALSE,
               execute = FALSE
             )
           )
@@ -188,13 +196,12 @@ plot_scaffolding <- function(
       sliders = list(
         list(
           currentvalue = list(prefix = "Axis 1"),
-          active = 6,
           x = 0.0,
           y = -0.15,
           xanchor = "left",
           yanchor = "bottom",
           steps = slider_steps,
-          visible=FALSE
+          visible = FALSE
         )
       )
     )

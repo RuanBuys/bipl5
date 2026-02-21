@@ -73,8 +73,8 @@ plot_scaffolding_payload <- function(payload, dpquality, basis,
         y = 0.8,
         type = "buttons",
         x = 0,
-        showactive = FALSE,
-        active = c(0, 1),
+        showactive = TRUE,
+        active = -1,
         buttons = list(
           list(
             method = "skip",
@@ -98,6 +98,14 @@ plot_scaffolding_payload <- function(payload, dpquality, basis,
             label = "Vector Display",
             name = "vecload",
             visible = vec_dis,
+            execute = FALSE
+          ),
+          list(
+            method = "skip",
+            args = list("type", "scatter"),
+            label = "Edit: Axes",
+            name = "EditAxes",
+            visible = FALSE,
             execute = FALSE
           )
         )

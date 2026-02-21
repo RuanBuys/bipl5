@@ -2,10 +2,10 @@
   window.bipl5Attach = function (el, x, data) {
     el.bipl5 = {
       clicked: false, //helps keep trac if an observation is clicked
-      rel_but: [0, 0, 0, 0], //flags to keep track which buttons have been clicked
+      rel_but: [0, 0, 0, 0, 0], // includes EditAxes toggle state
       is_visible: true,
       vect_visible: 0,
-      but_names: ["PC", "AxisStats", "TransAxes", "vecload"],
+      but_names: ["PC", "AxisStats", "TransAxes", "vecload", "EditAxes"], // top-row button ids
       currentPCKey: "PC 1 & 2",
       currentFMKey: "Cum. Predictivity"
     };
@@ -16,6 +16,13 @@
 
     });
 
+    /**
+     * Extracts the primary meta tag from a trace/annotation-like object.
+     * Supports both string `meta` and array `meta` formats.
+     *
+     * @param {Object} tr - Plotly trace or annotation object.
+     * @returns {string|null} The first/only meta tag, or null when unavailable.
+     */
     function metaTag(tr) {
       if (Array.isArray(tr.meta)) return tr.meta[0];
       if (typeof tr.meta === "string") return tr.meta;
@@ -69,6 +76,121 @@
       return JSON.parse(JSON.stringify(obj));
     }
 
+    function normalizeBipl5State(state) {
+      // Keep backward compatibility with payloads saved before EditAxes existed.
+      const out = (state && typeof state === "object") ? state : {};
+      const fallbackNames = ["PC", "AxisStats", "TransAxes", "vecload", "EditAxes"];
+      const names = Array.isArray(out.but_names) ? out.but_names.slice() : fallbackNames.slice();
+
+      if (!names.includes("EditAxes")) names.push("EditAxes");
+
+      const rel = Array.isArray(out.rel_but) ? out.rel_but.slice() : [];
+      while (rel.length < names.length) rel.push(0);
+
+      out.but_names = names;
+      out.rel_but = rel.slice(0, names.length);
+      return out;
+    }
+
+    function payloadHasExpAxes(payload) {
+      // Used to decide whether EditAxes can be shown for a payload.
+      const traces = payload && Array.isArray(payload.trace_data) ? payload.trace_data : [];
+      for (let i = 0; i < traces.length; i++) {
+        if (metaTag(traces[i]) === "ExpAx") return true;
+      }
+      return false;
+    }
+
+    function isSelectAxisButton(btn) {
+      // Placeholder entry shown before a real axis is selected.
+      const key = btn && (btn.name || btn.label);
+      return key === "Select Axis";
+    }
+
+    function selectAxisPromptButton() {
+      // Synthetic first option so dropdown caption reads "Select Axis".
+      return {
+        method: "skip",
+        args: ["type", "scatter"],
+        label: "Select Axis",
+        name: "Select Axis",
+        execute: false
+      };
+    }
+
+    function axisButtonsNoPromptFromLayout(layoutObj) {
+      // Strip placeholder; remaining entries are real axes only.
+      const buttons = deepClone(layoutObj?.updatemenus?.[3]?.buttons || []);
+      const stripped = buttons.filter(b => !isSelectAxisButton(b));
+      return stripped;
+    }
+
+    function axisButtonsWithPromptFromLayout(layoutObj) {
+      // Add placeholder back as first option for fresh edit sessions.
+      const stripped = axisButtonsNoPromptFromLayout(layoutObj);
+      return [selectAxisPromptButton()].concat(stripped);
+    }
+
+    function sliderMenuHasPrompt(layoutObj) {
+      // Detect whether dropdown currently includes "Select Axis" at index 0.
+      const buttons = layoutObj?.updatemenus?.[3]?.buttons;
+      if (!Array.isArray(buttons) || !buttons.length) return false;
+      return isSelectAxisButton(buttons[0]);
+    }
+
+    function sliderPrefixFromButtons(buttons, axisIdx) {
+      // Slider caption follows axis name from prompt-free axis list.
+      let axisName = `Axis ${axisIdx + 1}`;
+      if (Array.isArray(buttons) && buttons[axisIdx]) {
+        axisName = buttons[axisIdx].name || buttons[axisIdx].label || axisName;
+      }
+      return `Axis: ${axisName}  `;
+    }
+
+    function sliderPrefixFromLayout(layoutObj, axisIdx) {
+      // Keep slider label synced with the selected axis dropdown entry.
+      const buttons = axisButtonsNoPromptFromLayout(layoutObj);
+      return sliderPrefixFromButtons(buttons, axisIdx);
+    }
+
+    function syncPayloadSliderFromLayout(payload) {
+      // Persist current axis selection + current slider step to this payload.
+      const p = data.p;
+      const sliderActiveNow =
+        (el.layout.sliders && el.layout.sliders[0] && Number.isFinite(el.layout.sliders[0].active))
+          ? el.layout.sliders[0].active
+          : 0;
+
+      ensureSliderInfo(payload, p, sliderActiveNow);
+      const si = payload.slider_info;
+      si.axis_chosen = false;
+
+      // Only persist active axis choice when slider is visible (user selected an axis).
+      const sliderVisible =
+        !!(el.layout.sliders && el.layout.sliders[0] && el.layout.sliders[0].visible === true);
+      if (!sliderVisible) return;
+
+      let axisActiveNow =
+        (el.layout.updatemenus && el.layout.updatemenus[3] && Number.isFinite(el.layout.updatemenus[3].active))
+          ? el.layout.updatemenus[3].active
+          : si.slider_axis_idx;
+
+      if (sliderMenuHasPrompt(el.layout)) {
+        if (axisActiveNow <= 0) return;
+        axisActiveNow -= 1;
+      }
+
+      if (Number.isFinite(axisActiveNow) && axisActiveNow >= 0 && axisActiveNow < p) {
+        si.slider_axis_idx = axisActiveNow;
+        si.axis_chosen = true;
+      }
+
+      const idx = si.slider_axis_idx;
+      if (Number.isFinite(idx) && idx >= 0 && idx < p) {
+        si.slider_pos[idx] = sliderActiveNow;
+      }
+    }
+
 
 
     function togglePC(d){
@@ -94,6 +216,8 @@
 
         // ---- B) save CURRENT LHS (biplot) into payloads[oldKey]
         const prev = data.payloads[oldKey] || {};
+        // Save per-payload slider selection before leaving this PC view.
+        syncPayloadSliderFromLayout(prev);
         const curBiplotTraces = deepClone(el.data.filter(tr => !isFitPanelTrace(tr)));
 
 
@@ -112,7 +236,7 @@
         const nextPayload = data.payloads[newKey];
         if (!nextPayload) return; // nothing to switch to
 
-        const next_bipl5=deepClone(nextPayload.bipl5);
+        const next_bipl5=normalizeBipl5State(deepClone(nextPayload.bipl5));
         next_bipl5.is_visible=deepClone(el.bipl5.is_visible);
         next_bipl5.currentFMKey=deepClone(el.bipl5.currentFMKey || "Cum. Predictivity");
         el.bipl5=next_bipl5;
@@ -134,6 +258,42 @@
         newLayout.xaxis.title = deepClone((nextPayload.layout && nextPayload.layout.xaxis.title) || []);
         newLayout.xaxis.autorange=true;
         newLayout.yaxis.autorange=true;
+
+        // Restore per-payload slider axis + step selection in UI state.
+        const seedActive =
+          (nextPayload.slider_info && Array.isArray(nextPayload.slider_info.slider_pos) &&
+           Number.isFinite(nextPayload.slider_info.slider_pos[0]))
+            ? nextPayload.slider_info.slider_pos[0]
+            : 0;
+        ensureSliderInfo(nextPayload, data.p, seedActive);
+        const nextSI = nextPayload.slider_info;
+        let nextAxisIdx = Number(nextSI.slider_axis_idx);
+        if (!Number.isFinite(nextAxisIdx) || nextAxisIdx < 0 || nextAxisIdx >= data.p) nextAxisIdx = 0;
+        nextSI.slider_axis_idx = nextAxisIdx;
+        let nextSliderActive = Number(nextSI.slider_pos[nextAxisIdx]);
+        if (!Number.isFinite(nextSliderActive)) nextSliderActive = 0;
+        nextSI.slider_pos[nextAxisIdx] = nextSliderActive;
+        // Per-payload flag: false means keep prompt visible and slider hidden.
+        const nextAxisChosen = !!nextSI.axis_chosen;
+
+        const sliderButtons = nextAxisChosen
+          ? axisButtonsNoPromptFromLayout(newLayout)
+          : axisButtonsWithPromptFromLayout(newLayout);
+
+        if (newLayout.updatemenus && newLayout.updatemenus[3]) {
+          newLayout.updatemenus[3].buttons = sliderButtons;
+          newLayout.updatemenus[3].active = nextAxisChosen ? nextAxisIdx : 0;
+        }
+        if (newLayout.sliders && newLayout.sliders[0]) {
+          newLayout.sliders[0].active = nextSliderActive;
+          if (nextAxisChosen) {
+            newLayout.sliders[0].currentvalue = Object.assign(
+              {},
+              newLayout.sliders[0].currentvalue || {},
+              { prefix: sliderPrefixFromButtons(sliderButtons, nextAxisIdx) }
+            );
+          }
+        }
 //        if(nextPayload.layout.updatemenus[0].buttons){
 //          console.log(nextPayload.layout.updatemenus[0].buttons)
 //          newLayout.updatemenus[0].buttons=deepClone(nextPayload.layout.updatemenus[0].buttons);
@@ -144,11 +304,49 @@
         // ---- E) one redraw ----
         const newData = nextBiplotTraces.concat(nextFitPanelTraces);
 
-        // 3) Switch the plot
-        Plotly.react(el, newData, newLayout);
+        // 3) Switch the plot and then restore EditAxes visibility for the new payload state.
+        Plotly.react(el, newData, newLayout).then(() => {
+          // 4) Update current key
+          el.bipl5.currentPCKey = newKey;
 
-        // 4) Update current key
-        el.bipl5.currentPCKey = newKey;
+          const transIdx = el.bipl5.but_names.indexOf("TransAxes");
+          const editIdx = el.bipl5.but_names.indexOf("EditAxes");
+          const hasExpAxes = payloadHasExpAxes(nextPayload);
+          const transOn = transIdx >= 0 && el.bipl5.rel_but[transIdx] === 1;
+
+          // If translated axes are unavailable or not active in this payload,
+          // EditAxes must reset and remain hidden.
+          if (!hasExpAxes || !transOn) {
+            if (editIdx >= 0) el.bipl5.rel_but[editIdx] = 0;
+          }
+
+          const editOn = editIdx >= 0 && el.bipl5.rel_but[editIdx] === 1;
+          const editButtonVisible = hasExpAxes && transOn;
+
+          if (!editButtonVisible) {
+            setEditAxesUI({ editButtonVisible: false, dropdownVisible: false, sliderVisible: false, usePrompt: true });
+            return;
+          }
+
+          if (!editOn) {
+            setEditAxesUI({ editButtonVisible: true, dropdownVisible: false, sliderVisible: false, usePrompt: true });
+            return;
+          }
+
+          if (nextAxisChosen) {
+            setEditAxesUI({
+              editButtonVisible: true,
+              dropdownVisible: true,
+              sliderVisible: true,
+              usePrompt: false,
+              axisIdx: nextAxisIdx,
+              sliderActive: nextSliderActive
+            });
+            return;
+          }
+
+          setEditAxesUI({ editButtonVisible: true, dropdownVisible: true, sliderVisible: false, usePrompt: true });
+        });
 
     }
 
@@ -242,6 +440,15 @@ function getButtonIndex(d) {
   return -1;
 }
 
+/**
+ * Ensures payload-local slider state exists and has consistent dimensions.
+ * Initializes per-axis slider positions, selected axis index, and axis-chosen flag.
+ *
+ * @param {Object} payload - Payload object for the current PC view.
+ * @param {number} p - Number of available axes.
+ * @param {number} defaultActive - Default slider step index used for initialization.
+ * @returns {void}
+ */
 function ensureSliderInfo(payload, p, defaultActive) {
   payload.slider_info = payload.slider_info || {};
 
@@ -258,6 +465,89 @@ function ensureSliderInfo(payload, p, defaultActive) {
   if (!Number.isFinite(si.slider_axis_idx)) {
     si.slider_axis_idx = 0;
   }
+
+  if (typeof si.axis_chosen !== "boolean") {
+    // Tracks whether user chose a real axis (vs Select Axis prompt).
+    si.axis_chosen = false;
+  }
+}
+
+function topMenuButtonIndexByName(name) {
+  // Resolve dynamic index since button ordering can change with layout updates.
+  const btns = el?.layout?.updatemenus?.[0]?.buttons;
+  if (!Array.isArray(btns)) return -1;
+  for (let i = 0; i < btns.length; i++) {
+    const b = btns[i];
+    const k = b && (b.name || b.label);
+    if (k === name) return i;
+  }
+  return -1;
+}
+
+function isTraceVisibleForLegendState(tr) {
+  // In Plotly, `undefined` behaves like visible=true.
+  return !!tr && (tr.visible === true || tr.visible === undefined);
+}
+
+function findExpAxisTraceIndex(axisKey) {
+  for (let i = 0; i < el.data.length; i++) {
+    const tr = el.data[i];
+    if (metaTag(tr) === "ExpAx" && tr.legendgroup === axisKey) return i;
+  }
+  return -1;
+}
+
+function triggerLegendClickForAxisIfHidden(axisKey) {
+  // Reuse existing legend-click handler so axis trace + linked traces/annotations
+  // are restored exactly the same way as a user legend interaction.
+  const idx = findExpAxisTraceIndex(axisKey);
+  if (idx < 0) return false;
+  if (isTraceVisibleForLegendState(el.data[idx])) return false;
+
+  el.emit("plotly_legendclick", {
+    curveNumber: idx,
+    data: el.data,
+    event: { detail: 1 }
+  });
+  return true;
+}
+
+function setEditAxesUI(opts) {
+  // Single relayout patch for EditAxes button + axis dropdown + slider visibility.
+  const cfg = Object.assign({
+    editButtonVisible: false,
+    dropdownVisible: false,
+    sliderVisible: false,
+    usePrompt: true,
+    axisIdx: 0,
+    sliderActive: null
+  }, opts || {});
+
+  // Dropdown content switches between prompt+axes and axes-only modes.
+  const axisButtons = cfg.usePrompt
+    ? axisButtonsWithPromptFromLayout(el.layout)
+    : axisButtonsNoPromptFromLayout(el.layout);
+
+  const patch = {
+    "sliders[0].visible": cfg.sliderVisible,
+    "updatemenus[3].visible": cfg.dropdownVisible,
+    "updatemenus[3].buttons": axisButtons,
+    "updatemenus[3].active": cfg.usePrompt ? 0 : cfg.axisIdx
+  };
+
+  if (cfg.sliderVisible && Number.isFinite(cfg.sliderActive)) {
+    patch["sliders[0].active"] = cfg.sliderActive;
+  }
+  if (!cfg.usePrompt) {
+    patch["sliders[0].currentvalue.prefix"] = sliderPrefixFromButtons(axisButtons, cfg.axisIdx);
+  }
+
+  const editIdx = topMenuButtonIndexByName("EditAxes");
+  if (editIdx >= 0) {
+    patch[`updatemenus[0].buttons[${editIdx}].visible`] = cfg.editButtonVisible;
+    patch["updatemenus[0].active"] = (cfg.dropdownVisible || cfg.sliderVisible) ? editIdx : -1;
+  }
+  return Plotly.relayout(el, patch);
 }
 
 function toggleSlider(d) {
@@ -267,11 +557,13 @@ function toggleSlider(d) {
 
   const p = data.p;
 
-  const sliderActiveNow =
+  const sliderActiveRaw =
     (el.layout.sliders && el.layout.sliders[0] && Number.isFinite(el.layout.sliders[0].active))
       ? el.layout.sliders[0].active
-      : 0;
+      : null;
+  const sliderActiveNow = Number.isFinite(sliderActiveRaw) ? sliderActiveRaw : 0;
 
+  // Keep slider selection state isolated per payload (per PC view).
   ensureSliderInfo(payload, p, sliderActiveNow);
 
   const si = payload.slider_info;
@@ -280,24 +572,52 @@ function toggleSlider(d) {
   const axisName = d.button && (d.button.name || d.button.label);
   if (!axisName) return false;
 
-  // Axis index in dropdown buttons (0-based)
-  const newAxisIdx = getButtonIndex(d);
+  // Axis index in dropdown buttons (0-based, possibly offset by Select Axis prompt).
+  const rawIdx = getButtonIndex(d);
+  if (rawIdx < 0) return false;
+
+  const hasPrompt = sliderMenuHasPrompt(el.layout);
+  if (hasPrompt && rawIdx === 0) {
+    // "Select Axis" prompt clicked: keep slider hidden until a real axis is chosen.
+    si.axis_chosen = false;
+    return Plotly.relayout(el, { "sliders[0].visible": false, "updatemenus[3].active": 0 });
+  }
+
+  const newAxisIdx = hasPrompt ? rawIdx - 1 : rawIdx;
   if (newAxisIdx < 0 || newAxisIdx >= p) return false;
 
-  // 1) Save current slider step for previously selected axis
+  const axisKey = "ExpAx" + (newAxisIdx + 1);
+  triggerLegendClickForAxisIfHidden(axisKey);
+
+  // 1) Save current slider step for previously selected axis.
+  // Guard this so we do not overwrite axis 1 with 0 when slider.active is unset
+  // and no real axis has been selected yet.
   const oldAxisIdx = si.slider_axis_idx;
-  si.slider_pos[oldAxisIdx] = sliderActiveNow;
+  const sliderVisibleNow =
+    !!(el.layout.sliders && el.layout.sliders[0] && el.layout.sliders[0].visible === true);
+  if (si.axis_chosen && sliderVisibleNow &&
+      Number.isFinite(sliderActiveRaw) &&
+      Number.isFinite(oldAxisIdx) && oldAxisIdx >= 0 && oldAxisIdx < p) {
+    si.slider_pos[oldAxisIdx] = sliderActiveRaw;
+  }
 
   // 2) Switch selected axis
   si.slider_axis_idx = newAxisIdx;
+  // Once an axis is chosen, remove prompt and show slider.
+  si.axis_chosen = true;
 
   // 3) Load saved slider step for new axis
   const nextActive = si.slider_pos[newAxisIdx];
 
+  const axisButtons = axisButtonsNoPromptFromLayout(el.layout);
+
   // 4) Update slider UI
   const relayoutPatch = {
+    "updatemenus[3].buttons": axisButtons,
+    "updatemenus[3].active": newAxisIdx,
+    "sliders[0].visible": true,
     "sliders[0].active": nextActive,
-    "sliders[0].currentvalue.prefix": `Axis: ${axisName}  `
+    "sliders[0].currentvalue.prefix": sliderPrefixFromButtons(axisButtons, newAxisIdx)
   };
 
   return Plotly.relayout(el, relayoutPatch);
@@ -377,6 +697,44 @@ function toggleSlider(d) {
         return;
       }
 
+      if (d.button.name === "EditAxes") {
+        // Edit mode is only available while translated axes are active.
+        const transOn = el.bipl5.rel_but[el.bipl5.but_names.indexOf("TransAxes")] === 1;
+        const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+        data.payloads = data.payloads || {};
+        const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
+        const sliderActiveNow =
+          (el.layout.sliders && el.layout.sliders[0] && Number.isFinite(el.layout.sliders[0].active))
+            ? el.layout.sliders[0].active
+            : 0;
+        console.log(sliderActiveNow);
+        console.log(payload)
+        ensureSliderInfo(payload, data.p, sliderActiveNow);
+        const si = payload.slider_info;
+
+        if (!transOn) {
+          si.axis_chosen = false;
+          setEditAxesUI({ editButtonVisible: false, dropdownVisible: false, sliderVisible: false, usePrompt: true });
+          return;
+        }
+
+        if (rel_but_sel === 0) {
+          toggleButton(d.button.name);
+          // Enter edit mode: show dropdown prompt first; slider appears after axis selection.
+          si.axis_chosen = false;
+          setEditAxesUI({ editButtonVisible: true, dropdownVisible: true, sliderVisible: false, usePrompt: true });
+          return;
+        }
+
+        if (rel_but_sel === 1) {
+          toggleButton(d.button.name);
+          // Exit edit mode: hide controls and re-arm Select Axis prompt for next entry.
+          si.axis_chosen = false;
+          setEditAxesUI({ editButtonVisible: true, dropdownVisible: false, sliderVisible: false, usePrompt: true });
+          return;
+        }
+      }
+
       if (d.button.name === "TransAxes") {
         // that is need to swop between normal axes and translated ones
         //
@@ -408,8 +766,15 @@ function toggleSlider(d) {
               el.layout.annotations[i].visible = true;
             }
           }
-          el.layout.sliders[0].visible=true;
-          el.layout.updatemenus[3].visible=true;
+          const editBtnStateIdx = el.bipl5.but_names.indexOf("EditAxes");
+          if (editBtnStateIdx >= 0) el.bipl5.rel_but[editBtnStateIdx] = 0;
+          const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+          data.payloads = data.payloads || {};
+          const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
+          ensureSliderInfo(payload, data.p, 0);
+          payload.slider_info.axis_chosen = false;
+          // When TransAxes turns on: show EditAxes button, but keep controls hidden.
+          setEditAxesUI({ editButtonVisible: true, dropdownVisible: false, sliderVisible: false, usePrompt: true });
           //searchAnnot("vecload",false);
           el.bipl5.ax_hide = ax_hide;
           el.bipl5.exp_ax_hide = exp_ax_hide;
@@ -451,8 +816,15 @@ function toggleSlider(d) {
             }
           }
 
-          el.layout.sliders[0].visible=false;
-          el.layout.updatemenus[3].visible=false;
+          const editBtnStateIdx = el.bipl5.but_names.indexOf("EditAxes");
+          if (editBtnStateIdx >= 0) el.bipl5.rel_but[editBtnStateIdx] = 0;
+          const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+          data.payloads = data.payloads || {};
+          const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
+          ensureSliderInfo(payload, data.p, 0);
+          payload.slider_info.axis_chosen = false;
+          // When TransAxes turns off: hide EditAxes button and controls.
+          setEditAxesUI({ editButtonVisible: false, dropdownVisible: false, sliderVisible: false, usePrompt: true });
 
           searchAnnot('vecload', false);
 
@@ -616,11 +988,76 @@ function toggleSlider(d) {
       return m ? { axis: lg, num: Number(m[2]), type: m[1]} : null;
     }
 
+    /**
+     * Reads the axis reference key from trace `customdata`.
+     * Accepts both array form (e.g. ["ExpAx3"]) and string form ("ExpAx3").
+     *
+     * @param {Object} tr - Plotly trace object.
+     * @returns {string|null} Axis reference key (e.g. "ExpAx3"), or null when absent.
+     */
     function customAxisRef(tr) {
-      // you use: tr.customdata[0] === axis
-      // so guard for array-like customdata
-      if (!tr || !Array.isArray(tr.customdata)) return null;
-      return tr.customdata[0] ?? null;
+      // Density traces can reference an axis in two shapes depending on builder:
+      // - customdata: ["ExpAx3"]  (current payload style)
+      // - customdata: "ExpAx3"    (legacy style)
+      // This helper normalizes both to the same string key.
+      if (!tr) return null;
+      if (Array.isArray(tr.customdata)) return tr.customdata[0] ?? null;
+      if (typeof tr.customdata === "string") return tr.customdata;
+      return null;
+    }
+
+    /**
+     * Returns whether a trace is currently visible on the plot area.
+     * Treats both `false` and `"legendonly"` as hidden.
+     *
+     * @param {Object} tr - Plotly trace object.
+     * @returns {boolean} True when trace is rendered in the plot area.
+     */
+    function isTraceVisible(tr) {
+      if (!tr) return false;
+      return tr.visible !== false && tr.visible !== "legendonly";
+    }
+
+    /**
+     * Collects indices of density traces for one class/legend group.
+     * Optionally restricts results to densities linked to visible translated axes.
+     *
+     * @param {string} groupName - Density legend group (class name).
+     * @param {boolean} visibleAxesOnly - If true, include only densities on visible ExpAx traces.
+     * @returns {number[]} Trace indices to update together.
+     */
+    function densityIndicesForGroup(groupName, visibleAxesOnly) {
+      if (typeof groupName !== "string" || !groupName.length) return [];
+
+      const indices = [];
+      const visibleAxes = new Set();
+
+      if (visibleAxesOnly) {
+        for (let i = 0; i < el.data.length; i++) {
+          const t = el.data[i];
+          if (metaTag(t) === "ExpAx" && typeof t.legendgroup === "string" && isTraceVisible(t)) {
+            visibleAxes.add(t.legendgroup);
+          }
+        }
+      }
+
+      for (let i = 0; i < el.data.length; i++) {
+        const t = el.data[i];
+        if (metaTag(t) !== "density") continue;
+        if (t.legendgroup !== groupName) continue;
+
+        const axisRef = customAxisRef(t);
+        if (axisRef === "legendentry") {
+          indices.push(i);
+          continue;
+        }
+
+        if (!visibleAxesOnly || visibleAxes.has(axisRef)) {
+          indices.push(i);
+        }
+      }
+
+      return indices;
     }
 
     function toggleAxisAnnot(num,type) {
@@ -667,49 +1104,32 @@ function toggleSlider(d) {
       }
       //purely toggle a trace
 
-      if (tag === "data" || hasMeta(tr,"FitPanel") || tag === "polygon") {
-        var a = ["legendonly", true].indexOf(tr.visible);
-        var update = {
-          visible: [true, "legendonly"][a],
-        };
+      if (tag === "data") {
+        // Toggle clicked data class and mirror that state to its linked densities.
+        const update = toggleLegendOnly(tr);
+        Plotly.restyle(el.id, update, dat.curveNumber);
+
+        // Bring back densities only on ExpAx traces that are currently visible.
+        const densityIndices = densityIndicesForGroup(tr.name, true);
+        if (densityIndices.length) {
+          Plotly.restyle(el.id, update, densityIndices);
+        }
+
+        return false;
+      }
+
+      if (hasMeta(tr,"FitPanel") || tag === "polygon") {
+        const update = toggleLegendOnly(tr);
         Plotly.restyle(el.id, update, dat.curveNumber);
         return false;
       }
       if (metaTag(tr) === "density") {
-        const legend_group = tr.legendgroup;
-        console.log(legend_group)
-        console.log(el.data)
-        const indices = [];
-        const ax_counter = [];
-        const ax_visible =[];
-        let j = 1;
-        for (let i = 0; i < el.data.length; i++) {
-          const t = el.data[i];
-          // Same legendgroup
-          if(metaTag(t) === "ExpAx"){
-            ax_counter.push("ExpAx"+j);
-            ax_visible.push(t.visible === true);
-            j++;
-          }
-
-          if (t && t.legendgroup === legend_group) {
-            //if this trace's lg == lg of density chosen (its data class is the same)
-            //first check if the axis is on plot, if not = need not worry about it
-            //also when unclick this helps
-            if(customAxisRef(t)==='legendentry'){
-              indices.push(i);
-              continue;
-            }
-
-            if(ax_visible[ax_counter.indexOf(customAxisRef(t))]){
-              indices.push(i);
-            }
-
-          }
-          if (customAxisRef(t) === legend_group) indices.push(i);
+        // Toggle selected class densities, constrained to visible translated axes.
+        const indices = densityIndicesForGroup(tr.legendgroup, true);
+        const update = toggleLegendOnly(tr);
+        if (indices.length) {
+          Plotly.restyle(el.id, update, indices);
         }
-        var update = toggleLegendOnly(tr);
-        Plotly.restyle(el.id, update, indices);
         return false;
       }
 
@@ -763,6 +1183,14 @@ function toggleSlider(d) {
 //-------------------Slider Change------------
 
 
+/**
+ * Computes a unit normal vector from line coordinates using first and last points.
+ * The returned normal is orientation-normalized so `nx >= 0`.
+ *
+ * @param {number[]} x - X coordinates for the line.
+ * @param {number[]} y - Y coordinates for the line.
+ * @returns {{nx: number, ny: number}} Unit normal vector components.
+ */
 function unitNormalFromXY(x, y) {
   const n = Math.min(x.length, y.length);
   if (n < 2) return { nx: 0, ny: 0 };
@@ -771,7 +1199,28 @@ function unitNormalFromXY(x, y) {
   const dy = y[n - 1] - y[0];
 
   const L = Math.hypot(dx, dy) || 1;
-  return { nx: -dy / L, ny: dx / L }; // rotate direction by +90°
+  let nx = -dy / L;
+  let ny = dx / L;
+  if (nx < 0) {
+    nx = -nx;
+    ny = -ny;
+  }
+  return { nx, ny }; // rotate direction by +90°; enforce nx >= 0
+}
+
+/**
+ * Shifts numeric entries in an array by a constant delta.
+ * Non-numeric entries are preserved unchanged.
+ *
+ * @param {Array} arr - Array of coordinates or mixed values.
+ * @param {number} delta - Translation offset to add to numeric elements.
+ * @returns {Array} New array with shifted numeric values.
+ */
+function shiftNumericArray(arr, delta) {
+  // Utility for bulk coordinate translation.
+  // Keeps non-numeric entries untouched so mixed arrays do not break updates.
+  if (!Array.isArray(arr)) return arr;
+  return arr.map(v => (typeof v === "number" && Number.isFinite(v)) ? (v + delta) : v);
 }
 
     el.on("plotly_sliderchange", function(e) {
@@ -779,30 +1228,153 @@ function unitNormalFromXY(x, y) {
       const transOn = el.bipl5.rel_but[el.bipl5.but_names.indexOf("TransAxes")] === 1;
       if (!transOn) return;
 
-      // current PC payload
+      // Each PC pair has its own slider state. Resolve/create that payload bucket first.
       const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
       data.payloads = data.payloads || {};
-      const payload = data.payloads[pcKey];
-      if (!payload || !payload.slider_info) return;
+      const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
 
+      // Plotly slider UI state at the moment of this event.
+      // We use this as a fallback if event payload is partial.
+      const sliderActiveNow =
+        (el.layout.sliders && el.layout.sliders[0] && Number.isFinite(el.layout.sliders[0].active))
+          ? el.layout.sliders[0].active
+          : 0;
+
+      // Ensure payload.slider_info has expected shape:
+      // slider_pos[axisIndex], slider_axis_idx, and step_size.
+      ensureSliderInfo(payload, data.p, sliderActiveNow);
       const si = payload.slider_info;
 
-      // which axis is selected in your axis dropdown?
+      // Axis currently selected in the "Slider_toggle" dropdown (0-based).
       const axisIdx0 = si.slider_axis_idx; // 0-based
       if (!Number.isFinite(axisIdx0)) return;
 
+      // Tags used throughout traces/annotations for this selected axis.
       const axisNum = axisIdx0 + 1;         // your annotations use customdata = 1..p
       const axisKey = "ExpAx" + axisNum;    // your traces use legendgroup "ExpAx<i>"
 
-      const activeIdx = e && e.slider && Number.isFinite(e.slider.active) ? e.slider.active : null;
-      if (activeIdx == null) return;
+      // Slider step index from event payload.
+      // Fallback to layout value to be robust across Plotly event differences.
+      const activeIdx =
+        (e && e.slider && Number.isFinite(e.slider.active))
+          ? e.slider.active
+          : sliderActiveNow;
 
-      // step size (distance per step)
+      // Geometry scalar from R payload: movement distance in plot units per slider step.
       const step = Number(si.step_size);
       if (!Number.isFinite(step)) return;
 
-      // signed distance (negative left, positive right)
-      const dist = (activeIdx - e.previousActive) * step;
+      // Hybrid previous-state lookup:
+      // 1) prefer per-axis saved position (most reliable for axis switching),
+      // 2) fallback to Plotly event previousActive when missing,
+      // 3) fallback to current active index.
+      const prevActive = Number.isFinite(si.slider_pos[axisIdx0])
+        ? si.slider_pos[axisIdx0]
+        : ((e && Number.isFinite(e.previousActive)) ? e.previousActive : activeIdx);
+      
+      
+      // Signed translation distance in axis-normal direction.
+      const dist = (activeIdx - prevActive) * step;
+
+      // Persist new position for this axis immediately.
+      si.slider_pos[axisIdx0] = activeIdx;
+      if (!Number.isFinite(dist) || dist === 0) return;
+
+      // Find the selected ExpAx line and compute its normal.
+      // Translating along this normal keeps the axis parallel.
+      let axisNormal = null;
+      for (let i = 0; i < el.data.length; i++) {
+        const t = el.data[i];
+        if (metaTag(t) === "ExpAx" && t.legendgroup === axisKey &&
+            Array.isArray(t.x) && Array.isArray(t.y) &&
+            t.x.length > 1 && t.y.length > 1) {
+          axisNormal = unitNormalFromXY(t.x, t.y);
+          break;
+        }
+      }
+      if (!axisNormal) return;
+
+      // Cartesian translation vector.
+      const dx = dist * axisNormal.nx;
+      const dy = dist * axisNormal.ny;
+
+      // Collect a batched Plotly.update patch.
+      // We move only traces associated with the selected ExpAx:
+      // 1) the ExpAx line itself (legendgroup === axisKey)
+      // 2) density traces linked via customdata -> axisKey
+      // 3) prediction line for this axis (meta="predict", same legendgroup)
+      //
+      // Prediction traces are handled specially: only the projected endpoint
+      // (last point) should move; the clicked observation anchor stays fixed.
+      const traceIndices = [];
+      const xUpdates = [];
+      const yUpdates = [];
+
+      for (let i = 0; i < el.data.length; i++) {
+        const t = el.data[i];
+        const tag = metaTag(t);
+
+        if (tag === "ExpAx" && t.legendgroup === axisKey && Array.isArray(t.x) && Array.isArray(t.y)) {
+          traceIndices.push(i);
+          xUpdates.push(shiftNumericArray(t.x, dx));
+          yUpdates.push(shiftNumericArray(t.y, dy));
+          continue;
+        }
+
+        if (tag === "density" && customAxisRef(t) === axisKey && Array.isArray(t.x) && Array.isArray(t.y)) {
+          traceIndices.push(i);
+          xUpdates.push(shiftNumericArray(t.x, dx));
+          yUpdates.push(shiftNumericArray(t.y, dy));
+          continue;
+        }
+
+        if (tag === "predict" && t.legendgroup === axisKey && Array.isArray(t.x) && Array.isArray(t.y)) {
+          const newX = t.x.slice();
+          const newY = t.y.slice();
+          const j = newX.length - 1;
+          if (j >= 0 && Number.isFinite(newX[j]) && Number.isFinite(newY[j])) {
+            newX[j] += dx;
+            newY[j] += dy;
+            traceIndices.push(i);
+            xUpdates.push(newX);
+            yUpdates.push(newY);
+          }
+        }
+      }
+
+      // Move annotations tied to this axis:
+      // - ExpAx tick labels/marks/name/glyph (meta="ExpAx", customdata=axisNum)
+      // - prediction value label for this axis (meta="predict", customdata=axisNum)
+      //
+      // We clone touched annotations so relayout gets a clean, immutable patch.
+      let changedAnn = false;
+      const oldAnns = Array.isArray(el.layout.annotations) ? el.layout.annotations : [];
+      const newAnns = oldAnns.map(function (ann) {
+        if (!ann || typeof ann !== "object") return ann;
+        const annTag = metaTag(ann);
+        const annAxis = Number(ann.customdata);
+        if ((annTag === "ExpAx" || annTag === "predict") && annAxis === axisNum) {
+          const next = Object.assign({}, ann);
+          if (Number.isFinite(next.x)) next.x += dx;
+          if (Number.isFinite(next.y)) next.y += dy;
+          changedAnn = true;
+          return next;
+        }
+        return ann;
+      });
+
+      const traceChanged = traceIndices.length > 0;
+      if (!traceChanged && !changedAnn) return;
+
+      // Single batched call when traces changed for better sync/perf.
+      // If only annotations changed, relayout is sufficient.
+      if (traceChanged) {
+        const tracePatch = { x: xUpdates, y: yUpdates };
+        const layoutPatch = changedAnn ? { annotations: newAnns } : {};
+        Plotly.update(el, tracePatch, layoutPatch, traceIndices);
+      } else {
+        Plotly.relayout(el, { annotations: newAnns });
+      }
 
     });
 

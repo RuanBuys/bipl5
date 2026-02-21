@@ -280,7 +280,7 @@ Prefer `Plotly.relayout(el, patch)` rather than mutating layout objects without 
 
 ### 7.3 Updatemenus naming (must remain stable)
 In scaffolding:
-- Updatemenus[0]: top buttons (`AxisStats`, `TransAxes`, `vecload`)
+- Updatemenus[0]: top buttons (`AxisStats`, `TransAxes`, `vecload`, `EditAxes`)
 - Updatemenus[1]: PC dropdown (`name: "PC_toggle"`)
 - Updatemenus[2]: Fit dropdown (`name: "Fit_toggle"`)
 - Updatemenus[3]: Axis selector dropdown for slider (`name: "Slider_toggle"`)
@@ -331,8 +331,11 @@ Removal:
 ## 10) Slider-driven parallel translation (translated axes)
 
 ### 10.1 UI
-- Axis dropdown chooses which translated axis is controlled.
-- Slider uses discrete steps; position is stored per axis per PC.
+- `TransAxes` enables translated-axis traces and reveals an intermediate `Edit: Axes` button.
+- Clicking `Edit: Axes` shows only the axis dropdown first (no slider yet).
+- The dropdown initially contains a prompt entry: `"Select Axis"`.
+- Once a real axis is selected, the prompt is removed and the slider appears for that axis.
+- Turning `Edit: Axes` off hides dropdown + slider and re-arms the `"Select Axis"` prompt for next use.
 
 ### 10.2 State storage
 Per PC payload:
@@ -340,21 +343,29 @@ Per PC payload:
 payload.slider_info = {
   slider_pos: [<step idx per axis>],
   slider_axis_idx: 0,
-  step_size: <number>
+  step_size: <number>,
+  axis_chosen: <boolean>
 }
 ```
+- `axis_chosen === false`: prompt mode (`"Select Axis"` visible), slider hidden.
+- `axis_chosen === true`: a concrete axis is selected; slider visible when edit mode is on.
+- This state is saved/restored per PC payload when switching via `PC_toggle`.
 
 ### 10.3 Event handling
 - `plotly_buttonclicked` with `menu.name === "Slider_toggle"`:
-  - save current slider active into `slider_pos[oldAxis]`
-  - set slider active to `slider_pos[newAxis]`
-  - update `slider_axis_idx`
+  - if `"Select Axis"` is picked: keep slider hidden.
+  - if a real axis is picked:
+    - set `slider_axis_idx`
+    - restore slider step from `slider_pos[axis]`
+    - show slider
+    - if that axis is hidden (`legendonly`), emit a `plotly_legendclick` for that axis to make it visible.
 - `plotly_sliderchange`:
-  - `dist = (newActive - prevActive) * step_size`
+  - `dist = (newActive - prevActive) * step_size` (using payload-local state)
   - shift:
-    - ExpAx trace(s) for the axis
-    - ExpAx tick annotations for the axis
-    - optionally density traces associated with the axis
+    - selected `ExpAx` trace(s)
+    - linked density traces
+    - matching `ExpAx` and `predict` annotations
+    - selected prediction-line endpoint (if present)
 
 Use a single `Plotly.update()` when possible.
 
