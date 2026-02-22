@@ -147,11 +147,7 @@
       return `Axis: ${axisName}  `;
     }
 
-    function sliderPrefixFromLayout(layoutObj, axisIdx) {
-      // Keep slider label synced with the selected axis dropdown entry.
-      const buttons = axisButtonsNoPromptFromLayout(layoutObj);
-      return sliderPrefixFromButtons(buttons, axisIdx);
-    }
+    
 
     function syncPayloadSliderFromLayout(payload) {
       // Persist current axis selection + current slider step to this payload.
@@ -362,14 +358,6 @@
         if (isFitPanelTrace(el.data[i])) idx.push(i);
       }
       return idx;
-    }
-
-    function removeFitPanelTraces() {
-      const idx = fitPanelIndices();
-      if (!idx.length) return Promise.resolve();
-      // delete from highest -> lowest is safest
-      idx.sort((a, b) => b - a);
-      return Plotly.deleteTraces(el, idx);
     }
 
     function getFitTracesByKey(key) {
