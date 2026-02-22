@@ -1418,20 +1418,19 @@ function shiftNumericArray(arr, delta) {
     }
 
     el.on("plotly_click", function (d) {
-      if (d.points[0].meta === "density") {
-        return false;
-      }
-      if (d.points[0].data.meta === "ClassMean") {
-        return false;
-      }
+      const clickedPoint = d && Array.isArray(d.points) ? d.points[0] : null;
+      const clickedTrace = clickedPoint && clickedPoint.data ? clickedPoint.data : null;
+      if (!clickedPoint || !clickedTrace) return false;
+      // Prediction lines are only valid for observation clicks.
+      if (!hasMeta(clickedTrace, "data")) return false;
       if (el.bipl5.vect_visible === 1) {
         return false;
       }
 
       //-----------------PREDICTION LINES--------------
 
-      RemovePredictions();
-      if(el.bipl5.clicked) removeAnnotation('predict');
+      // Distinguish first insertion from "replace existing prediction" flow.
+      const wasClicked = el.bipl5.clicked === true;
 
       //obtain the indeces of the relevant axes onto which pred. lines
       // must be drawn
@@ -1456,13 +1455,17 @@ function shiftNumericArray(arr, delta) {
         line: { dash: "dot", color: "gray", width: 1 }
       };
 
+      // Candidate trace set for this click:
+      // [0] legend entry + [1..] one prediction trace per visible axis.
       var traces_to_be_added = [predLegendTrace];
+      // Prediction value labels corresponding to traces_to_be_added[1..].
+      var new_predict_annotations = [];
       for (let i = 0; i < indeces.length; i++) {
         var idx = indeces[i];
         var coordinates = obtain_projection(d,idx);
         var newtrace = {
-          x: [d.points[0].x, coordinates[0]],
-          y: [d.points[0].y, coordinates[1]],
+          x: [clickedPoint.x, coordinates[0]],
+          y: [clickedPoint.y, coordinates[1]],
           mode: "lines+markers",
           xaxis: "x",
           yaxis: "y",
@@ -1481,7 +1484,7 @@ function shiftNumericArray(arr, delta) {
             size: [1, 6]
           },
           hoverinfo: 'text',
-          hovertext: d.points[0].hovertext
+          hovertext: clickedPoint.hovertext
         };
         var newAnnotation = {
           x: coordinates[0],
@@ -1501,8 +1504,55 @@ function shiftNumericArray(arr, delta) {
           },
         };
         traces_to_be_added.push(newtrace);
-        el.layout.annotations.push(newAnnotation);
+        new_predict_annotations.push(newAnnotation);
       }
+
+      // If a point was already selected, reuse prediction traces/annotations and
+      // refresh them in one Plotly.update call instead of delete+add cycles.
+      if (wasClicked) {
+        // Existing prediction trace slots currently on the graph.
+        var pred_trace_idx = [];
+        for (let i = 0; i < el.data.length; i++) {
+          if (metaTag(el.data[i]) === "predict") pred_trace_idx.push(i);
+        }
+
+        // Map new per-axis traces by legendgroup so we can align them to old slots.
+        var trace_by_axis = {};
+        for (let i = 1; i < traces_to_be_added.length; i++) {
+          trace_by_axis[traces_to_be_added[i].legendgroup] = traces_to_be_added[i];
+        }
+
+        // Keep trace indices stable: preserve old ordering and swap in new geometry.
+        var aligned_traces = pred_trace_idx.map(function(idx){
+          const old_trace = el.data[idx] || {};
+          if (old_trace.legendgroup === PRED_GROUP) return traces_to_be_added[0];
+          return trace_by_axis[old_trace.legendgroup] || old_trace;
+        });
+
+        // Replace only prediction annotations; keep all non-prediction annotations intact.
+        const old_annotations = Array.isArray(el.layout.annotations) ? el.layout.annotations : [];
+        const kept_annotations = old_annotations.filter(function(ann){
+          return metaTag(ann) !== "predict";
+        });
+        const updated_annotations = kept_annotations.concat(new_predict_annotations);
+
+        // Batched trace + layout patch in a single Plotly API call.
+        var trace_update = {
+          x: aligned_traces.map(function(tr){ return tr.x; }),
+          y: aligned_traces.map(function(tr){ return tr.y; }),
+          visible: aligned_traces.map(function(tr){ return tr.visible; }),
+          legendgroup: aligned_traces.map(function(tr){ return tr.legendgroup; }),
+          hovertext: aligned_traces.map(function(tr){ return tr.hovertext; })
+        };
+
+        Plotly.update(el, trace_update, { annotations: updated_annotations }, pred_trace_idx);
+        el.bipl5.clicked = true;
+        return;
+      }
+
+      RemovePredictions();
+      if (!Array.isArray(el.layout.annotations)) el.layout.annotations = [];
+      el.layout.annotations = el.layout.annotations.concat(new_predict_annotations);
       Plotly.addTraces(el.id, traces_to_be_added);
       el.bipl5.clicked = true;
     });
