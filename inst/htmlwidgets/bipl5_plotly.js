@@ -28,12 +28,24 @@
       if (typeof tr.meta === "string") return tr.meta;
       return null;
     }
+    /**
+     * Toggles a top-row button flag in `el.bipl5.rel_but`.
+     *
+     * @param {string} buttonName - Button identifier from `el.bipl5.but_names`.
+     * @returns {number|null} New toggle value, or null when button is unknown.
+     */
     function toggleButton(buttonName) {
       const i = el.bipl5.but_names.indexOf(buttonName);
       if (i === -1) return null;
       el.bipl5.rel_but[i] = 1 - el.bipl5.rel_but[i];
     }
 
+    /**
+     * Removes all prediction traces/annotations from the current plot.
+     * Uses `el.bipl5.clicked` as a fast guard to skip work when inactive.
+     *
+     * @returns {boolean} True when a prediction state was cleared, else false.
+     */
     function RemovePredictions() {
       if (!el.bipl5.clicked) return false;
       var remove = [];
@@ -48,6 +60,13 @@
       return true;
     }
 
+    /**
+     * Sets visibility for all annotations matching a meta tag.
+     *
+     * @param {string} item - Annotation meta tag to match.
+     * @param {boolean} vis - Target visibility.
+     * @returns {void}
+     */
     function searchAnnot(item, vis){
       for (let i = 0; i < el.layout.annotations.length; i++) {
         let tag = metaTag(el.layout.annotations[i]);
@@ -57,6 +76,13 @@
       }
     }
 
+    /**
+     * Removes annotations whose meta tag matches `item`.
+     * Iterates backwards so splicing does not skip elements.
+     *
+     * @param {string} item - Annotation meta tag to remove.
+     * @returns {void}
+     */
     function removeAnnotation(item) {
       for (let i = (el.layout.annotations.length-1); i>= 0; i--) {
         let tag = metaTag(el.layout.annotations[i]);
@@ -66,10 +92,23 @@
       }
     }
 
+    /**
+     * Deep clones plain JSON-compatible objects.
+     *
+     * @param {*} obj - Value to clone.
+     * @returns {*} Deep-cloned value.
+     */
     function deepClone(obj) {
       return JSON.parse(JSON.stringify(obj));
     }
 
+    /**
+     * Normalizes persisted `bipl5` state to include current button schema.
+     * Preserves old payloads that were saved before newer buttons existed.
+     *
+     * @param {Object} state - Potentially old bipl5 state object.
+     * @returns {Object} Normalized state with aligned `but_names` and `rel_but`.
+     */
     function normalizeBipl5State(state) {
       // Keep backward compatibility with payloads saved before EditAxes existed.
       const out = (state && typeof state === "object") ? state : {};
@@ -86,6 +125,12 @@
       return out;
     }
 
+    /**
+     * Checks whether a payload contains translated-axis traces.
+     *
+     * @param {Object} payload - PC payload object.
+     * @returns {boolean} True when at least one `meta === "ExpAx"` trace exists.
+     */
     function payloadHasExpAxes(payload) {
       // Used to decide whether EditAxes can be shown for a payload.
       const traces = payload && Array.isArray(payload.trace_data) ? payload.trace_data : [];
@@ -95,12 +140,23 @@
       return false;
     }
 
+    /**
+     * Identifies the synthetic "Select Axis" dropdown placeholder button.
+     *
+     * @param {Object} btn - Updatemenu button object.
+     * @returns {boolean} True when this is the placeholder entry.
+     */
     function isSelectAxisButton(btn) {
       // Placeholder entry shown before a real axis is selected.
       const key = btn && (btn.name || btn.label);
       return key === "Select Axis";
     }
 
+    /**
+     * Builds the synthetic prompt button shown before an axis is selected.
+     *
+     * @returns {Object} Plotly updatemenu button config.
+     */
     function selectAxisPromptButton() {
       // Synthetic first option so dropdown caption reads "Select Axis".
       return {
@@ -112,6 +168,12 @@
       };
     }
 
+    /**
+     * Returns slider dropdown axis buttons without the prompt entry.
+     *
+     * @param {Object} layoutObj - Plotly layout object.
+     * @returns {Object[]} Axis-only button list.
+     */
     function axisButtonsNoPromptFromLayout(layoutObj) {
       // Strip placeholder; remaining entries are real axes only.
       const buttons = deepClone(layoutObj?.updatemenus?.[3]?.buttons || []);
@@ -119,12 +181,24 @@
       return stripped;
     }
 
+    /**
+     * Returns slider dropdown buttons with prompt prepended.
+     *
+     * @param {Object} layoutObj - Plotly layout object.
+     * @returns {Object[]} Prompt + axis button list.
+     */
     function axisButtonsWithPromptFromLayout(layoutObj) {
       // Add placeholder back as first option for fresh edit sessions.
       const stripped = axisButtonsNoPromptFromLayout(layoutObj);
       return [selectAxisPromptButton()].concat(stripped);
     }
 
+    /**
+     * Checks whether the slider dropdown currently includes the prompt entry.
+     *
+     * @param {Object} layoutObj - Plotly layout object.
+     * @returns {boolean} True when button index 0 is "Select Axis".
+     */
     function sliderMenuHasPrompt(layoutObj) {
       // Detect whether dropdown currently includes "Select Axis" at index 0.
       const buttons = layoutObj?.updatemenus?.[3]?.buttons;
@@ -132,6 +206,13 @@
       return isSelectAxisButton(buttons[0]);
     }
 
+    /**
+     * Builds slider current-value prefix text from axis dropdown buttons.
+     *
+     * @param {Object[]} buttons - Axis dropdown buttons (prompt removed).
+     * @param {number} axisIdx - Zero-based axis index.
+     * @returns {string} Label prefix for slider current-value display.
+     */
     function sliderPrefixFromButtons(buttons, axisIdx) {
       // Slider caption follows axis name from prompt-free axis list.
       let axisName = `Axis ${axisIdx + 1}`;
@@ -141,8 +222,12 @@
       return `Axis: ${axisName}  `;
     }
 
-    
-
+    /**
+     * Persists current slider selection/position into a payload bucket.
+     *
+     * @param {Object} payload - Payload object for current PC view.
+     * @returns {void}
+     */
     function syncPayloadSliderFromLayout(payload) {
       // Persist current axis selection + current slider step to this payload.
       const p = data.p;
@@ -205,9 +290,13 @@
         }
       }
     }
-
-
-
+    /**
+     * Switches the active PC payload while preserving interaction state.
+     * Keeps fit-panel traces where possible and restores per-PC slider/edit state.
+     *
+     * @param {Object} d - Plotly button-click payload for `PC_toggle`.
+     * @returns {void}
+     */
     function togglePC(d){
       // new selection
         const newKey = d.button && (d.button.name || d.button.label);
@@ -371,11 +460,22 @@
 
 
 
+    /**
+     * Returns whether a trace belongs to the fit panel.
+     *
+     * @param {Object} tr - Plotly trace object.
+     * @returns {boolean} True when trace is tagged as FitPanel.
+     */
     function isFitPanelTrace(tr) {
       // meta can be ["FitPanel", "..."] or "FitPanel"
       return hasMeta(tr, "FitPanel");
     }
 
+    /**
+     * Collects indices of fit-panel traces in the current `el.data`.
+     *
+     * @returns {number[]} Trace indices for FitPanel traces.
+     */
     function fitPanelIndices() {
       const idx = [];
       for (let i = 0; i < el.data.length; i++) {
@@ -384,6 +484,12 @@
       return idx;
     }
 
+    /**
+     * Resolves precomputed fit-panel traces by UI key.
+     *
+     * @param {string} key - Fit-menu key.
+     * @returns {Object[]|null} Trace list for that key, or null if unknown.
+     */
     function getFitTracesByKey(key) {
       const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
       const payload = data.payloads?.[pcKey];
@@ -400,6 +506,12 @@
 
 
 
+    /**
+     * Handles fit-menu selection and swaps the active fit-panel traces.
+     *
+     * @param {Object} d - Plotly button-click payload for `Fit_toggle`.
+     * @returns {Promise<boolean>|boolean} Plotly promise on update, else false.
+     */
     function toggleFit(d){
 
       const newKey = d.button && (d.button.name || d.button.label);
@@ -435,6 +547,13 @@
               });
     }
 
+/**
+ * Resolves clicked button index from Plotly button-click payload.
+ * Falls back from `_index` to menu active index to name/label matching.
+ *
+ * @param {Object} d - Plotly button-click payload.
+ * @returns {number} Zero-based index, or -1 when unresolved.
+ */
 function getButtonIndex(d) {
   if (d && d.button && Number.isFinite(d.button._index)) return d.button._index;
   if (d && d.menu && Number.isFinite(d.menu.active)) return d.menu.active;
@@ -483,6 +602,12 @@ function ensureSliderInfo(payload, p, defaultActive) {
   }
 }
 
+/**
+ * Finds a top-row button index by stable name/label text.
+ *
+ * @param {string} name - Button name to find.
+ * @returns {number} Zero-based index, or -1 if missing.
+ */
 function topMenuButtonIndexByName(name) {
   // Resolve dynamic index since button ordering can change with layout updates.
   const btns = el?.layout?.updatemenus?.[0]?.buttons;
@@ -495,11 +620,23 @@ function topMenuButtonIndexByName(name) {
   return -1;
 }
 
+/**
+ * Returns whether a trace is visible under Plotly legend semantics.
+ *
+ * @param {Object} tr - Plotly trace object.
+ * @returns {boolean} True for visible/undefined traces, false for legendonly/false.
+ */
 function isTraceVisibleForLegendState(tr) {
   // In Plotly, `undefined` behaves like visible=true.
   return !!tr && (tr.visible === true || tr.visible === undefined);
 }
 
+/**
+ * Finds the displayed translated-axis trace index by axis key.
+ *
+ * @param {string} axisKey - Axis legendgroup key, e.g. "ExpAx3".
+ * @returns {number} Trace index, or -1 when not found.
+ */
 function findExpAxisTraceIndex(axisKey) {
   for (let i = 0; i < el.data.length; i++) {
     const tr = el.data[i];
@@ -508,6 +645,13 @@ function findExpAxisTraceIndex(axisKey) {
   return -1;
 }
 
+/**
+ * Emits a synthetic legend click to reveal a hidden translated axis.
+ * Reuses legend-click logic so linked traces/annotations stay consistent.
+ *
+ * @param {string} axisKey - Axis legendgroup key, e.g. "ExpAx3".
+ * @returns {boolean} True when a synthetic click was emitted.
+ */
 function triggerLegendClickForAxisIfHidden(axisKey) {
   // Reuse existing legend-click handler so axis trace + linked traces/annotations
   // are restored exactly the same way as a user legend interaction.
@@ -523,6 +667,18 @@ function triggerLegendClickForAxisIfHidden(axisKey) {
   return true;
 }
 
+/**
+ * Applies EditAxes controls visibility/state through a single relayout patch.
+ *
+ * @param {Object} opts - UI options.
+ * @param {boolean} [opts.editButtonVisible=false] - Show/hide EditAxes button.
+ * @param {boolean} [opts.dropdownVisible=false] - Show/hide axis dropdown.
+ * @param {boolean} [opts.sliderVisible=false] - Show/hide slider.
+ * @param {boolean} [opts.usePrompt=true] - Use prompt+axes vs axes-only dropdown.
+ * @param {number} [opts.axisIdx=0] - Active axis index when prompt removed.
+ * @param {number|null} [opts.sliderActive=null] - Slider step to set when visible.
+ * @returns {Promise} Plotly relayout promise.
+ */
 function setEditAxesUI(opts) {
   // Single relayout patch for EditAxes button + axis dropdown + slider visibility.
   const cfg = Object.assign({
@@ -561,6 +717,13 @@ function setEditAxesUI(opts) {
   return Plotly.relayout(el, patch);
 }
 
+/**
+ * Handles axis dropdown selection for translated-axis slider editing.
+ * Persists per-PC slider state and updates dropdown/slider UI.
+ *
+ * @param {Object} d - Plotly button-click payload for `Slider_toggle`.
+ * @returns {Promise|boolean} Plotly relayout promise on change, else false.
+ */
 function toggleSlider(d) {
   const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
   data.payloads = data.payloads || {};
@@ -634,7 +797,14 @@ function toggleSlider(d) {
   return Plotly.relayout(el, relayoutPatch);
 }
 
-
+    /**
+     * Checks whether a trace/annotation meta field contains a given tag.
+     * Supports both scalar and array meta formats.
+     *
+     * @param {Object} tr - Plotly trace or annotation object.
+     * @param {string} tag - Meta tag to test.
+     * @returns {boolean} True when tag is present.
+     */
     function hasMeta(tr, tag) {
       if (!tr) return false;
       const m = tr.meta;
@@ -642,6 +812,11 @@ function toggleSlider(d) {
       return m === tag;
     }
 
+    /**
+     * Shows or hides the fit panel by adjusting data and layout domains.
+     *
+     * @returns {boolean} False to suppress default button behavior.
+     */
     function switch_fit_panel(){
       const show = el.bipl5.is_visible;
 
@@ -986,10 +1161,22 @@ function toggleSlider(d) {
 //------------LEGENDCLICK--------------------
 
 
+    /**
+     * Returns whether a trace has a usable legendgroup string.
+     *
+     * @param {Object} tr - Plotly trace object.
+     * @returns {boolean} True when legendgroup is a non-empty string.
+     */
     function hasLegendgroup(tr) {
       return tr && typeof tr.legendgroup === "string" && tr.legendgroup.length > 0;
     }
 
+    /**
+     * Parses axis legendgroup values of form "AxN" or "ExpAxN".
+     *
+     * @param {string} lg - Legendgroup key.
+     * @returns {{axis:string,num:number,type:string}|null} Parsed axis metadata.
+     */
     function axisNameFromLegendgroup(lg) {
       // expects "Ax<number>"
       if (typeof lg !== "string") return null;
@@ -1083,6 +1270,14 @@ function toggleSlider(d) {
       return idx >= 0 && rel[idx] === 1;
     }
 
+    /**
+     * Toggles axis annotation visibility for one axis number and type.
+     * Also mirrors visibility for prediction annotations on the same axis.
+     *
+     * @param {number} num - Axis index stored in annotation customdata.
+     * @param {string} type - Axis meta tag ("Ax" or "ExpAx").
+     * @returns {number} Number of axis annotations toggled.
+     */
     function toggleAxisAnnot(num,type) {
       const anns = el?.layout?.annotations;
       if (!Array.isArray(anns)) return 0;
@@ -1104,6 +1299,12 @@ function toggleSlider(d) {
       return changed;
     }
 
+    /**
+     * Builds a Plotly visibility patch that flips trace legend state.
+     *
+     * @param {Object} tr - Plotly trace object.
+     * @returns {{visible:(true|string)}} Restyle patch.
+     */
     function toggleLegendOnly(tr) {
       const isShown = (tr.visible === true || tr.visible === undefined); // undefined behaves like visible
     return { visible: isShown ? "legendonly" : true };
@@ -1410,6 +1611,12 @@ function shiftNumericArray(arr, delta) {
 
 //-------------------POINTS CLICK--------------
 
+    /**
+     * Returns line-trace indices whose primary meta tag matches `item`.
+     *
+     * @param {string} item - Meta tag to match ("axis" or "ExpAx").
+     * @returns {number[]} Matching axis trace indices.
+     */
     function searchAxes(item){
         var idx = []
         el.data.forEach((arr, index) => {
@@ -1420,6 +1627,14 @@ function shiftNumericArray(arr, delta) {
         return(idx)
     }
 
+    /**
+     * Computes orthogonal projection of a clicked point onto an axis trace.
+     * Also interpolates the projected z-hat value along that axis.
+     *
+     * @param {Object} d - Plotly click event payload.
+     * @param {number} idx - Axis trace index in `el.data`.
+     * @returns {[number, number, number, number]} [xCross, yCross, zhat, slope].
+     */
     function obtain_projection(d,idx){
       var x = el.data[idx].x;
       var y = el.data[idx].y;
