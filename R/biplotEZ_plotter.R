@@ -200,7 +200,6 @@ plot_bipl5.PCA<-function(x){
   fm_payl["CumAd"]<-add_axis_adeq_payload(fm_payl,x,EZ=TRUE)
   fm_payl["VarExp"]<-add_prop_variance_payload(x)
   fm_payl["Scree"]<-add_scree_payload(x)
-  print(fm_payl["Scree"])
 
   p_ly<-insert_linear_js_v1(p_ly,
                          m=grads,p=x$p,cols=x$axes$tick.label.col,
@@ -493,4 +492,3 @@ plot_bipl5.PCO<-function(x){
     }
   return(p_ly)
 }
-

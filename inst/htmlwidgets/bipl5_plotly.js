@@ -295,7 +295,6 @@
           }
         }
 //        if(nextPayload.layout.updatemenus[0].buttons){
-//          console.log(nextPayload.layout.updatemenus[0].buttons)
 //          newLayout.updatemenus[0].buttons=deepClone(nextPayload.layout.updatemenus[0].buttons);
 //        } else {
 //          newLayout.updatemenus[0].buttons[1].label = "Translated Axes"
@@ -707,8 +706,6 @@ function toggleSlider(d) {
           (el.layout.sliders && el.layout.sliders[0] && Number.isFinite(el.layout.sliders[0].active))
             ? el.layout.sliders[0].active
             : 0;
-        console.log(sliderActiveNow);
-        console.log(payload)
         ensureSliderInfo(payload, data.p, sliderActiveNow);
         const si = payload.slider_info;
 
