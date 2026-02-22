@@ -57,12 +57,6 @@
       }
     }
 
-    function removeAnnot() {
-      for (let i = 0; i < data.p; i++) {
-        el.layout.annotations.pop();
-      }
-    }
-
     function removeAnnotation(item) {
       for (let i = (el.layout.annotations.length-1); i>= 0; i--) {
         let tag = metaTag(el.layout.annotations[i]);
@@ -187,6 +181,31 @@
       }
     }
 
+    /**
+     * Sets the TransAxes button caption to match the current axis mode.
+     * Shows "Translated Axes" when centered axes are active, and
+     * "Centered Axes" when translated axes are active.
+     *
+     * @param {Object} layoutObj - Layout object containing top-row updatemenus buttons.
+     * @param {boolean} transOn - Whether translated-axis mode is currently enabled.
+     * @returns {void}
+     */
+    function setTransAxesButtonLabel(layoutObj, transOn) {
+      // Keep top-button label aligned with the currently active axis mode.
+      const buttons = layoutObj?.updatemenus?.[0]?.buttons;
+      if (!Array.isArray(buttons)) return;
+
+      for (let i = 0; i < buttons.length; i++) {
+        const b = buttons[i];
+        const key = b && (b.name || b.label);
+        // Match by stable name, or by either display label if already relabeled.
+        if (key === "TransAxes" || key === "Translated Axes" || key === "Centered Axes") {
+          b.label = transOn ? "Centered Axes" : "Translated Axes";
+          return;
+        }
+      }
+    }
+
 
 
     function togglePC(d){
@@ -254,6 +273,11 @@
         newLayout.xaxis.title = deepClone((nextPayload.layout && nextPayload.layout.xaxis.title) || []);
         newLayout.xaxis.autorange=true;
         newLayout.yaxis.autorange=true;
+
+        // Ensure TransAxes button caption reflects restored state after PC switch.
+        const transIdxForLabel = el.bipl5.but_names.indexOf("TransAxes");
+        const transOnForLabel = transIdxForLabel >= 0 && el.bipl5.rel_but[transIdxForLabel] === 1;
+        setTransAxesButtonLabel(newLayout, transOnForLabel);
 
         // Restore per-payload slider axis + step selection in UI state.
         const seedActive =
@@ -789,7 +813,7 @@ function toggleSlider(d) {
                 remove.push(index);
               }
             });
-            removeAnnot();
+            removeAnnotation('predict');
             Plotly.deleteTraces(el.id, remove);
             el.bipl5.clicked = false;
           }
