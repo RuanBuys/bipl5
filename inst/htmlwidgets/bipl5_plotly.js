@@ -1057,6 +1057,20 @@ function toggleSlider(d) {
       return indices;
     }
 
+    /**
+     * Returns whether translated-axes mode is currently enabled.
+     * Uses the top-button state as the source of truth.
+     *
+     * @returns {boolean} True when "TransAxes" mode is on.
+     */
+    function translatedAxesModeOn() {
+      const names = el?.bipl5?.but_names;
+      const rel = el?.bipl5?.rel_but;
+      if (!Array.isArray(names) || !Array.isArray(rel)) return false;
+      const idx = names.indexOf("TransAxes");
+      return idx >= 0 && rel[idx] === 1;
+    }
+
     function toggleAxisAnnot(num,type) {
       const anns = el?.layout?.annotations;
       if (!Array.isArray(anns)) return 0;
@@ -1106,6 +1120,10 @@ function toggleSlider(d) {
         const update = toggleLegendOnly(tr);
         Plotly.restyle(el.id, update, dat.curveNumber);
 
+        // Density placeholder/segments should only follow data toggles
+        // when translated axes are active.
+        if (!translatedAxesModeOn()) return false;
+
         // Bring back densities only on ExpAx traces that are currently visible.
         const densityIndices = densityIndicesForGroup(tr.name, true);
         if (densityIndices.length) {
@@ -1121,6 +1139,9 @@ function toggleSlider(d) {
         return false;
       }
       if (metaTag(tr) === "density") {
+        // Keep density legend clicks inert while translated axes are off.
+        // This prevents placeholder state drift before TransAxes is enabled.
+        if (!translatedAxesModeOn()) return false;
         // Toggle selected class densities, constrained to visible translated axes.
         const indices = densityIndicesForGroup(tr.legendgroup, true);
         const update = toggleLegendOnly(tr);
