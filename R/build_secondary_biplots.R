@@ -1,5 +1,3 @@
-
-
 #' Initiate the payload scaffolding
 #'
 #' @param payload List containing data and layout attributes for a plotly graph
@@ -12,10 +10,15 @@
 #'
 #' @return updated payload
 #' @noRd
-plot_scaffolding_payload <- function(payload, dpquality, basis,
-                                     PC_toggle = TRUE,
-                                     ax_pred = TRUE, TDA = TRUE, vec_dis = TRUE) {
-
+plot_scaffolding_payload <- function(
+  payload,
+  dpquality,
+  basis,
+  PC_toggle = TRUE,
+  ax_pred = TRUE,
+  TDA = TRUE,
+  vec_dis = TRUE
+) {
   Title <- "Overall quality and axis predictivities (cumulative)"
 
   layout <- list(
@@ -115,9 +118,21 @@ plot_scaffolding_payload <- function(payload, dpquality, basis,
         x = 0,
         visible = PC_toggle,
         buttons = list(
-          list(method = "skip", args = list("type", "scatter"),   label = "PC 1 & 2"),
-          list(method = "skip", args = list("type", "histogram"), label = "PC 1 & 3"),
-          list(method = "skip", args = list("type", "histogram"), label = "PC 2 & 3")
+          list(
+            method = "skip",
+            args = list("type", "scatter"),
+            label = "PC 1 & 2"
+          ),
+          list(
+            method = "skip",
+            args = list("type", "histogram"),
+            label = "PC 1 & 3"
+          ),
+          list(
+            method = "skip",
+            args = list("type", "histogram"),
+            label = "PC 2 & 3"
+          )
         )
       )
     )
@@ -126,7 +141,6 @@ plot_scaffolding_payload <- function(payload, dpquality, basis,
   payload <- payload_add_layout(payload, layout)
   payload
 }
-
 
 
 #' Add the main observations to the payload
@@ -140,7 +154,6 @@ plot_scaffolding_payload <- function(payload, dpquality, basis,
 #' @return updated payload
 #' @noRd
 insert_Z_coo_payload <- function(payload, x, p_ly_pch, Col, visible = TRUE) {
-
   groups <- levels(x$group)
   num_groups <- length(groups)
 
@@ -156,7 +169,7 @@ insert_Z_coo_payload <- function(payload, x, p_ly_pch, Col, visible = TRUE) {
       name = g,
       type = "scatter",
       mode = "markers",
-      hovertext = hovertext_generator(x, i,"<br />"),
+      hovertext = hovertext_generator(x, i, "<br />"),
       hoverinfo = "text+name",
       customdata = (seq_len(x$n))[sel],
       meta = list("data"),
@@ -202,7 +215,7 @@ insert_class_means_payload <- function(payload, Z, symbol, color) {
       mode = "markers",
       hovertext = "Class Mean",
       hoverinfo = "text+name",
-      customdata = i - 1,              # keep your 0-based id
+      customdata = i - 1, # keep your 0-based id
       meta = list("ClassMean"),
       xaxis = "x",
       yaxis = "y",
@@ -226,7 +239,12 @@ insert_class_means_payload <- function(payload, Z, symbol, color) {
 #'
 #' @return updated payload
 #' @noRd
-insert_polygon_EZ_payload <- function(payload, coors, aes, leg_group = "Alpha Bags") {
+insert_polygon_EZ_payload <- function(
+  payload,
+  coors,
+  aes,
+  leg_group = "Alpha Bags"
+) {
   stopifnot(is.list(coors), length(coors) > 0)
 
   leg_name <- names(coors) %||% paste0("Group_", seq_along(coors))
@@ -292,7 +310,7 @@ InsertAxisDeets_payload <- function(payload, x, EZ = FALSE) {
 
   for (i in seq_len(n)) {
     linetype <- if (i == n) "solid" else "dashdot"
-    lwidth   <- if (i == n) 3 else 2
+    lwidth <- if (i == n) 3 else 2
 
     traces[[i]] <- list(
       x = seq_len(p),
@@ -306,7 +324,7 @@ InsertAxisDeets_payload <- function(payload, x, EZ = FALSE) {
       showlegend = TRUE,
       name = ColNames[i],
       visible = FALSE,
-      meta = list("FitPanel","axis_pred"),
+      meta = list("FitPanel", "axis_pred"),
       legendgroup = "AxPred",
       legendgrouptitle = list(text = "<b> Axis Predictivity <b>")
     )
@@ -325,26 +343,21 @@ InsertAxisDeets_payload <- function(payload, x, EZ = FALSE) {
 #' @return updated payload
 #' @noRd
 add_axis_adeq_payload <- function(payload, x, EZ = FALSE) {
-  if (EZ) {
-    pred_deets <- axis_predictivities_EZ(x)
-    ColNames <- c(colnames(x$X), "Weighted mean = Quality")
-  } else {
-    pred_deets <- axis_predictivities(x)
-    ColNames <- c(colnames(x$x), "Weighted mean = Quality")
-  }
+  adeq_deets <- axis_adequacies(x)
+  ColNames <- colnames(x$x) %||% colnames(x$X)
 
   p <- x$p
-  n <- nrow(pred_deets)
+  n <- nrow(adeq_deets)
 
   traces <- vector("list", n)
 
   for (i in seq_len(n)) {
-    linetype <- if (i == n) "solid" else "dashdot"
-    lwidth   <- if (i == n) 3 else 2
+    linetype <- "dashdot"
+    lwidth <- 2
 
     traces[[i]] <- list(
       x = seq_len(p),
-      y = as.numeric(pred_deets[i, ]),
+      y = as.numeric(adeq_deets[i, ]),
       type = "scatter",
       mode = "lines+markers",
       line = list(dash = linetype, width = lwidth),
@@ -354,7 +367,7 @@ add_axis_adeq_payload <- function(payload, x, EZ = FALSE) {
       showlegend = TRUE,
       name = ColNames[i],
       visible = TRUE,
-      meta = list("FitPanel","Cum. Adequacy"),
+      meta = list("FitPanel", "Cum. Adequacy"),
       legendgroup = "AxPred",
       legendgrouptitle = list(text = "<b> Axis Adequacy <b>")
     )
@@ -362,7 +375,6 @@ add_axis_adeq_payload <- function(payload, x, EZ = FALSE) {
 
   return(list(traces))
 }
-
 
 
 #' Insert axis predictivity graph to the payload
@@ -389,7 +401,7 @@ add_axis_pred_payload <- function(payload, x, EZ = FALSE) {
 
   for (i in seq_len(n)) {
     linetype <- if (i == n) "solid" else "dashdot"
-    lwidth   <- if (i == n) 3 else 2
+    lwidth <- if (i == n) 3 else 2
 
     traces[[i]] <- list(
       x = seq_len(p),
@@ -403,7 +415,7 @@ add_axis_pred_payload <- function(payload, x, EZ = FALSE) {
       showlegend = TRUE,
       name = ColNames[i],
       visible = TRUE,
-      meta = list("FitPanel","Cum. Predictivity"),
+      meta = list("FitPanel", "Cum. Predictivity"),
       legendgroup = "AxPred",
       legendgrouptitle = list(text = "<b> Axis Predictivity <b>")
     )
@@ -423,27 +435,29 @@ add_axis_pred_payload <- function(payload, x, EZ = FALSE) {
 #'
 #' @return A list containing stacked bar and line traces for variance components
 #' @noRd
-add_prop_variance_payload<-function(x,
-                                    axis = "x3", yaxis = "y3",
-                                    title = "Proportion of variance",
-                                    meta_key = "Variance Explained",
-                                    line_color = "black") {
-
+add_prop_variance_payload <- function(
+  x,
+  axis = "x3",
+  yaxis = "y3",
+  title = "Proportion of variance",
+  meta_key = "Variance Explained",
+  line_color = "black"
+) {
   eig <- x$eigenvalues
 
   k <- length(eig)
   pcs <- seq_len(k)
 
-  ind <- eig / sum(eig)     # % individual
-  cum <- cumsum(ind)              # % cumulative
+  ind <- eig / sum(eig) # % individual
+  cum <- cumsum(ind) # % cumulative
 
   #right so we get the individual axis predictivities. see p92 of UB
-  preds<-axis_predictivities_EZ(x)[1:x$p,]
+  preds <- axis_predictivities_EZ(x)[1:x$p, ]
   V.mat <- x$Lmat
   eigval <- x$eigenvalues
   lambda.mat <- diag(eigval)
-  V_ii<-diag(V.mat%*%lambda.mat%*%t(V.mat))
-  w<-V_ii/sum(diag(lambda.mat))
+  V_ii <- diag(V.mat %*% lambda.mat %*% t(V.mat))
+  w <- V_ii / sum(diag(lambda.mat))
 
   # line: % Individual
   tr_ind <- list(
@@ -456,31 +470,31 @@ add_prop_variance_payload<-function(x,
     yaxis = yaxis,
     meta = list("FitPanel", meta_key),
     hoverinfo = "text",
-    visible=TRUE,
+    visible = TRUE,
     text = sprintf("PC %d<br>Individual: %.2f%%", pcs, ind),
     line = list(color = line_color),
     marker = list(color = line_color)
   )
-  data<-list()
-  for(i in 1:x$p){
+  data <- list()
+  for (i in 1:x$p) {
     data[[i]] <- list(
       type = "bar",
       x = pcs,
-      y = preds[i,]*w[i],
+      y = preds[i, ] * w[i],
       name = rownames(preds)[i],
       xaxis = axis,
       yaxis = yaxis,
       meta = list("FitPanel", rownames(preds)[i]),
       textposition = "outside",
       hoverinfo = "text",
-      visible=TRUE,
+      visible = TRUE,
       hovertext = sprintf("PC %d<br>Cumulative: %.2f%%", pcs, cum),
-      legendgroup="VarExplained",
-      legendgrouptitle=list(text="<b> Variance Contribution <b>"),
+      legendgroup = "VarExplained",
+      legendgrouptitle = list(text = "<b> Variance Contribution <b>"),
       marker = list(opacity = 0.7)
     )
   }
-  data[[i+1]]<-tr_ind
+  data[[i + 1]] <- tr_ind
 
   return(list(data))
 }
@@ -496,11 +510,13 @@ add_prop_variance_payload<-function(x,
 #'
 #' @return A list containing a single scree trace in Plotly.addTraces format
 #' @noRd
-add_scree_payload <- function(x,
-                              axis = "x3",
-                              yaxis = "y3",
-                              meta_key = "Scree Plot",
-                              line_color = "black") {
+add_scree_payload <- function(
+  x,
+  axis = "x3",
+  yaxis = "y3",
+  meta_key = "Scree Plot",
+  line_color = "black"
+) {
   stopifnot(!is.null(x$eigenvalues), !is.null(x$p))
 
   pcs <- seq_len(x$p)
@@ -523,8 +539,11 @@ add_scree_payload <- function(x,
     visible = TRUE,
 
     hoverinfo = "text",
-    text = sprintf("PC %d<br>Eigenvalue: %s",
-                   pcs, formatC(eig, format = "f", digits = 4)),
+    text = sprintf(
+      "PC %d<br>Eigenvalue: %s",
+      pcs,
+      formatC(eig, format = "f", digits = 4)
+    ),
 
     line = list(color = line_color),
     marker = list(color = line_color)
@@ -544,13 +563,19 @@ add_scree_payload <- function(x,
 #'
 #' @return updated payload
 #' @noRd
-insert_vector_annots_payload <- function(payload, PC12, PC13 = NULL, PC23 = NULL) {
-
+insert_vector_annots_payload <- function(
+  payload,
+  PC12,
+  PC13 = NULL,
+  PC23 = NULL
+) {
   make_vec_annots <- function(PC, meta = NULL, visible = FALSE, text = NULL) {
     stopifnot(!is.null(PC$V), ncol(PC$V) >= 2)
     p <- PC$p %||% nrow(PC$V)
 
-    if (is.null(text)) text <- colnames(PC$x) %||% paste0("Var", seq_len(p))
+    if (is.null(text)) {
+      text <- colnames(PC$x) %||% paste0("Var", seq_len(p))
+    }
 
     anns <- vector("list", p)
     for (i in seq_len(p)) {
@@ -576,11 +601,18 @@ insert_vector_annots_payload <- function(payload, PC12, PC13 = NULL, PC23 = NULL
   anns <- list()
 
   # PC12: keep your meta tag vecload (used by your JS)
-  anns <- c(anns, make_vec_annots(PC12, meta = list("vecload"), visible = FALSE))
+  anns <- c(
+    anns,
+    make_vec_annots(PC12, meta = list("vecload"), visible = FALSE)
+  )
 
   # PC13 / PC23: your original code didn’t tag meta; keep consistent (or tag if you want)
-  if (!is.null(PC13)) anns <- c(anns, make_vec_annots(PC13, meta = NULL, visible = FALSE))
-  if (!is.null(PC23)) anns <- c(anns, make_vec_annots(PC23, meta = NULL, visible = FALSE))
+  if (!is.null(PC13)) {
+    anns <- c(anns, make_vec_annots(PC13, meta = NULL, visible = FALSE))
+  }
+  if (!is.null(PC23)) {
+    anns <- c(anns, make_vec_annots(PC23, meta = NULL, visible = FALSE))
+  }
 
   payload_add_layout(payload, list(annotations = anns))
 }
@@ -602,7 +634,9 @@ add_TDA_payload <- function(payload, z.axes, x, Z, group, Col, inflate = 1) {
   `%||%` <- function(a, b) if (is.null(a)) b else a
 
   # ensure group is a factor (for levels / match)
-  if (!is.factor(group)) group <- factor(group)
+  if (!is.factor(group)) {
+    group <- factor(group)
+  }
 
   r1 <- range(x$Z[, 1])
   r2 <- range(x$Z[, 2])
@@ -685,9 +719,9 @@ add_TDA_payload <- function(payload, z.axes, x, Z, group, Col, inflate = 1) {
 
     # tick label + tick mark annotations (one per tick)
     ang_deg <- -atan(m[i]) * 180 / pi
-    xs1 <-  12 * sin(atan(m[i]))
+    xs1 <- 12 * sin(atan(m[i]))
     ys1 <- -12 * cos(atan(m[i]))
-    xs2 <-  22 * sin(atan(m[i]))
+    xs2 <- 22 * sin(atan(m[i]))
     ys2 <- -22 * cos(atan(m[i]))
 
     for (k in seq_len(nrow(ends))) {
@@ -764,11 +798,14 @@ add_TDA_payload <- function(payload, z.axes, x, Z, group, Col, inflate = 1) {
     Dens <- as.matrix(DensCoors[[gi]])
     gname <- unique(as.character(group))[gi]
     gidx <- match(gname, group_levels)
-    if (is.na(gidx)) gidx <- gi
+    if (is.na(gidx)) {
+      gidx <- gi
+    }
 
     # legend entry (hidden initially; you can turn on later)
     traces[[length(traces) + 1]] <- list(
-      x = list(0), y = list(0),
+      x = list(0),
+      y = list(0),
       type = "scatter",
       mode = "lines",
       line = list(dash = "dot", color = Col[gidx], width = 0.95),
@@ -786,8 +823,8 @@ add_TDA_payload <- function(payload, z.axes, x, Z, group, Col, inflate = 1) {
     # per-axis densities
     for (j in seq_len(p)) {
       traces[[length(traces) + 1]] <- list(
-        x = Dens[, 2*j - 1],
-        y = Dens[, 2*j],
+        x = Dens[, 2 * j - 1],
+        y = Dens[, 2 * j],
         type = "scatter",
         mode = "lines",
         line = list(dash = "dot", color = Col[gidx], width = 0.95),
@@ -824,8 +861,8 @@ insert_linear_axes_payload <- function(payload, z.axes, x) {
 
   p <- x$p
   radius <- max(abs(x$Z)) * 1.2
-  theta <- seq(0, 2*pi, length.out = 200)
-  elipcoords <- cbind(radius*cos(theta), radius*sin(theta))
+  theta <- seq(0, 2 * pi, length.out = 200)
+  elipcoords <- cbind(radius * cos(theta), radius * sin(theta))
 
   z.axes <- check_inside_circle(z.axes, radius, NULL)
 
@@ -842,7 +879,8 @@ insert_linear_axes_payload <- function(payload, z.axes, x) {
     endp <- z.axes[[i]][which.max(z.axes[[i]][, 3]), 1:2]
     pos <- "right"
 
-    m <- (z.axes[[i]][2,2] - z.axes[[i]][1,2]) / (z.axes[[i]][2,1] - z.axes[[i]][1,1])
+    m <- (z.axes[[i]][2, 2] - z.axes[[i]][1, 2]) /
+      (z.axes[[i]][2, 1] - z.axes[[i]][1, 1])
     grads[i] <- m
 
     angle <- atan(m)
@@ -852,8 +890,8 @@ insert_linear_axes_payload <- function(payload, z.axes, x) {
     }
 
     # endpoints on circle for the axis line
-    x_line <- c(radius*cos(atan(m)), radius*cos(atan(m) - pi))
-    y_line <- c(radius*sin(atan(m)), radius*sin(atan(m) - pi))
+    x_line <- c(radius * cos(atan(m)), radius * cos(atan(m) - pi))
+    y_line <- c(radius * sin(atan(m)), radius * sin(atan(m) - pi))
 
     mat <- cbind(x_line, y_line)
     zhats <- obtain_zhat(mat, z.axes[[i]])
@@ -884,7 +922,7 @@ insert_linear_axes_payload <- function(payload, z.axes, x) {
 
     ang_deg <- -atan(m) * 180 / pi
     yshift <- -12 * cos(atan(m))
-    xshift <-  12 * sin(atan(m))
+    xshift <- 12 * sin(atan(m))
 
     for (k in seq_len(nrow(tick_xy))) {
       # numeric labels
@@ -971,9 +1009,14 @@ insert_linear_axes_payload <- function(payload, z.axes, x) {
 #'
 #' @return updated payload
 #' @noRd
-insert_unit_circle_payload <- function(payload, n = 200, visible = FALSE,
-                                       color = "red", width = 1.2) {
-  theta <- seq(0, 2*pi, length.out = n)
+insert_unit_circle_payload <- function(
+  payload,
+  n = 200,
+  visible = FALSE,
+  color = "red",
+  width = 1.2
+) {
+  theta <- seq(0, 2 * pi, length.out = n)
 
   trace <- list(
     x = cos(theta),
@@ -983,7 +1026,7 @@ insert_unit_circle_payload <- function(payload, n = 200, visible = FALSE,
     line = list(color = color, width = width),
     name = "Unit Circle",
     showlegend = FALSE,
-    meta = list("veccircle"),   # array form plays nicely with metaTag()
+    meta = list("veccircle"), # array form plays nicely with metaTag()
     xaxis = "x",
     yaxis = "y",
     hoverinfo = "name",
@@ -1004,12 +1047,13 @@ insert_unit_circle_payload <- function(payload, n = 200, visible = FALSE,
 #'
 #' @return updated payload
 #' @noRd
-add_table_payload <- function(payload,
-                              x,
-                              domain_x = c(0.5, 1),
-                              domain_y = c(0.15, 0.85),
-                              visible  = TRUE) {
-
+add_table_payload <- function(
+  payload,
+  x,
+  domain_x = c(0.5, 1),
+  domain_y = c(0.15, 0.85),
+  visible = TRUE
+) {
   stopifnot(is.list(payload))
   stopifnot(!is.null(x$X))
 
@@ -1017,29 +1061,27 @@ add_table_payload <- function(payload,
   vars <- colnames(x$X) %||% paste0("V", seq_len(p))
 
   # placeholders (you'll populate later)
-  adequacy     <- rep("", p)
-  predictivity <- rep("", p)
+  adequacy <- round(rowSums(x$Vr^2), 4)
+  predictivity <- round(marginal_predictivities_EZ(x), 4)
 
   table_trace <- list(
     type = "table",
     domain = list(x = domain_x, y = domain_y),
     header = list(
       values = list("Variable", "Adequacy", "Predictivity"),
-      align  = "left"
+      align = "left"
     ),
     cells = list(
       values = list(vars, adequacy, predictivity),
-      align  = "left"
+      align = "left"
     ),
     meta = list("FitPanel", "Summary Table"),
     showlegend = FALSE,
     visible = visible
   )
-  payload$payload$fit_table <- list(table_trace)  # IMPORTANT: list-of-traces for Plotly.addTraces
+  payload$payload$fit_table <- list(table_trace) # IMPORTANT: list-of-traces for Plotly.addTraces
   payload
 }
-
-
 
 
 #' Add fit measures to the payload
@@ -1052,31 +1094,30 @@ add_table_payload <- function(payload,
 #'
 #' @return updated payload
 #' @noRd
-slider_control_payload <- function(payload,
-                              n_inside=17,
-                              n_outside=4) {
-
+slider_control_payload <- function(payload, n_inside = 17, n_outside = 4) {
   #vector of axis slopes; vector of intercept of equation
-  m<-payload$m
-  dist<-numeric(length(m))
-  for(i in 1:length(m)){
-    b<-payload$shift$ends[[i]][1,2]-m[i]*payload$shift$ends[[i]][1,1]
-    x_cross<--b/(1/m[i]+m[i])
-    y_cross<--1/m[i]*x_cross
-    dist[i]<-sign(x_cross)*sqrt(x_cross^2+y_cross^2)
+  m <- payload$m
+  dist <- numeric(length(m))
+  for (i in 1:length(m)) {
+    b <- payload$shift$ends[[i]][1, 2] - m[i] * payload$shift$ends[[i]][1, 1]
+    x_cross <- -b / (1 / m[i] + m[i])
+    y_cross <- -1 / m[i] * x_cross
+    dist[i] <- sign(x_cross) * sqrt(x_cross^2 + y_cross^2)
   }
 
-  radius<-max(abs(dist))
-  total_steps<-n_inside+n_outside
-  indiv_pos<-dist/radius
+  radius <- max(abs(dist))
+  total_steps <- n_inside + n_outside
+  indiv_pos <- dist / radius
 
+  pos_shifted_slider <- round(indiv_pos * (n_inside - 1) / 2, 0)
 
-  pos_shifted_slider<-round(indiv_pos*(n_inside-1)/2,0)
+  actual_pos <- pos_shifted_slider + (n_inside - 1) / 2 + 1 + n_outside / 2 - 1 # we minus 1 for javascript
 
-  actual_pos<-pos_shifted_slider+(n_inside-1)/2+1+n_outside/2 -1 # we minus 1 for javascript
+  step_size <- 2 * radius / n_inside
 
-  step_size<-2*radius/n_inside
-
-  payload$payload$slider_info<-list("slider_pos"=actual_pos,"step_size"=step_size)
+  payload$payload$slider_info <- list(
+    "slider_pos" = actual_pos,
+    "step_size" = step_size
+  )
   payload
 }

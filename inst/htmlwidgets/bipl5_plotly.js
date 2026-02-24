@@ -668,6 +668,65 @@ function triggerLegendClickForAxisIfHidden(axisKey) {
 }
 
 /**
+ * Normalizes Plotly axis-title specs to plain text.
+ * Accepts either string titles or object titles with a `text` field.
+ *
+ * @param {string|Object|null|undefined} titleSpec - Plotly axis title spec.
+ * @returns {string} Title text, or empty string when unavailable.
+ */
+function titleTextFromSpec(titleSpec) {
+  if (typeof titleSpec === "string") return titleSpec;
+  if (titleSpec && typeof titleSpec === "object" && typeof titleSpec.text === "string") {
+    return titleSpec.text;
+  }
+  return "";
+}
+
+function activePayloadForCurrentPC() {
+  const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+  data.payloads = data.payloads || {};
+  return data.payloads[pcKey] || (data.payloads[pcKey] = {});
+}
+
+function cacheCurrentQualityTitle() {
+  const payload = activePayloadForCurrentPC();
+  ensureSliderInfo(payload, data.p, 0);
+  const si = payload.slider_info;
+
+  if (typeof si.quality_title === "string" && si.quality_title.length > 0) {
+    return si.quality_title;
+  }
+
+  const fromPayload = titleTextFromSpec(payload?.layout?.xaxis?.title);
+  if (fromPayload) {
+    si.quality_title = fromPayload;
+    return fromPayload;
+  }
+
+  const fromLayout = titleTextFromSpec(el?.layout?.xaxis?.title);
+  if (fromLayout) {
+    si.quality_title = fromLayout;
+    return fromLayout;
+  }
+
+  return "";
+}
+
+/**
+ * Returns the quality-of-display title for the current PC payload.
+ * Prefers payload layout title and falls back to current live layout title.
+ *
+ * @returns {string} Current quality title text (possibly empty).
+ */
+function currentQualityTitleText() {
+  const payload = activePayloadForCurrentPC();
+  ensureSliderInfo(payload, data.p, 0);
+  const cached = payload.slider_info.quality_title;
+  if (typeof cached === "string" && cached.length > 0) return cached;
+  return cacheCurrentQualityTitle();
+}
+
+/**
  * Applies EditAxes controls visibility/state through a single relayout patch.
  *
  * @param {Object} opts - UI options.
@@ -695,11 +754,18 @@ function setEditAxesUI(opts) {
     ? axisButtonsWithPromptFromLayout(el.layout)
     : axisButtonsNoPromptFromLayout(el.layout);
 
+  if (cfg.sliderVisible) {
+    // Cache title before clearing it so restore does not depend on live layout.
+    cacheCurrentQualityTitle();
+  }
+
   const patch = {
     "sliders[0].visible": cfg.sliderVisible,
     "updatemenus[3].visible": cfg.dropdownVisible,
     "updatemenus[3].buttons": axisButtons,
-    "updatemenus[3].active": cfg.usePrompt ? 0 : cfg.axisIdx
+    "updatemenus[3].active": cfg.usePrompt ? 0 : cfg.axisIdx,
+    // Hide quality title only while slider is visible to prevent overlap.
+    "xaxis.title.text": cfg.sliderVisible ? "" : currentQualityTitleText()
   };
 
   if (cfg.sliderVisible && Number.isFinite(cfg.sliderActive)) {
@@ -754,7 +820,12 @@ function toggleSlider(d) {
   if (hasPrompt && rawIdx === 0) {
     // "Select Axis" prompt clicked: keep slider hidden until a real axis is chosen.
     si.axis_chosen = false;
-    return Plotly.relayout(el, { "sliders[0].visible": false, "updatemenus[3].active": 0 });
+    return Plotly.relayout(el, {
+      "sliders[0].visible": false,
+      "updatemenus[3].active": 0,
+      // Restore title once slider is hidden.
+      "xaxis.title.text": currentQualityTitleText()
+    });
   }
 
   const newAxisIdx = hasPrompt ? rawIdx - 1 : rawIdx;
@@ -786,12 +857,16 @@ function toggleSlider(d) {
   const axisButtons = axisButtonsNoPromptFromLayout(el.layout);
 
   // 4) Update slider UI
+  // Cache current title before hiding it while slider is shown.
+  cacheCurrentQualityTitle();
   const relayoutPatch = {
     "updatemenus[3].buttons": axisButtons,
     "updatemenus[3].active": newAxisIdx,
     "sliders[0].visible": true,
     "sliders[0].active": nextActive,
-    "sliders[0].currentvalue.prefix": sliderPrefixFromButtons(axisButtons, newAxisIdx)
+    "sliders[0].currentvalue.prefix": sliderPrefixFromButtons(axisButtons, newAxisIdx),
+    // Hide title while slider is on-screen to avoid overlap.
+    "xaxis.title.text": ""
   };
 
   return Plotly.relayout(el, relayoutPatch);
