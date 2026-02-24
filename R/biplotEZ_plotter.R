@@ -42,6 +42,8 @@ plot_bipl5.PCA <- function(x) {
   #if(is.null(x$axes))
   #for now all the default settings of axes is supported. Might change later on
   x <- biplotEZ::axes(x)
+  # Populate observation-level fit fields (e.g., sample.predictivity) for hover text.
+  x <- biplotEZ::fit.measures(x)
   x$X <- scale(x$X, center = FALSE, scale = 1 / x$sd)
   x$X <- scale(x$X, -x$means, scale = FALSE)
   #next we need to obtain the coordinates of the other PC's
@@ -50,10 +52,14 @@ plot_bipl5.PCA <- function(x) {
 
   PC13 <- biplotEZ::biplot(x$raw.X, center = x$center, scaled = x$scaled) |>
     biplotEZ::PCA(e.vects = c(1, 3), correlation.biplot = corr) |>
-    biplotEZ::axes()
+    biplotEZ::axes() |>
+    # Keep sample.predictivity available for the PC 1 & 3 hover payload.
+    biplotEZ::fit.measures()
   PC23 <- biplotEZ::biplot(x$raw.X, center = x$center, scaled = x$scaled) |>
     biplotEZ::PCA(e.vects = c(2, 3), correlation.biplot = corr) |>
-    biplotEZ::axes()
+    biplotEZ::axes() |>
+    # Keep sample.predictivity available for the PC 2 & 3 hover payload.
+    biplotEZ::fit.measures()
   PC13$X <- x$X
   PC23$X <- x$X
 
@@ -123,20 +129,30 @@ plot_bipl5.PCA <- function(x) {
   z.axes13 <- biplotEZ::axes_coordinates(PC13)
   z.axes23 <- biplotEZ::axes_coordinates(PC23)
   #insert Z coordinates ->PCAbiplot_Helper
-  obj <- list(Z = x$Z, group = group, n = x$n, x = as.matrix(x$X), XHat = Xhat)
+  # Pass per-observation predictivity through so hovertext_generator can append it.
+  obj <- list(
+    Z = x$Z,
+    group = group,
+    n = x$n,
+    x = as.matrix(x$X),
+    XHat = Xhat,
+    sample.predictivity = x$sample.predictivity
+  )
   obj13 <- list(
     Z = PC13$Z,
     group = group,
     n = PC13$n,
     x = as.matrix(PC13$X),
-    XHat = Xhat_13
+    XHat = Xhat_13,
+    sample.predictivity = PC13$sample.predictivity
   )
   obj23 <- list(
     Z = PC23$Z,
     group = group,
     n = PC23$n,
     x = as.matrix(PC23$X),
-    XHat = Xhat_23
+    XHat = Xhat_23,
+    sample.predictivity = PC23$sample.predictivity
   )
 
   p_ly <- insert_Z_coo(p_ly, obj, symbol, color, TRUE)

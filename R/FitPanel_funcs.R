@@ -47,3 +47,29 @@ marginal_predictivities_EZ <- function(x) {
 
   return(fit.predictivity)
 }
+
+
+#' Give marginal axis predictivities of the biplot
+#'
+#' This function calculates the marginal axis predictivities in Understanding
+#' Biplots. It constructs the matrices outlined on page 91
+#'
+#' @param x An object of class biplotEZ::biplot
+#'
+#' @return
+#' marginal axis predictivities for each axis (row 1:p)
+#' @noRd
+marginal_predictivities_EZ <- function(x) {
+  V.mat <- x$Lmat
+  eigval <- x$eigenvalues
+  lambda.mat <- diag(eigval)
+  V <- x$Vr
+  lambda.r.mat <- diag(eigval[x$e.vects])
+  fit.predictivity.mat <- diag(diag(V %*% lambda.r.mat %*% t(V))) %*%
+    solve(
+      diag(diag(V.mat %*% lambda.mat %*% t(V.mat)))
+    )
+  fit.predictivity <- diag(fit.predictivity.mat)
+
+  return(fit.predictivity)
+}

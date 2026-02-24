@@ -160,6 +160,12 @@ insert_Z_coo<-function(p_ly,x,p_ly_pch,Col,visible=TRUE){
 #' @return Character string containing formated table to be displayd on hover
 #' @noRd
 hovertext_generator<-function(x,i,linebreak="\n"){
+  # Prefer the observation-level metric from fit.measures(); keep a legacy fallback.
+  sample_pred <- x$sample.predictivity
+  if (is.null(sample_pred) && !is.null(x$within.class.sample.predictivity)) {
+    sample_pred <- x$within.class.sample.predictivity
+  }
+
   if(is.null(x$XHat))
     return(rownames(x$x)[x$group==levels(x$group)[i]])
   obs<-paste0("Observation: ",rownames(x$x))
@@ -172,6 +178,15 @@ hovertext_generator<-function(x,i,linebreak="\n"){
                              digits=4,align="c"),linebreak)
     vec<-Reduce(paste0,kable_mat)
     vec<-paste0(obs[j],linebreak,linebreak,vec)
+    # Append the observation's sample predictivity below the Actual/Pred table.
+    if (!is.null(sample_pred) && length(sample_pred) >= j) {
+      vec <- paste0(
+        vec,
+        linebreak,
+        "Sample predictivity: ",
+        formatC(as.numeric(sample_pred[j]), format = "f", digits = 4)
+      )
+    }
     longvector<-c(longvector,vec)
   }
   return(longvector)
@@ -883,7 +898,5 @@ insert_vector_annots<-function(p_ly,PC12,PC13,PC23){
     }
   return(p_ly)
 }
-
-
 
 

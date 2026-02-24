@@ -358,10 +358,15 @@
         }
          // ---- D) merge layout: need to change title and button names
         var newLayout = Object.assign({}, el.layout || {});
-        newLayout.annotations = deepClone((nextPayload.layout && nextPayload.layout.annotations) || []);
+        newLayout.annotations = stripFitCaptionAnnotations(
+          deepClone((nextPayload.layout && nextPayload.layout.annotations) || [])
+        );
         newLayout.xaxis.title = deepClone((nextPayload.layout && nextPayload.layout.xaxis.title) || []);
         newLayout.xaxis.autorange=true;
         newLayout.yaxis.autorange=true;
+        if (fitPanelActive) {
+          applyFitPanelTitlesAndCaption(newLayout, fmKey, nextFitPanelTraces, newKey);
+        }
 
         // Ensure TransAxes button caption reflects restored state after PC switch.
         const transIdxForLabel = el.bipl5.but_names.indexOf("TransAxes");
@@ -504,6 +509,166 @@
       return null;
     }
 
+    /**
+     * Returns axis-title and caption text for each fit-panel mode.
+     *
+     * @param {string} key - Active fit-panel key.
+     * @param {string} pcKey - Active PC-pair key.
+     * @returns {{xTitle: string, yTitle: string, caption: string, isTable: boolean}}
+     */
+    function fitPanelTextByKey(key, pcKey) {
+      const tableNumMap = { "PC 1 & 2": 1, "PC 1 & 3": 2, "PC 2 & 3": 3 };
+      const tableNum = tableNumMap[pcKey] || 1;
+
+      const map = {
+        "Cum. Predictivity": {
+          xTitle: "Dimension of subspace",
+          yTitle: "Overall quality and axis predictivities (cumulative)",
+          caption: "Figure 1: Cumulative quality and axis predictivities<br>across the subspace.",
+          isTable: false
+        },
+        "Cum. Adequacy": {
+          xTitle: "Dimension of subspace",
+          yTitle: "Cumulative adequacy",
+          caption: "Figure 2: Cumulative adequacy across dimensions<br>of the subspace.",
+          isTable: false
+        },
+        "Scree Plot": {
+          xTitle: "Dimension of subspace",
+          yTitle: "Scree profile (eigenvalues)",
+          caption: "Figure 3: Scree profile of eigenvalues across<br>subspace dimensions.",
+          isTable: false
+        },
+        "Variance Explained": {
+          xTitle: "Dimension of subspace",
+          yTitle: "Proportion of total variation (cumulative)",
+          caption: "Figure 4: Cumulative proportion of total variation<br>explained across subspace dimensions.",
+          isTable: false
+        },
+        "Summary Table": {
+          xTitle: "",
+          yTitle: "",
+          caption: `Table ${tableNum}: Marginal predictivity and adequacy of the axes<br>for the ${pcKey} pair biplot.`,
+          isTable: true
+        }
+      };
+      return map[key] || map["Cum. Predictivity"];
+    }
+
+    /**
+     * Removes fit-panel caption annotations by meta tag.
+     *
+     * @param {Object[]|undefined} annotations - Layout annotations.
+     * @returns {Object[]} Annotation list without fit-panel captions.
+     */
+    function stripFitCaptionAnnotations(annotations) {
+      const anns = Array.isArray(annotations) ? deepClone(annotations) : [];
+      return anns.filter((ann) => {
+        const m = ann && ann.meta;
+        if (m === "FitCaption") return false;
+        if (Array.isArray(m) && m.includes("FitCaption")) return false;
+        return true;
+      });
+    }
+
+    /**
+     * Computes the center x-position of the RHS panel from `xaxis3.domain`.
+     *
+     * @param {Object} layoutObj - Plotly layout object.
+     * @returns {number} Paper-coordinate center x.
+     */
+    function rhsGraphCenterX(layoutObj) {
+      const dom = layoutObj?.xaxis3?.domain;
+      if (Array.isArray(dom) && dom.length === 2) {
+        const a = Number(dom[0]);
+        const b = Number(dom[1]);
+        if (Number.isFinite(a) && Number.isFinite(b)) return (a + b) / 2;
+      }
+      return 0.825;
+    }
+
+    /**
+     * Computes the center x-position for a fit table from table trace domain.
+     *
+     * @param {Object[]|null} fitTraces - Active fit traces.
+     * @param {number} fallback - Fallback center x.
+     * @returns {number} Paper-coordinate center x.
+     */
+    function rhsTableCenterX(fitTraces, fallback) {
+      if (!Array.isArray(fitTraces) || !fitTraces.length) return fallback;
+      const tr = fitTraces[0];
+      const dom = tr?.domain?.x;
+      if (Array.isArray(dom) && dom.length === 2) {
+        const a = Number(dom[0]);
+        const b = Number(dom[1]);
+        if (Number.isFinite(a) && Number.isFinite(b)) return (a + b) / 2;
+      }
+      return fallback;
+    }
+
+    /**
+     * Applies fit-panel axis titles and centered caption annotation.
+     *
+     * @param {Object} layoutObj - Layout to patch.
+     * @param {string} key - Active fit-panel key.
+     * @param {Object[]|null} fitTraces - Active fit traces.
+     * @param {string} pcKey - Active PC-pair key.
+     * @returns {void}
+     */
+    function applyFitPanelTitlesAndCaption(layoutObj, key, fitTraces, pcKey) {
+      const txt = fitPanelTextByKey(key, pcKey);
+
+      layoutObj.xaxis3 = Object.assign({}, layoutObj.xaxis3 || {});
+      layoutObj.yaxis3 = Object.assign({}, layoutObj.yaxis3 || {});
+
+      if (txt.isTable) {
+        layoutObj.xaxis3.title = "";
+        layoutObj.yaxis3.title = "";
+        layoutObj.xaxis3.showticklabels = false;
+        layoutObj.yaxis3.showticklabels = false;
+        layoutObj.xaxis3.showgrid = false;
+        layoutObj.yaxis3.showgrid = false;
+        layoutObj.xaxis3.zeroline = false;
+        layoutObj.yaxis3.zeroline = false;
+        layoutObj.xaxis3.ticks = "";
+        layoutObj.yaxis3.ticks = "";
+      } else {
+        layoutObj.xaxis3.title = txt.xTitle;
+        layoutObj.yaxis3.title = txt.yTitle;
+        layoutObj.xaxis3.showticklabels = true;
+        layoutObj.yaxis3.showticklabels = true;
+        layoutObj.xaxis3.showgrid = true;
+        layoutObj.yaxis3.showgrid = true;
+        layoutObj.xaxis3.zeroline = true;
+        layoutObj.yaxis3.zeroline = true;
+      }
+
+      const cleaned = stripFitCaptionAnnotations(layoutObj.annotations);
+      const graphCenter = rhsGraphCenterX(layoutObj);
+      const xCenter = txt.isTable ? rhsTableCenterX(fitTraces, graphCenter) : graphCenter;
+
+      const graphTop = (Array.isArray(layoutObj?.yaxis3?.domain) && Number.isFinite(layoutObj.yaxis3.domain[1]))
+        ? layoutObj.yaxis3.domain[1]
+        : 0.85;
+      // Keep caption in a dedicated strip just above the panel so menus stay aligned.
+      const captionY = graphTop + 0.012;
+
+      cleaned.push({
+        xref: "paper",
+        yref: "paper",
+        x: xCenter,
+        y: captionY,
+        xanchor: "center",
+        yanchor: "bottom",
+        align: "center",
+        text: `<b>${txt.caption}</b>`,
+        showarrow: false,
+        meta: ["FitPanel", "FitCaption"],
+        font: { size: 13 }
+      });
+      layoutObj.annotations = cleaned;
+    }
+
 
 
     /**
@@ -538,9 +703,17 @@
       // yaxis3 scaling rule: fixed [0,1] except Scree Plot (autorange)
       if (newKey === "Scree Plot") {
         newLayout.yaxis3 = Object.assign({}, newLayout.yaxis3, { autorange: true });
+      } else if (newKey === "Summary Table") {
+        newLayout.yaxis3 = Object.assign({}, newLayout.yaxis3, { autorange: false });
       } else {
         newLayout.yaxis3 = Object.assign({}, newLayout.yaxis3, { autorange: false, range: [0, 1] });
       }
+      applyFitPanelTitlesAndCaption(
+        newLayout,
+        newKey,
+        tracesToAdd,
+        el.bipl5.currentPCKey || "PC 1 & 2"
+      );
 
       return Plotly.react(el, newData, newLayout).then(() => {
               el.bipl5.currentFMKey = newKey;
@@ -906,6 +1079,12 @@ function toggleSlider(d) {
         newLayout.updatemenus[2].visible=true;
         newLayout.sliders[0].len=0.5;
         newLayout.yaxis3.zeroline=true;
+        applyFitPanelTitlesAndCaption(
+          newLayout,
+          "Cum. Predictivity",
+          add,
+          el.bipl5.currentPCKey || "PC 1 & 2"
+        );
 
         Plotly.react(el, newData, newLayout).then(() => {
         el.bipl5.is_visible = false;
@@ -923,6 +1102,7 @@ function toggleSlider(d) {
           newLayout.yaxis3.zeroline=true;
           newLayout.updatemenus[2].active=0;
           newLayout.sliders[0].len=1;
+          newLayout.annotations = stripFitCaptionAnnotations(newLayout.annotations);
 
           Plotly.react(el, keep, newLayout).then(() => {
           el.bipl5.is_visible = true;
