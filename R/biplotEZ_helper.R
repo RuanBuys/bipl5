@@ -1188,7 +1188,7 @@ is_correlation <- function(x) {
 #'
 #' @return Character vector
 #' @noRd
-fit_quality <- function(eigval, basis) {
+fit_quality <- function(eigval, basis, dim_prefix = "PC") {
   fit.quality <- paste0(
     "Quality of display = ",
     round(
@@ -1198,11 +1198,11 @@ fit_quality <- function(eigval, basis) {
     "%",
     " = ",
     round((eigval[basis[1]] / sum(eigval)) * 100, digits = 2),
-    "% (PC",
+    "% (", dim_prefix,
     basis[1],
     ") + ",
     round((eigval[basis[2]] / sum(eigval)) * 100, digits = 2),
-    "% (PC",
+    "% (", dim_prefix,
     basis[2],
     ")"
   )

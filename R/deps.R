@@ -42,6 +42,10 @@ bipl5_dependency <- function() {
 #' @param payload Named list of precomputed PC payloads.
 #' @param fm_payload List of precomputed fit-panel traces.
 #' @param ax_slider Optional slider configuration (currently reserved for compatibility).
+#' @param initial_pc_key Character; the payload key initially rendered in the
+#'   plotly widget (default \code{"PC 1 & 2"}).  Passed to JavaScript so that
+#'   \code{currentPCKey} is set correctly when a non-default PC pair is shown
+#'   first.
 #'
 #' @return Plotly htmlwidget with dependency and onRender handler attached.
 #' @noRd
@@ -51,7 +55,8 @@ insert_linear_js_v1 <- function(
   cols,
   payload,
   fm_payload,
-  ax_slider = NULL
+  ax_slider = NULL,
+  initial_pc_key = "PC 1 & 2"
 ) {
   dep <- bipl5_dependency()
 
@@ -80,7 +85,8 @@ insert_linear_js_v1 <- function(
       class_mean_hover = FALSE,
       payloads = payload,
       fm_payload = fm_payload,
-      ax_slider = ax_slider
+      ax_slider = ax_slider,
+      initialPCKey = initial_pc_key
     )
   )
 

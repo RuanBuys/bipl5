@@ -416,10 +416,10 @@ plot_bipl5.CVA <- function(x) {
 
   p_ly <- insert_linear_js_v1(
     p_ly,
-    m = grads,
     p = p,
     cols = x$axes$tick.label.col,
-    payload = NULL
+    payload = NULL,
+    fm_payload = NULL
   )
 
   return(p_ly)

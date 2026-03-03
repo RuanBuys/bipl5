@@ -1,12 +1,13 @@
 (function () {
   window.bipl5Attach = function (el, x, data) {
+    var _initPCKey = data.initialPCKey || "PC 1 & 2";
     el.bipl5 = {
       clicked: false, //helps keep trac if an observation is clicked
       rel_but: [0, 0, 0, 0, 0], // includes EditAxes toggle state
       is_visible: true,
       vect_visible: 0,
       but_names: ["PC", "AxisStats", "TransAxes", "vecload", "EditAxes"], // top-row button ids
-      currentPCKey: "PC 1 & 2",
+      currentPCKey: _initPCKey,
       currentFMKey: "Cum. Predictivity"
     };
 
@@ -237,7 +238,7 @@
           : 0;
 
       ensureSliderInfo(payload, p, sliderActiveNow);
-      const si = payload.slider_info;
+      const si = payload.config.slider_info;
       si.axis_chosen = false;
 
       // Only persist active axis choice when slider is visible (user selected an axis).
@@ -303,7 +304,7 @@
         if (!newKey) return;
 
         // ignore if user re-clicks same dropdown option
-        const oldKey = el.bipl5.currentPCKey || "PC 1 & 2";
+        const oldKey = el.bipl5.currentPCKey || _initPCKey;
         if (newKey === oldKey) return;
         data.payloads = data.payloads || {};
 
@@ -374,13 +375,14 @@
         setTransAxesButtonLabel(newLayout, transOnForLabel);
 
         // Restore per-payload slider axis + step selection in UI state.
+        const nextCfgSI = nextPayload.config && nextPayload.config.slider_info;
         const seedActive =
-          (nextPayload.slider_info && Array.isArray(nextPayload.slider_info.slider_pos) &&
-           Number.isFinite(nextPayload.slider_info.slider_pos[0]))
-            ? nextPayload.slider_info.slider_pos[0]
+          (nextCfgSI && Array.isArray(nextCfgSI.slider_pos) &&
+           Number.isFinite(nextCfgSI.slider_pos[0]))
+            ? nextCfgSI.slider_pos[0]
             : 0;
         ensureSliderInfo(nextPayload, data.p, seedActive);
-        const nextSI = nextPayload.slider_info;
+        const nextSI = nextPayload.config.slider_info;
         let nextAxisIdx = Number(nextSI.slider_axis_idx);
         if (!Number.isFinite(nextAxisIdx) || nextAxisIdx < 0 || nextAxisIdx >= data.p) nextAxisIdx = 0;
         nextSI.slider_axis_idx = nextAxisIdx;
@@ -496,7 +498,7 @@
      * @returns {Object[]|null} Trace list for that key, or null if unknown.
      */
     function getFitTracesByKey(key) {
-      const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+      const pcKey = el.bipl5.currentPCKey || _initPCKey;
       const payload = data.payloads?.[pcKey];
 
       // pick the right source
@@ -517,7 +519,10 @@
      * @returns {{xTitle: string, yTitle: string, caption: string, isTable: boolean}}
      */
     function fitPanelTextByKey(key, pcKey) {
-      const tableNumMap = { "PC 1 & 2": 1, "PC 1 & 3": 2, "PC 2 & 3": 3 };
+      // Build table numbering dynamically from available payload keys
+      const pcKeys = Object.keys(data.payloads);
+      const tableNumMap = {};
+      pcKeys.forEach(function(k, i) { tableNumMap[k] = i + 1; });
       const tableNum = tableNumMap[pcKey] || 1;
 
       const map = {
@@ -712,7 +717,7 @@
         newLayout,
         newKey,
         tracesToAdd,
-        el.bipl5.currentPCKey || "PC 1 & 2"
+        el.bipl5.currentPCKey || _initPCKey
       );
 
       return Plotly.react(el, newData, newLayout).then(() => {
@@ -753,9 +758,10 @@ function getButtonIndex(d) {
  * @returns {void}
  */
 function ensureSliderInfo(payload, p, defaultActive) {
-  payload.slider_info = payload.slider_info || {};
+  payload.config = payload.config || {};
+  payload.config.slider_info = payload.config.slider_info || {};
 
-  const si = payload.slider_info;
+  const si = payload.config.slider_info;
 
   if (!Array.isArray(si.slider_pos)) {
     si.slider_pos = new Array(p).fill(defaultActive);
@@ -856,7 +862,7 @@ function titleTextFromSpec(titleSpec) {
 }
 
 function activePayloadForCurrentPC() {
-  const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+  const pcKey = el.bipl5.currentPCKey || _initPCKey;
   data.payloads = data.payloads || {};
   return data.payloads[pcKey] || (data.payloads[pcKey] = {});
 }
@@ -864,7 +870,7 @@ function activePayloadForCurrentPC() {
 function cacheCurrentQualityTitle() {
   const payload = activePayloadForCurrentPC();
   ensureSliderInfo(payload, data.p, 0);
-  const si = payload.slider_info;
+  const si = payload.config.slider_info;
 
   if (typeof si.quality_title === "string" && si.quality_title.length > 0) {
     return si.quality_title;
@@ -894,7 +900,7 @@ function cacheCurrentQualityTitle() {
 function currentQualityTitleText() {
   const payload = activePayloadForCurrentPC();
   ensureSliderInfo(payload, data.p, 0);
-  const cached = payload.slider_info.quality_title;
+  const cached = payload.config.slider_info.quality_title;
   if (typeof cached === "string" && cached.length > 0) return cached;
   return cacheCurrentQualityTitle();
 }
@@ -964,7 +970,7 @@ function setEditAxesUI(opts) {
  * @returns {Promise|boolean} Plotly relayout promise on change, else false.
  */
 function toggleSlider(d) {
-  const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+  const pcKey = el.bipl5.currentPCKey || _initPCKey;
   data.payloads = data.payloads || {};
   const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
 
@@ -979,7 +985,7 @@ function toggleSlider(d) {
   // Keep slider selection state isolated per payload (per PC view).
   ensureSliderInfo(payload, p, sliderActiveNow);
 
-  const si = payload.slider_info;
+  const si = payload.config.slider_info;
 
   // Selected axis name (button)
   const axisName = d.button && (d.button.name || d.button.label);
@@ -1083,7 +1089,7 @@ function toggleSlider(d) {
           newLayout,
           "Cum. Predictivity",
           add,
-          el.bipl5.currentPCKey || "PC 1 & 2"
+          el.bipl5.currentPCKey || _initPCKey
         );
 
         Plotly.react(el, newData, newLayout).then(() => {
@@ -1141,7 +1147,7 @@ function toggleSlider(d) {
       if (d.button.name === "EditAxes") {
         // Edit mode is only available while translated axes are active.
         const transOn = el.bipl5.rel_but[el.bipl5.but_names.indexOf("TransAxes")] === 1;
-        const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+        const pcKey = el.bipl5.currentPCKey || _initPCKey;
         data.payloads = data.payloads || {};
         const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
         const sliderActiveNow =
@@ -1149,7 +1155,7 @@ function toggleSlider(d) {
             ? el.layout.sliders[0].active
             : 0;
         ensureSliderInfo(payload, data.p, sliderActiveNow);
-        const si = payload.slider_info;
+        const si = payload.config.slider_info;
 
         if (!transOn) {
           si.axis_chosen = false;
@@ -1207,11 +1213,11 @@ function toggleSlider(d) {
           }
           const editBtnStateIdx = el.bipl5.but_names.indexOf("EditAxes");
           if (editBtnStateIdx >= 0) el.bipl5.rel_but[editBtnStateIdx] = 0;
-          const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+          const pcKey = el.bipl5.currentPCKey || _initPCKey;
           data.payloads = data.payloads || {};
           const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
           ensureSliderInfo(payload, data.p, 0);
-          payload.slider_info.axis_chosen = false;
+          payload.config.slider_info.axis_chosen = false;
           // When TransAxes turns on: show EditAxes button, but keep controls hidden.
           setEditAxesUI({ editButtonVisible: true, dropdownVisible: false, sliderVisible: false, usePrompt: true });
           //searchAnnot("vecload",false);
@@ -1257,11 +1263,11 @@ function toggleSlider(d) {
 
           const editBtnStateIdx = el.bipl5.but_names.indexOf("EditAxes");
           if (editBtnStateIdx >= 0) el.bipl5.rel_but[editBtnStateIdx] = 0;
-          const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+          const pcKey = el.bipl5.currentPCKey || _initPCKey;
           data.payloads = data.payloads || {};
           const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
           ensureSliderInfo(payload, data.p, 0);
-          payload.slider_info.axis_chosen = false;
+          payload.config.slider_info.axis_chosen = false;
           // When TransAxes turns off: hide EditAxes button and controls.
           setEditAxesUI({ editButtonVisible: false, dropdownVisible: false, sliderVisible: false, usePrompt: true });
 
@@ -1715,7 +1721,7 @@ function shiftNumericArray(arr, delta) {
       if (!transOn) return;
 
       // Each PC pair has its own slider state. Resolve/create that payload bucket first.
-      const pcKey = el.bipl5.currentPCKey || "PC 1 & 2";
+      const pcKey = el.bipl5.currentPCKey || _initPCKey;
       data.payloads = data.payloads || {};
       const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
 
@@ -1726,10 +1732,10 @@ function shiftNumericArray(arr, delta) {
           ? el.layout.sliders[0].active
           : 0;
 
-      // Ensure payload.slider_info has expected shape:
+      // Ensure payload.config.slider_info has expected shape:
       // slider_pos[axisIndex], slider_axis_idx, and step_size.
       ensureSliderInfo(payload, data.p, sliderActiveNow);
-      const si = payload.slider_info;
+      const si = payload.config.slider_info;
 
       // Axis currently selected in the "Slider_toggle" dropdown (0-based).
       const axisIdx0 = si.slider_axis_idx; // 0-based

@@ -208,8 +208,8 @@ insert_class_means_payload <- function(payload, Z, symbol, color) {
 
   for (i in seq_len(n)) {
     traces[[i]] <- list(
-      x = Z[i, 1],
-      y = Z[i, 2],
+      x = list(Z[i, 1]),
+      y = list(Z[i, 2]),
       name = rownames(Z)[i] %||% paste0("ClassMean_", i),
       type = "scatter",
       mode = "markers",
@@ -1115,7 +1115,7 @@ slider_control_payload <- function(payload, n_inside = 17, n_outside = 4) {
 
   step_size <- 2 * radius / n_inside
 
-  payload$payload$slider_info <- list(
+  payload$payload$config$slider_info <- list(
     "slider_pos" = actual_pos,
     "step_size" = step_size
   )
