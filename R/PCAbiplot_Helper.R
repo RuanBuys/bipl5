@@ -10,9 +10,9 @@ getquad<-function(V,m){
   p<-nrow(V)
   quadrants<-numeric()
   for(i in 1:p){
-    if(V[i,1]>0) quadrants[i]<-c(1,4)[m[i]<0 +1]
+    if(V[i,1]>0) quadrants[i]<-c(1,4)[(m[i] < 0) + 1]
     else
-      quadrants[i]<-c(2,3)[m[i]<0 +1]
+      quadrants[i]<-c(2,3)[(m[i] < 0) + 1]
   }
   quadrants
 }

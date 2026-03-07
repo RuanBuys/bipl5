@@ -531,36 +531,41 @@ plot_bipl5.PCO <- function(x) {
           visible = TRUE,
           hovertext = round(z.axes[[i]][, 3], 1),
           hoverinfo = "text"
-        ) |>
+        )
 
-        add_annotations(
-          x = z.axes[[i]][idx, 1],
-          y = z.axes[[i]][idx, 2],
-          text = as.character(z.axes[[i]][idx, 3]),
-          showarrow = FALSE,
-          textangle = -atan(m) * 180 / pi,
-          visible = TRUE,
-          yshift = -12 * cos(atan(m)),
-          xshift = 12 * sin(atan(m)),
-          meta = 'axis',
-          xaxis = "x",
-          yaxis = "y",
-          customdata = i,
-          font = list(size = 10)
-        ) |>
-        add_annotations(
-          x = z.axes[[i]][idx, 1],
-          y = z.axes[[i]][idx, 2],
-          text = "&#124;",
-          showarrow = FALSE,
-          textangle = -atan(m) * 180 / pi,
-          visible = TRUE,
-          meta = 'axis',
-          xaxis = "x",
-          yaxis = "y",
-          customdata = i,
-          font = list(size = 8)
-        ) |>
+      if (length(idx) > 0) {
+        p_ly <- p_ly |>
+          add_annotations(
+            x = z.axes[[i]][idx, 1],
+            y = z.axes[[i]][idx, 2],
+            text = as.character(z.axes[[i]][idx, 3]),
+            showarrow = FALSE,
+            textangle = -atan(m) * 180 / pi,
+            visible = TRUE,
+            yshift = -12 * cos(atan(m)),
+            xshift = 12 * sin(atan(m)),
+            meta = 'axis',
+            xaxis = "x",
+            yaxis = "y",
+            customdata = i,
+            font = list(size = 10)
+          ) |>
+          add_annotations(
+            x = z.axes[[i]][idx, 1],
+            y = z.axes[[i]][idx, 2],
+            text = "&#124;",
+            showarrow = FALSE,
+            textangle = -atan(m) * 180 / pi,
+            visible = TRUE,
+            meta = 'axis',
+            xaxis = "x",
+            yaxis = "y",
+            customdata = i,
+            font = list(size = 8)
+          )
+      }
+
+      p_ly <- p_ly |>
         add_trace(
           x = endp[1],
           y = endp[2],
