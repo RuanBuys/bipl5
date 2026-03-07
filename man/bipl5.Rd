@@ -42,15 +42,15 @@ License: \tab MIT \cr
 \section{Core Functions}{
 
 \itemize{
-\item{\link{PCAbiplot}}
+\item{\link{wrap_bipl5}}
 
-\item{\link{TDAbiplot}}
+\item{\link{extract}}
 
-\item{\link{FMbiplot}}
+\item{\link{append_payload}}
 
-\item{\link{predict.bipl5}}
+\item{\link{remove_payload}}
 
-\item{\link{print.bipl5}}
+\item{\link{plot.bipl5_biplot}}
 }
 }
 

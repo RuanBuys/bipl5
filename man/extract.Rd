@@ -5,7 +5,7 @@
 \alias{extract.bipl5_biplot}
 \title{Extract nested components from a bipl5_biplot object}
 \usage{
-extract(object, ...)
+extract(object, expr, from, what)
 
 \method{extract}{bipl5_biplot}(object, expr, from, what)
 }

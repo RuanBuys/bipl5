@@ -40,108 +40,32 @@ library(bipl5)
 #> Run help(bipl5) for more information on the package scope.
 ```
 
-## Example: Traditional PCA biplot
+## Example: PCA biplot
 
-This is a basic example of constructing a traditional PCA biplot with
-calibrated axes and vector loadings. In the literature, a square is
-often drawn around the biplot purely for aesthetic reasons. This
-approached was modified by constructing a circle which bounds the plot:
-
-``` r
-PCAbiplot(iris[,-5],group=iris[,5])
-#> Call:
-#> PCAbiplot(x = iris[, -5], group = iris[, 5])
-#> 
-#> Data Breakdown:
-#>   n: 150 
-#>   p: 4
-#> 
-#> Grouping variable:            
-#>              Count
-#>   setosa        50
-#>   versicolor    50
-#>   virginica     50
-#> 
-#> Fit Statistics:
-#> 
-#> 
-#> Table: Adequacy of the Axes
-#> 
-#> |         | Sepal.Length| Sepal.Width| Petal.Length| Petal.Width|
-#> |:--------|------------:|-----------:|------------:|-----------:|
-#> |PC: 1+2: |       0.4140|      0.9250|       0.3375|      0.3235|
-#> |PC: 1+3: |       0.7893|      0.1323|       0.3571|      0.7214|
-#> |PC: 2+3: |       0.6602|      0.9122|       0.0208|      0.4068|
-#> 
-#> 
-#> Table: Axis Predictivity
-#> 
-#> |         | Sepal.Length| Sepal.Width| Petal.Length| Petal.Width|
-#> |:--------|------------:|-----------:|------------:|-----------:|
-#> |PC: 1+2: |       0.9226|      0.9909|       0.9837|      0.9353|
-#> |PC: 1+3: |       0.8684|      0.2205|       0.9861|      0.9902|
-#> |PC: 2+3: |       0.2062|      0.7880|       0.0035|      0.0631|
-#> 
-#> Quality of display = 95.81% = 72.96% (PC1) + 22.85% (PC2)
-```
-
-<img src="man/figures/PCAbiplot.png" width="100%" />
-
-On the rendered HTML file there are reactive events embedded on the
-plot, such as changing the principal components used for the
-scaffolding. More detailed information can be obtained by reading the
-help documentation
+The current workflow is built around `biplotEZ` objects wrapped with
+`wrap_bipl5()`. The resulting widget includes the calibrated axes,
+translated density axes, and the interactive controls:
 
 ``` r
-?PCAbiplot
+bp <- biplotEZ::biplot(iris[, -5]) |>
+  biplotEZ::PCA() |>
+  wrap_bipl5()
+
+plot(bp)
 ```
 
-## Example: Automated Orthogonal Parallel Translation of the axes
+## Example: CVA biplot
 
-The cluttering in the centroid of the biplot can be relieved by the
-Orthogonal Parallel Translation of the axes out of the data centroid in
-such a way that the correlation structure among variables is retained.
-This is done with the following:
+Canonical variate biplots use the same workflow:
 
 ``` r
-x<-PCAbiplot(iris[,-5],group=iris[,5])
-x |> TDAbiplot()
-#> [1] 1.008636
-#> Call:
-#> PCAbiplot(x = iris[, -5], group = iris[, 5]) |> 
-#>  TDAbiplot.bipl5(x = x)
-#> 
-#> Data Breakdown:
-#>   n: 150 
-#>   p: 4
-#> 
-#> Grouping variable:            
-#>              Count
-#>   setosa        50
-#>   versicolor    50
-#>   virginica     50
-#> 
-#> Fit Statistics:
-#> 
-#> 
-#> Table: Adequacy of the Axes
-#> 
-#> |         | Sepal.Length| Sepal.Width| Petal.Length| Petal.Width|
-#> |:--------|------------:|-----------:|------------:|-----------:|
-#> |PC: 1+2: |       0.4140|      0.9250|       0.3375|      0.3235|
-#> |PC: 1+3: |       0.7893|      0.1323|       0.3571|      0.7214|
-#> |PC: 2+3: |       0.6602|      0.9122|       0.0208|      0.4068|
-#> 
-#> 
-#> Table: Axis Predictivity
-#> 
-#> |         | Sepal.Length| Sepal.Width| Petal.Length| Petal.Width|
-#> |:--------|------------:|-----------:|------------:|-----------:|
-#> |PC: 1+2: |       0.9226|      0.9909|       0.9837|      0.9353|
-#> |PC: 1+3: |       0.8684|      0.2205|       0.9861|      0.9902|
-#> |PC: 2+3: |       0.2062|      0.7880|       0.0035|      0.0631|
-#> 
-#> Quality of display = 95.81% = 72.96% (PC1) + 22.85% (PC2)
+bp_cva <- biplotEZ::biplot(iris[, 1:4]) |>
+  biplotEZ::CVA(classes = iris[, 5]) |>
+  wrap_bipl5()
+
+plot(bp_cva)
 ```
 
-<img src="man/figures/TDAbiplot.png" width="100%" />
+Translated axes are part of the interactive widget. After rendering the
+plot, use the translated-axis controls in the plot UI rather than
+calling a separate translation function.

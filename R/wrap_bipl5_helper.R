@@ -8,19 +8,49 @@
 #'
 #' @param ez_obj A biplotEZ \code{biplot} object that has already been
 #'   processed through \code{biplotEZ::PCA()}, \code{biplotEZ::axes()},
-#'   and \code{biplotEZ::fit.measures()}.
+#'   and \code{biplotEZ::fit.measures()} for the specific dimension pair being
+#'   built.
 #' @param group Factor vector of group memberships (length \code{ez_obj$n}).
 #' @param color Character vector of colours, one per group level.
 #' @param symbol Character vector of plotly marker symbols, one per group
 #'   level (output of \code{pch_to_plotly()}).
 #' @param x_ref The primary biplotEZ object used for polygon data and class
-#'   means aesthetics.  Typically the original PC 1 & 2 object.
+#'   means aesthetics.  This is typically the user's originally requested
+#'   biplotEZ object, not necessarily \code{ez_obj}.
 #' @param include_polygons Logical; if \code{TRUE}, alpha bags and
 #'   concentration ellipses from \code{x_ref} are inserted.  Should only be
-#'   \code{TRUE} for PC 1 & 2, because polygon coordinates are computed in
-#'   that space.
+#'   \code{TRUE} for the primary payload, because polygon coordinates are only
+#'   valid in the coordinate system in which they were computed.
+#' @param dim_prefix Basis label prefix used by \code{fit_quality()}, usually
+#'   \code{"PC"} for PCA payloads or \code{"CV"} for CVA payloads.
+#' @param ax_pred Logical; whether axis-predictivity scaffolding should be
+#'   included in the payload.
+#' @param vec_dis Logical; whether unit-circle and vector-loading layers should
+#'   be added. This is typically \code{TRUE} for PCA and \code{FALSE} for CVA.
 #'
 #' @return An object of class \code{bipl5_payload}.
+#'
+#' @details
+#' The payload is built in a fixed order so downstream JavaScript sees a stable
+#' trace layout:
+#' \enumerate{
+#'   \item plot scaffolding and fit-quality text
+#'   \item primary-pair polygons, when requested
+#'   \item observation traces with hovertext built from actual and reconstructed
+#'   values
+#'   \item class-mean traces, using coordinates from \code{ez_obj} but
+#'   aesthetics from \code{x_ref}
+#'   \item calibrated linear axes
+#'   \item optional PCA-only vector layers
+#'   \item translated density axes and slider metadata
+#'   \item the nested \code{bipl5_data} object used for inspection
+#' }
+#'
+#' The distinction between \code{ez_obj} and \code{x_ref} matters.  Coordinates
+#' that depend on the current basis, such as \code{Z}, \code{Zmeans}, and axis
+#' coordinates, come from \code{ez_obj}.  Display options that should remain
+#' consistent across payloads, such as polygon availability and class-mean
+#' aesthetics, are taken from \code{x_ref}.
 #' @noRd
 build_one_payload <- function(
   ez_obj,

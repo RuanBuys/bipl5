@@ -5,7 +5,7 @@
 \alias{remove_payload.bipl5_biplot}
 \title{Remove a payload from a bipl5_biplot object}
 \usage{
-remove_payload(object, ...)
+remove_payload(object, payload)
 
 \method{remove_payload}{bipl5_biplot}(object, payload)
 }

@@ -3,16 +3,12 @@ test_that("PCAbiplot creates correct class", {
   expect_s3_class(obj,"bipl5")
 })
 
-#' @srrstats {G5.0} Iris dataset used in tests
 test_that("PCAbiplot: scale correct applied", {
   obj<-PCAbiplot(iris[1:20,-5],scale=FALSE)
 
   expect_equal(obj$stddev,rep(1,obj$p))
 })
 
-#' @srrstats {G5.2} error warnings and messages tested in following code
-#' @srrstats {G5.2a} All messages unique to situation
-#' @srrstats {G5.2b} Conditions outlines when errors occur
 test_that("PCAbiplot: error on NA", {
   data<-iris[1:20,-5]
 

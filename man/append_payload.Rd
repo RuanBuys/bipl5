@@ -5,7 +5,7 @@
 \alias{append_payload.bipl5_biplot}
 \title{Append a payload to a bipl5_biplot object}
 \usage{
-append_payload(object, ...)
+append_payload(object, eigenvectors)
 
 \method{append_payload}{bipl5_biplot}(object, eigenvectors)
 }

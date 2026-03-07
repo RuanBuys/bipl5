@@ -17,9 +17,6 @@
 #'    License: \tab MIT \cr
 #'  }
 #'
-#' @srrstats {G1.0} Primary reference included in package description
-#' @srrstats {G1.3} All statistical terminology explained in the documentation
-#' @srrstats {G1.2} Life cycle statement included in contributing file
 #' @section Author(s):
 #'
 #'
@@ -38,15 +35,15 @@
 #'
 #' @section Core Functions:
 #' \itemize{
-#'  \item{\link{PCAbiplot}}
+#'  \item{\link{wrap_bipl5}}
 #'
-#'  \item{\link{TDAbiplot}}
+#'  \item{\link{extract}}
 #'
-#'  \item{\link{FMbiplot}}
+#'  \item{\link{append_payload}}
 #'
-#'  \item{\link{predict.bipl5}}
+#'  \item{\link{remove_payload}}
 #'
-#'  \item{\link{print.bipl5}}
+#'  \item{\link{plot.bipl5_biplot}}
 #' }
 #'
 #' @section Code Availability:
@@ -55,6 +52,7 @@
 #' GitHub: \url{https://github.com/RuanBuys/bipl5}
 #'
 #'
+#' @import plotly
 #' @docType package
 #' @name bipl5
 NULL

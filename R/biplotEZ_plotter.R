@@ -30,7 +30,6 @@ plot_bipl5 <- function(x) {
 #' @return A plotly graph
 #' @export
 #' @method plot_bipl5 PCA
-#' @S3method plot_bipl5 PCA
 #'
 #' @examples
 #' library(biplotEZ)
@@ -280,7 +279,6 @@ plot_bipl5.PCA <- function(x) {
 #' @return A plotly graph
 #' @export
 #' @method plot_bipl5 CVA
-#' @S3method plot_bipl5 CVA
 #' @import biplotEZ
 #'
 #' @examples
@@ -433,7 +431,6 @@ plot_bipl5.CVA <- function(x) {
 #' @return A plotly graph
 #' @export
 #' @method plot_bipl5 PCO
-#' @S3method plot_bipl5 PCO
 #'
 #' @examples
 #' library(biplotEZ)

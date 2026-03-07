@@ -67,8 +67,6 @@ translate<-function(elip,quadrant,other,d,endpoints,theta,swop=FALSE){
 #'         sixteen unique colors defined.
 #' @importFrom grDevices rgb
 #'
-#' @srrstats {G2.4a} Paramater assumed integer converted via as.integer
-#'
 #' @export
 #' @examples
 #' colorpal(number=7)
@@ -103,4 +101,3 @@ colorpal<-function(number=16){
   )
   return(c(pal,pal2)[1:number])
 }
-

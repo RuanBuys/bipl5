@@ -11,3 +11,5 @@
 ^\.github$
 ^codecov\.yml$
 ^bipl5_junk$
+^\.claude$
+^agents\.md$

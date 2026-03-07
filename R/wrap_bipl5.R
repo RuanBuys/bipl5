@@ -2,17 +2,59 @@
 # Naming helpers (payload, label, fit-table names from PC indices)
 # ─────────────────────────────────────────────────────────────────────────────
 
+#' Build the canonical payload name for a dimension pair
+#'
+#' Payloads are stored under stable names such as \code{Payload_12} and
+#' \code{Payload_45}. This helper centralises that convention so the same
+#' identifier is reused when payloads are constructed, subsetted, appended,
+#' removed, and registered in \code{meta$pc_info}.
+#'
+#' @param pcs Integer vector of length 2 giving the selected dimension pair.
+#'   Callers are expected to supply the pair in sorted order.
+#'
+#' @return A character scalar of the form \code{"Payload_ij"}.
 #' @noRd
 payload_name <- function(pcs) paste0("Payload_", pcs[1], pcs[2])
 
+#' Build the user-facing label for a dimension pair
+#'
+#' Converts an index pair such as \code{c(1, 3)} into the label shown in the
+#' dropdown menu and fit-quality text, for example \code{"PC 1 & 3"} or
+#' \code{"CV 1 & 3"}.
+#'
+#' @param pcs Integer vector of length 2 giving the selected dimension pair.
+#' @param prefix Label prefix used for the basis family, typically
+#'   \code{"PC"} or \code{"CV"}.
+#'
+#' @return A character scalar suitable for UI display.
 #' @noRd
 pair_label <- function(pcs, prefix = "PC") {
   paste0(prefix, " ", pcs[1], " & ", pcs[2])
 }
 
+#' Build the fit-table storage key for a dimension pair
+#'
+#' Fit tables are stored separately from the main payload traces and are keyed
+#' by names such as \code{fit_table_12}. This helper keeps that mapping
+#' consistent with the payload naming convention.
+#'
+#' @param pcs Integer vector of length 2 giving the selected dimension pair.
+#'
+#' @return A character scalar of the form \code{"fit_table_ij"}.
 #' @noRd
 ft_name <- function(pcs) paste0("fit_table_", pcs[1], pcs[2])
 
+#' Convert a fit-table storage key back to a display label
+#'
+#' This is used primarily by the print methods when rendering a tree view of a
+#' \code{bipl5_fitmeasures} object. For example, \code{fit_table_23} becomes
+#' \code{"PC 2 & 3"}.
+#'
+#' @param ft Character scalar of the form \code{"fit_table_ij"}.
+#' @param prefix Label prefix used for the basis family, typically
+#'   \code{"PC"} or \code{"CV"}.
+#'
+#' @return A user-facing label corresponding to \code{ft}.
 #' @noRd
 ft_label <- function(ft, prefix = "PC") {
   digits <- gsub("fit_table_", "", ft)
@@ -28,9 +70,17 @@ ft_label <- function(ft, prefix = "PC") {
 
 #' Create a bipl5_data object
 #'
-#' @param sample_coordinates Matrix of observation coordinates (Z)
-#' @param axes_coordinates List of axis tick coordinate matrices
-#' @param translated_axes_coordinates Shift data from TDA translation
+#' A \code{bipl5_data} object stores the numeric data behind one payload. It is
+#' used for inspection via \code{extract()}, for the tree-style print methods,
+#' and as a stable container for coordinates that correspond to the rendered
+#' plotly traces.
+#'
+#' @param sample_coordinates Numeric matrix of observation coordinates in the
+#'   current two-dimensional biplot space (\code{ez_obj$Z}).
+#' @param axes_coordinates List of per-variable axis coordinate objects returned
+#'   by \code{biplotEZ::axes_coordinates()} for the same dimension pair.
+#' @param translated_axes_coordinates Translation metadata returned by the TDA
+#'   builder and used to recover translated-axis positions.
 #'
 #' @return An object of class \code{bipl5_data}
 #' @noRd
@@ -50,10 +100,15 @@ new_bipl5_data <- function(
 
 #' Create a bipl5_payload object
 #'
-#' Bundles a constructed payload (from the payload_* functions) together with
-#' its associated \code{bipl5_data}.
+#' Bundles a constructed payload together with its associated
+#' \code{bipl5_data}. The \code{payload_list} supplied here is expected to be
+#' the output of the full build pipeline: a list containing the plotly-ready
+#' payload, fit-quality text, translated-axis metadata, and any slider state.
+#' This constructor simply attaches the \code{Data} node and assigns the class.
 #'
-#' @param payload_list The raw payload list produced by the build pipeline
+#' @param payload_list The raw list produced by the payload build pipeline,
+#'   typically containing \code{payload}, \code{fit_qual}, \code{m}, and
+#'   \code{shift}.
 #' @param data A \code{bipl5_data} object
 #'
 #' @return An object of class \code{bipl5_payload}
@@ -66,10 +121,14 @@ new_bipl5_payload <- function(payload_list, data) {
 
 #' Create a bipl5_fitmeasures object
 #'
-#' @param CumPred List of cumulative predictivity traces
-#' @param CumAd List of cumulative adequacy traces
-#' @param VarExp List of variance explained traces
-#' @param Scree List of scree plot traces
+#' Collects the plotly traces used by the optional right-hand-side fit panel in
+#' PCA biplots. The chart-based measures are shared across payloads, while the
+#' marginal summary tables are keyed by the corresponding PC pair.
+#'
+#' @param CumPred List of cumulative predictivity traces.
+#' @param CumAd List of cumulative adequacy traces.
+#' @param VarExp List of proportion-variance-explained traces.
+#' @param Scree List of scree-plot traces.
 #' @param fit_tables Named list of marginal fit table traces (e.g.
 #'   \code{list(fit_table_12 = ..., fit_table_13 = ...)})
 #'
@@ -95,10 +154,21 @@ new_bipl5_fitmeasures <- function(
 
 #' Create a bipl5_biplot object
 #'
+#' This is the top-level container returned by \code{wrap_bipl5()}. Payloads
+#' are stored as top-level fields, with \code{fit_measures} and \code{meta}
+#' added alongside them. The order of entries in \code{meta$pc_info} is
+#' significant: downstream code treats the first registered payload as the
+#' initial view shown to the user.
+#'
 #' @param payloads Named list of \code{bipl5_payload} objects
 #'   (e.g. \code{list(Payload_12 = ..., Payload_13 = ...)})
-#' @param fit_measures A \code{bipl5_fitmeasures} object (or \code{NULL})
-#' @param meta List of metadata (biplotEZ objects, aesthetics, pc_info)
+#' @param fit_measures A \code{bipl5_fitmeasures} object (or \code{NULL} for
+#'   CVA biplots).
+#' @param meta List of metadata required downstream by \code{plot()},
+#'   \code{print()}, \code{extract()}, \code{remove_payload()}, and
+#'   \code{append_payload()}. At minimum this contains the source biplotEZ
+#'   object, display aesthetics, \code{fit.quality}, \code{pc_info}, and the
+#'   basis prefix.
 #' @param biplot_type Character string for the secondary class, e.g.
 #'   \code{"pca"} or \code{"cva"}.
 #'
@@ -149,7 +219,6 @@ wrap_bipl5 <- function(x) {
 #' @return An object of class \code{bipl5_biplot}
 #' @export
 #' @method wrap_bipl5 PCA
-#' @S3method wrap_bipl5 PCA
 #'
 #' @examples
 #' \dontrun{
@@ -291,7 +360,6 @@ wrap_bipl5.PCA <- function(x) {
 #' @return An object of class \code{c("bipl5_biplot", "cva")}
 #' @export
 #' @method wrap_bipl5 CVA
-#' @S3method wrap_bipl5 CVA
 #'
 #' @examples
 #' \dontrun{
@@ -739,6 +807,13 @@ print.bipl5_fitmeasures <- function(x, ...) {
 
 # ── Print helpers (not exported) ─────────────────────────────────────────────
 
+#' Print the nested \code{Data} branch used by the public print methods
+#'
+#' @param data A \code{bipl5_data} object.
+#' @param prefix Prefix string used to align tree branches with the caller's
+#'   current indentation level.
+#'
+#' @return Invisibly called for its side effect of writing formatted text.
 #' @noRd
 print_data_subtree <- function(data, prefix) {
   green <- crayon::green
@@ -779,6 +854,13 @@ print_data_subtree <- function(data, prefix) {
   cat(inner, "\u2514\u2500\u2500 translated_axes_coordinates\n", sep = "")
 }
 
+#' Print the fit-measures branch used by the public print methods
+#'
+#' @param fm A \code{bipl5_fitmeasures} object.
+#' @param prefix Prefix string used to align tree branches with the caller's
+#'   current indentation level.
+#'
+#' @return Invisibly called for its side effect of writing formatted text.
 #' @noRd
 print_fitmeasures_subtree <- function(fm, prefix) {
   silver <- crayon::silver
@@ -816,6 +898,12 @@ print_fitmeasures_subtree <- function(fm, prefix) {
   }
 }
 
+#' Format a compact dimension label for tree-style printing
+#'
+#' @param mat An object that may have matrix-like dimensions or vector length.
+#'
+#' @return A short character label such as \code{"  [150 x 2]"},
+#'   \code{"  [4]"}, or \code{""} when no compact label can be inferred.
 #' @noRd
 dim_label <- function(mat) {
   if (is.matrix(mat) || is.data.frame(mat)) {
@@ -834,12 +922,19 @@ dim_label <- function(mat) {
 
 #' Subset a bipl5_biplot to keep only specified payloads
 #'
+#' Internal engine used by \code{extract()}, \code{remove_payload()}, and
+#' \code{append_payload()} when a new top-level \code{bipl5_biplot} needs to be
+#' assembled from an existing one. The order of \code{keep} is preserved and
+#' becomes the new payload order in \code{meta$pc_info}, which in turn controls
+#' the initial plot shown by \code{plot.bipl5_biplot()}.
+#'
 #' @param bp A \code{bipl5_biplot} object
 #' @param keep Character vector of payload names to retain
 #'   (e.g. \code{"Payload_12"} or \code{c("Payload_12", "Payload_23")})
 #'
 #' @return A new \code{bipl5_biplot} with only the specified payloads and
-#'   their corresponding fit tables
+#'   their corresponding fit tables. Shared PCA fit charts
+#'   (\code{CumPred}, \code{CumAd}, \code{VarExp}, \code{Scree}) are preserved.
 #' @noRd
 subset_biplot <- function(bp, keep) {
   pc_info <- bp$meta$pc_info
@@ -914,7 +1009,7 @@ subset_biplot <- function(bp, keep) {
 #'
 #' @return A \code{bipl5_biplot} (payload subset) or the requested sub-element
 #' @export
-extract <- function(object, ...) {
+extract <- function(object, expr, from, what) {
   UseMethod("extract")
 }
 
@@ -957,7 +1052,19 @@ extract.bipl5_biplot <- function(object, expr, from, what) {
   stop("Provide either (from, what) or a single $ expression.", call. = FALSE)
 }
 
-#' Walk a $ expression into a character path
+#' Decompose an \code{extract()} path expression into its field names
+#'
+#' \code{extract()} accepts expressions such as
+#' \code{Payload_12$Data$sample_coordinates}. This helper walks the nested
+#' \code{$} calls and returns a character vector that can be traversed
+#' programmatically.
+#'
+#' @param expr A symbol or nested \code{$} call captured with
+#'   \code{substitute()}.
+#'
+#' @return Character vector of field names in traversal order.
+#' @details Only plain symbols and nested \code{$} expressions are supported.
+#'   Any other language object is treated as invalid input and raises an error.
 #' @noRd
 deparse_path <- function(expr) {
   if (is.symbol(expr)) {
@@ -988,14 +1095,13 @@ deparse_path <- function(expr) {
 #'
 #' @return A new \code{bipl5_biplot} without the removed payload
 #' @export
-remove_payload <- function(object, ...) {
+remove_payload <- function(object, payload) {
   UseMethod("remove_payload")
 }
 
 #' @rdname remove_payload
 #' @export
 #' @method remove_payload bipl5_biplot
-#' @S3method remove_payload bipl5_biplot
 remove_payload.bipl5_biplot <- function(object, payload) {
   nm <- as.character(substitute(payload))
   all_payloads <- names(object$meta$pc_info)
@@ -1042,14 +1148,13 @@ remove_payload.bipl5_biplot <- function(object, payload) {
 #'
 #' @return A new \code{bipl5_biplot} with the additional payload appended
 #' @export
-append_payload <- function(object, ...) {
+append_payload <- function(object, eigenvectors) {
   UseMethod("append_payload")
 }
 
 #' @rdname append_payload
 #' @export
 #' @method append_payload bipl5_biplot
-#' @S3method append_payload bipl5_biplot
 append_payload.bipl5_biplot <- function(object, eigenvectors) {
   # ── Validate input ────────────────────────────────────────────────────────
   if (!is.numeric(eigenvectors) || length(eigenvectors) != 2) {

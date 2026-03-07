@@ -67,8 +67,6 @@ axis_predictivities_EZ <- function(x) {
         diag(diag(V.mat %*% lambda.mat %*% t(V.mat)))
       )
 
-    print(diag(diag(V %*% lambda.r.mat %*% t(V))))
-
     fit.predictivity <- round(diag(fit.predictivity.mat), digits = 3)
     databasis[1:x$p, i] <- fit.predictivity
     databasis[x$p + 1, i] <- sum(eigval[1:i]) / sum(eigval)

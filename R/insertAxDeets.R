@@ -4,9 +4,6 @@
 #' @param x Object of class biplot
 #'
 #' @return Updated plotly object
-#' @srrstats {G1.4} Roxygen 2 used
-#' @srrstats {G1.4a} Internal functions documented
-#'
 #' @noRd
 InsertAxisDeets<-function(p_ly,x,EZ=FALSE){
   if(EZ){

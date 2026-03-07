@@ -3,7 +3,6 @@ test_that("TDAbiplot creates correct class", {
   expect_s3_class(obj,"bipl5")
 })
 
-#' @srrstats {G5.0} Iris dataset used in examples
 test_that("TDAbiplot does not print to console", {
   expect_silent(TDAbiplot(PCAbiplot(iris[,-5])))
 })
