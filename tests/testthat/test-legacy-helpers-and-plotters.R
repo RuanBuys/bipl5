@@ -95,6 +95,44 @@ test_that("legacy hovertext, axes, fit tables, and JS helpers remain callable", 
   expect_length(hover, vec_in$n)
   expect_match(hover[[1]], "Sample predictivity:")
 
+  legacy_hovertext <- function(x, i, linebreak = "\n") {
+    sample_pred <- x$sample.predictivity
+    if (is.null(sample_pred) && !is.null(x$within.class.sample.predictivity)) {
+      sample_pred <- x$within.class.sample.predictivity
+    }
+
+    if (is.null(x$XHat)) {
+      return(rownames(x$x)[x$group == levels(x$group)[i]])
+    }
+
+    obs <- paste0("Observation: ", rownames(x$x))
+    longvector <- NULL
+    for (j in (1:x$n)[x$group == levels(x$group)[i]]) {
+      lil_mat <- data.frame(Actual = as.vector(x$x[j, ]), Pred = x$XHat[j, ])
+      rownames(lil_mat) <- colnames(x$x)
+      kable_mat <- paste0(knitr::kable(
+        lil_mat,
+        format = "pipe",
+        digits = 4,
+        align = "c"
+      ), linebreak)
+      vec <- Reduce(paste0, kable_mat)
+      vec <- paste0(obs[j], linebreak, linebreak, vec)
+      if (!is.null(sample_pred) && length(sample_pred) >= j) {
+        vec <- paste0(
+          vec,
+          linebreak,
+          "Sample predictivity: ",
+          formatC(as.numeric(sample_pred[j]), format = "f", digits = 4)
+        )
+      }
+      longvector <- c(longvector, vec)
+    }
+    longvector
+  }
+
+  expect_equal(hover, legacy_hovertext(hover_obj, i = 1, linebreak = "<br>"))
+
   p <- bipl5:::plot_scaffolding("Quality", c(1, 2), x_colnames = colnames(vec_in$x))
   p <- bipl5:::InsertAxisDeets(p, legacy)
   fit_tables <- bipl5:::InsertFitMeasures(p, legacy)
