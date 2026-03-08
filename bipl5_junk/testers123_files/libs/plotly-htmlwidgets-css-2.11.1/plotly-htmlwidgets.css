@@ -1,8 +1,0 @@
-/*
-just here so that plotly works
-correctly with ioslides.
-*/
-
-slide:not(.current) .plotly.html-widget{
-  display: none;
-}
