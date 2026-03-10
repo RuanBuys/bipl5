@@ -1,0 +1,54 @@
+---
+title: "Quarto Widget Test"
+format:
+  revealjs:
+    slide-number: true
+execute:
+  warning: false
+  message: false
+---
+
+```{r setup}
+#| include: false
+library(devtools)
+library(biplotEZ)
+library(plotly)
+load_all(quiet = TRUE)
+```
+
+## Standard Plotly
+
+```{r standard-plotly}
+plot_ly(
+  data = mtcars,
+  x = ~wt,
+  y = ~mpg,
+  type = "scatter",
+  mode = "markers",
+  color = ~factor(cyl),
+  colors = c("#0B6E4F", "#C75146", "#E3B505"),
+  text = ~paste(
+    "Model:", rownames(mtcars),
+    "<br>Weight:", wt,
+    "<br>MPG:", mpg,
+    "<br>Cylinders:", cyl
+  ),
+  hovertemplate = "%{text}<extra></extra>"
+) |>
+  layout(
+    title = "Standard Plotly Scatter Test",
+    xaxis = list(title = "Weight"),
+    yaxis = list(title = "Miles per gallon"),
+    legend = list(title = list(text = "Cylinders"))
+  )
+```
+
+## bipl5
+
+```{r bipl5}
+bp <- biplotEZ::biplot(iris[, 1:4]) |>
+  biplotEZ::PCA() |>
+  wrap_bipl5()
+
+plot(bp)
+```

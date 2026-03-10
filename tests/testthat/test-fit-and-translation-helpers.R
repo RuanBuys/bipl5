@@ -80,6 +80,27 @@ test_that("tickmark helpers shorten and filter axes sensibly", {
   expect_true(all(vapply(shortened, ncol, integer(1)) == 3))
 })
 
+test_that("shorten_axes trims to existing calibrated ticks", {
+  x <- prepared_pca_ez()
+  z_axes <- biplotEZ::axes_coordinates(x)
+  theta <- seq(0, 2 * pi, length.out = 101)
+  ellipse <- cbind(3 * cos(theta), 2 * sin(theta))
+
+  shortened <- bipl5:::shorten_axes(z_axes, ellipse)
+
+  for (i in seq_along(z_axes)) {
+    expect_true(all(shortened[[i]][, 3] %in% z_axes[[i]][, 3]))
+
+    original_idx <- match(shortened[[i]][, 3], z_axes[[i]][, 3])
+    expect_false(anyNA(original_idx))
+    expect_equal(
+      shortened[[i]][, 1:2, drop = FALSE],
+      z_axes[[i]][original_idx, 1:2, drop = FALSE],
+      tolerance = 1e-10
+    )
+  }
+})
+
 test_that("translation helpers return shifted endpoints and densities", {
   x <- prepared_pca_ez()
   z_axes <- biplotEZ::axes_coordinates(x)
@@ -124,4 +145,56 @@ test_that("translation helpers return shifted endpoints and densities", {
   )
   expect_named(translated, c("distance", "ends"))
   expect_equal(dim(translated$ends), c(2, 2))
+})
+
+test_that("dynamic density inflation keeps translated density heights bounded", {
+  x <- prepared_pca_ez()
+  z_axes <- biplotEZ::axes_coordinates(x)
+  r1 <- range(x$Z[, 1])
+  r2 <- range(x$Z[, 2])
+  len <- sqrt((r1[1] - r1[2])^2 + (r2[1] - r2[2])^2)
+  d <- len / 8
+  ellipse <- cluster::predict.ellipsoid(cluster::ellipsoidhull(x$Z), n.out = 101)
+
+  m <- vapply(z_axes, function(ax) ax[1, 2] / ax[1, 1], numeric(1))
+  endpoints <- bipl5:::shorten_axes(z_axes, ellipse)
+  moved <- bipl5:::MoveLines(
+    elip = ellipse,
+    m = m,
+    quadrant = bipl5:::get_quads_axes(z_axes),
+    d = d,
+    initial_ends = endpoints,
+    swop = FALSE,
+    cols = colnames(x$X)
+  )
+
+  inflate <- bipl5:::compute_density_inflation(
+    Z = x$Z,
+    m = m,
+    endpoints = moved$ends,
+    group = x$group.aes,
+    target_height = d
+  )
+  expect_length(inflate, length(m))
+  expect_true(all(is.finite(inflate)))
+  expect_true(all(inflate > 0))
+
+  densities <- bipl5:::MoveDensities(
+    Z = x$Z,
+    m = m,
+    endpoints = moved$ends,
+    dist = moved$ShiftDist,
+    dinflation = inflate,
+    group = x$group.aes
+  )
+
+  for (i in seq_along(m)) {
+    peak_height <- vapply(densities, function(curve) {
+      rotated <- curve[, (2 * i - 1):(2 * i), drop = FALSE] %*%
+        bipl5:::RotationConstructor(atan(m[i]))
+      max(rotated[, 2] - moved$ShiftDist[i])
+    }, numeric(1))
+
+    expect_equal(max(peak_height), d, tolerance = 1e-8)
+  }
 })

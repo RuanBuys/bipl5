@@ -1,0 +1,53 @@
+---
+title: "Testing 123"
+author: "Ruan Buys"
+date: "2024-11-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+
+library(devtools)
+library(biplotEZ)
+library(plotly)
+load_all(quiet = TRUE)
+
+```
+
+## Testing standard plotly
+
+```{r cars}
+plot_ly(
+  data = mtcars,
+  x = ~wt,
+  y = ~mpg,
+  type = "scatter",
+  mode = "markers",
+  color = ~factor(cyl),
+  colors = c("#0B6E4F", "#C75146", "#E3B505"),
+  text = ~paste(
+    "Model:", rownames(mtcars),
+    "<br>Weight:", wt,
+    "<br>MPG:", mpg,
+    "<br>Cylinders:", cyl
+  ),
+  hovertemplate = "%{text}<extra></extra>"
+) |>
+  layout(
+    title = "Standard Plotly Scatter Test",
+    xaxis = list(title = "Weight"),
+    yaxis = list(title = "Miles per gallon"),
+    legend = list(title = list(text = "Cylinders"))
+  )
+```
+
+## Testing bipl5
+
+```{r bipl5}
+bp <- biplotEZ::biplot(iris[, 1:4]) |>
+  biplotEZ::PCA() |>
+  wrap_bipl5()
+
+plot(bp)
+```

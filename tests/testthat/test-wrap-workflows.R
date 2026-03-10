@@ -132,8 +132,12 @@ test_that("append_payload validates input and extends PCA and CVA registries", {
   expect_identical(cva_extended$meta$pc_info$Payload_14$label, "CV 1 & 4")
 })
 
-test_that("wrap_bipl5 on a PCO object still has no applicable method", {
+test_that("wrap_bipl5 on a PCO object produces a bipl5_biplot with pco class", {
   pco <- pco_ez()
-  class(pco) <- "biplot"
-  expect_error(wrap_bipl5(pco), "no applicable method")
+  bp <- wrap_bipl5(pco)
+  expect_s3_class(bp, "bipl5_biplot")
+  expect_true("pco" %in% class(bp))
+  expect_null(bp$fit_measures)
+  expect_error(append_payload(bp, c(1, 3)), "not supported")
+  expect_error(remove_payload(bp, Payload_12), "not supported")
 })

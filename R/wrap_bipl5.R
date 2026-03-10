@@ -174,8 +174,12 @@ new_bipl5_fitmeasures <- function(
 #'
 #' @return An object of class \code{c("bipl5_biplot", biplot_type)}
 #' @noRd
-new_bipl5_biplot <- function(payloads, fit_measures, meta,
-                             biplot_type = "pca") {
+new_bipl5_biplot <- function(
+  payloads,
+  fit_measures,
+  meta,
+  biplot_type = "pca"
+) {
   obj <- payloads
   obj$fit_measures <- fit_measures
   obj$meta <- meta
@@ -202,6 +206,10 @@ wrap_bipl5 <- function(x) {
     if (!is.null(x$PCOaxes)) {
       class(x) <- c(class(x), "PCO")
     }
+  }
+  # Ensure regression/PCO biplots dispatch correctly, not to .PCA
+  if ("regress" %in% class(x) || "PCO" %in% class(x)) {
+    class(x) <- setdiff(class(x), "PCA")
   }
   UseMethod("wrap_bipl5", x)
 }
@@ -397,7 +405,9 @@ wrap_bipl5.CVA <- function(x) {
   # Build standard pairs from available CVs
   all_cvs <- seq_len(max_cv)
   standard <- list()
-  if (max_cv >= 2) standard <- c(standard, list(c(1, 2)))
+  if (max_cv >= 2) {
+    standard <- c(standard, list(c(1, 2)))
+  }
   if (max_cv >= 3) {
     standard <- c(standard, list(c(1, 3)))
     standard <- c(standard, list(c(2, 3)))
@@ -414,9 +424,11 @@ wrap_bipl5.CVA <- function(x) {
     # User picked a non-standard pair; supplement with available standard pairs
     all_pairs <- c(list(user_cvs), standard)
     # Remove duplicates
-    all_pairs <- all_pairs[!duplicated(
-      vapply(all_pairs, paste, character(1), collapse = ",")
-    )]
+    all_pairs <- all_pairs[
+      !duplicated(
+        vapply(all_pairs, paste, character(1), collapse = ",")
+      )
+    ]
   }
 
   # ── Extract display aesthetics ────────────────────────────────────────────
@@ -496,6 +508,230 @@ wrap_bipl5.CVA <- function(x) {
 }
 
 
+#' Construct a bipl5_biplot from a regression biplot
+#'
+#' Builds a single payload for a regression biplot.
+#' Regression biplots have no fit measures and only one fixed payload
+#' (\code{Payload_12}), so \code{append_payload()} and
+#' \code{remove_payload()} are not supported.
+#' The only active toggle button is "Translated Axes".
+#'
+#' @param x An object of class \code{biplot} from the biplotEZ package with
+#'   \code{regress()} method applied.
+#'
+#' @return An object of class \code{c("bipl5_biplot", "reg")}
+#' @export
+#' @method wrap_bipl5 regress
+#'
+#' @examples
+#' \dontrun{
+#' library(biplotEZ)
+#' bp <- biplot(iris[, 1:4]) |>
+#'   regress(Z = prcomp(iris[, 1:4])$x[, 1:2], group.aes = iris[, 5]) |>
+#'   wrap_bipl5()
+#' bp
+#' plot(bp)
+#' }
+wrap_bipl5.regress <- function(x) {
+  # ── Prepare biplotEZ object ───────────────────────────────────────────────
+  if (is.null(x$samples)) {
+    x <- biplotEZ::samples(x)
+  }
+  x <- biplotEZ::axes(x)
+
+  # ── Capture axis coordinates before un-centering X ──────────────────────
+
+  # axes_coordinates() depends on the current state of X, so we must
+  # capture them while X is still centered/scaled.
+  z.axes <- biplotEZ::axes_coordinates(x)
+
+  # ── Un-center/un-scale X so hovertext shows raw values ─────────────────
+  if (x$scaled) {
+    x$X <- scale(x$X, center = FALSE, scale = 1 / x$sd)
+  }
+  if (x$center) {
+    x$X <- scale(x$X, -x$means, scale = FALSE)
+  }
+
+  # ── Extract display aesthetics ────────────────────────────────────────────
+  color <- x$samples$col
+  symbol <- pch_to_plotly(x$samples$pch)
+  group <- x$group.aes
+  if (length(levels(x$group.aes)) == 1) {
+    group <- factor(rep("Data", x$n))
+  }
+
+  # ── Build single payload ────────────────────────────────────────────────
+  pcs <- c(1, 2)
+  pname <- payload_name(pcs)
+
+  payloads <- list()
+  payloads[[pname]] <- build_one_payload(
+    ez_obj = x,
+    group = group,
+    color = color,
+    symbol = symbol,
+    x_ref = x,
+    include_polygons = TRUE,
+    dim_prefix = "Dim",
+    ax_pred = FALSE,
+    vec_dis = FALSE,
+    z.axes = z.axes
+  )
+
+  # ── No fit measures for regression biplots ──────────────────────────────
+  fit_measures <- NULL
+
+  # ── Build pc_info ───────────────────────────────────────────────────────
+  pc_info <- list()
+  pc_info[[pname]] <- list(
+    pcs = pcs,
+    label = pair_label(pcs, prefix = "Dim"),
+    ft_name = ft_name(pcs)
+  )
+
+  # ── Store metadata for plot() ───────────────────────────────────────────
+  meta <- list(
+    x = x,
+    color = color,
+    symbol = symbol,
+    group = group,
+    fit.quality = "",
+    pc_info = pc_info,
+    dim_prefix = "Dim"
+  )
+
+  new_bipl5_biplot(payloads, fit_measures, meta, biplot_type = "reg")
+}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# wrap_bipl5.PCO
+# ─────────────────────────────────────────────────────────────────────────────
+
+#' Construct a bipl5_biplot from a PCO biplot
+#'
+#' Handles two cases depending on the axis type stored in \code{x$PCOaxes}:
+#' \describe{
+#'   \item{Linear axes}{Built identically to regression biplots via
+#'     \code{build_one_payload()}, including translated density axes.}
+#'   \item{Spline axes}{Uses a custom payload builder
+#'     (\code{build_spline_payload()}) that places only sample points, the
+#'     spline axis curves with tick marks, and a bounding circle.
+#'     A custom JavaScript handler is attached at plot time.}
+#' }
+#' In both cases there is a single payload (\code{Payload_12}), no fit
+#' measures, and \code{append_payload()} / \code{remove_payload()} are
+#' disabled.
+#'
+#' @param x An object of class \code{biplot} from the biplotEZ package with
+#'   \code{PCO()} method applied.
+#'
+#' @return An object of class \code{c("bipl5_biplot", "pco")}
+#' @export
+#' @method wrap_bipl5 PCO
+#'
+#' @examples
+#' \dontrun{
+#' library(biplotEZ)
+#' bp <- biplot(iris[, 1:4]) |>
+#'   PCO(dist.func = stats::dist) |>
+#'   wrap_bipl5()
+#' bp
+#' plot(bp)
+#' }
+wrap_bipl5.PCO <- function(x) {
+  # ── Prepare biplotEZ object ───────────────────────────────────────────────
+  if (is.null(x$samples)) {
+    x <- biplotEZ::samples(x)
+  }
+  if (is.null(x$axes)) {
+    x <- biplotEZ::axes(x)
+  }
+
+  # ── Capture axis coordinates before un-centering X ──────────────────────
+  # due to the nature of axes_coordinates(), we must temporarily
+  # replace x$raw.X with the centered/scaled x$X to get correct axis coordinates for spline axes.
+  # This does not affect the final payload because we restore x$raw.X immediately after.
+  temp <- x$raw.X
+  x$raw.X <- x$X
+  z.axes <- biplotEZ::axes_coordinates(x)
+  x$raw.X <- temp
+
+  # ── Un-center/un-scale X so hovertext shows raw values ─────────────────
+  if (x$scaled) {
+    x$X <- scale(x$X, center = FALSE, scale = 1 / x$sd)
+  }
+  if (x$center) {
+    x$X <- scale(x$X, -x$means, scale = FALSE)
+  }
+
+  # ── Extract display aesthetics ────────────────────────────────────────────
+  color <- x$samples$col
+  symbol <- pch_to_plotly(x$samples$pch)
+  group <- x$group.aes
+  if (length(levels(x$group.aes)) == 1) {
+    group <- factor(rep("Data", x$n))
+  }
+
+  # ── Build single payload ────────────────────────────────────────────────
+  pcs <- c(1, 2)
+  pname <- payload_name(pcs)
+
+  is_spline <- identical(x$PCOaxes, "splines")
+
+  payloads <- list()
+
+  if (is_spline) {
+    payloads[[pname]] <- build_spline_payload(
+      ez_obj = x,
+      group = group,
+      color = color,
+      symbol = symbol,
+      z.axes = z.axes
+    )
+  } else {
+    payloads[[pname]] <- build_one_payload(
+      ez_obj = x,
+      group = group,
+      color = color,
+      symbol = symbol,
+      x_ref = x,
+      include_polygons = TRUE,
+      dim_prefix = "Dim",
+      ax_pred = FALSE,
+      vec_dis = FALSE,
+      z.axes = z.axes
+    )
+  }
+
+  # ── No fit measures for PCO biplots ──────────────────────────────────────
+  fit_measures <- NULL
+
+  # ── Build pc_info ───────────────────────────────────────────────────────
+  pc_info <- list()
+  pc_info[[pname]] <- list(
+    pcs = pcs,
+    label = pair_label(pcs, prefix = "Dim"),
+    ft_name = ft_name(pcs)
+  )
+
+  # ── Store metadata for plot() ───────────────────────────────────────────
+  meta <- list(
+    x = x,
+    color = color,
+    symbol = symbol,
+    group = group,
+    fit.quality = "",
+    pc_info = pc_info,
+    dim_prefix = "Dim",
+    spline = is_spline
+  )
+
+  new_bipl5_biplot(payloads, fit_measures, meta, biplot_type = "pco")
+}
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # plot.bipl5_biplot
 # ─────────────────────────────────────────────────────────────────────────────
@@ -519,6 +755,9 @@ plot.bipl5_biplot <- function(x, y = NULL, ...) {
   pc_info <- bp$meta$pc_info
   has_fm <- !is.null(bp$fit_measures)
   is_cva <- "cva" %in% class(bp)
+  is_reg <- "reg" %in% class(bp)
+  is_pco <- "pco" %in% class(bp)
+  is_spline <- isTRUE(bp$meta$spline)
 
   # ── Detect available payloads ──────────────────────────────────────────────
   all_names <- names(pc_info)
@@ -545,8 +784,8 @@ plot.bipl5_biplot <- function(x, y = NULL, ...) {
     basis = ez$e.vects,
     PC_toggle = use_pc_toggle,
     ax_pred = has_fm,
-    TDA = TRUE,
-    vec_dis = !is_cva,
+    TDA = !is_spline,
+    vec_dis = !(is_cva || is_reg || is_pco),
     x_colnames = colnames(ez$X)
   )
 
@@ -586,7 +825,9 @@ plot.bipl5_biplot <- function(x, y = NULL, ...) {
       )
     } else {
       js_payl <- bp[[nm]]$payload
-      if (has_fm) js_payl$fit_table <- bp$fit_measures[[ft_map[nm]]]
+      if (has_fm) {
+        js_payl$fit_table <- bp$fit_measures[[ft_map[nm]]]
+      }
       payload_for_js[[lbl]] <- js_payl
     }
   }
@@ -602,14 +843,18 @@ plot.bipl5_biplot <- function(x, y = NULL, ...) {
   }
 
   # ── Step 6: Attach JavaScript ──────────────────────────────────────────────
-  p_ly <- insert_linear_js_v1(
-    p_ly,
-    p = ez$p,
-    cols = ez$axes$tick.label.col,
-    payload = payload_for_js,
-    fm_payload = fm_payload,
-    initial_pc_key = pc_map[first_name]
-  )
+  if (is_spline) {
+    p_ly <- insert_spline_js(p_ly, ez$p)
+  } else {
+    p_ly <- insert_linear_js_v1(
+      p_ly,
+      p = ez$p,
+      cols = ez$axes$tick.label.col,
+      payload = payload_for_js,
+      fm_payload = fm_payload,
+      initial_pc_key = pc_map[first_name]
+    )
+  }
 
   p_ly
 }
@@ -1103,6 +1348,12 @@ remove_payload <- function(object, payload) {
 #' @export
 #' @method remove_payload bipl5_biplot
 remove_payload.bipl5_biplot <- function(object, payload) {
+  if (any(c("reg", "pco") %in% class(object))) {
+    stop(
+      "remove_payload() is not supported for this biplot type.",
+      call. = FALSE
+    )
+  }
   nm <- as.character(substitute(payload))
   all_payloads <- names(object$meta$pc_info)
 
@@ -1156,6 +1407,12 @@ append_payload <- function(object, eigenvectors) {
 #' @export
 #' @method append_payload bipl5_biplot
 append_payload.bipl5_biplot <- function(object, eigenvectors) {
+  if (any(c("reg", "pco") %in% class(object))) {
+    stop(
+      "append_payload() is not supported for this biplot type.",
+      call. = FALSE
+    )
+  }
   # ── Validate input ────────────────────────────────────────────────────────
   if (!is.numeric(eigenvectors) || length(eigenvectors) != 2) {
     stop("eigenvectors must be a numeric vector of length 2.", call. = FALSE)

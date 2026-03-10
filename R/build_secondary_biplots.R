@@ -668,6 +668,18 @@ add_TDA_payload <- function(payload, z.axes, x, Z, group, Col, inflate = 1) {
     cols = cols_for_move
   )
 
+  # Match the legacy path: the tallest density on each translated axis is
+  # scaled to a fixed fraction of the axis-shift spacing. The inflate
+  # argument remains available as a multiplier on that target height.
+  inflate <- compute_density_inflation(
+    Z = Z,
+    m = m,
+    endpoints = shift$ends,
+    group = group,
+    target_height = dist * inflate,
+    densityargs = NULL
+  )
+
   DensCoors <- MoveDensities(
     Z = Z,
     m = m,

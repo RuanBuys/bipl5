@@ -54,7 +54,25 @@
       "Bash(\"C:/Program Files/R/R-4.3.1/bin/Rscript.exe\" -e \"x <- biplotEZ::biplot\\(iris\\); cat\\(''n:'', x[[''n'']], ''p:'', x[[''p'']], ''\\\\n''\\); cat\\(''groups:'', length\\(levels\\(x[[''group.aes'']]\\)\\), ''\\\\n''\\); cat\\(''class.means:'', x[[''class.means'']], ''\\\\n''\\)\")",
       "Bash(Rscript -e \"devtools::load_all\\(\\); cat\\(''OK\\\\n''\\)\")",
       "Bash(\"/c/Program Files/R/R-4.4.2/bin/Rscript.exe\" -e \"devtools::load_all\\(''C:/Users/user-pc/Documents/bipl5''\\); cat\\(''OK\\\\n''\\)\")",
-      "Bash(\"/c/Program Files/R/R-4.3.1/bin/Rscript.exe\" -e \"devtools::load_all\\(''C:/Users/user-pc/Documents/bipl5''\\); cat\\(''OK\\\\n''\\)\")"
+      "Bash(\"/c/Program Files/R/R-4.3.1/bin/Rscript.exe\" -e \"devtools::load_all\\(''C:/Users/user-pc/Documents/bipl5''\\); cat\\(''OK\\\\n''\\)\")",
+      "Bash(\"/c/Program Files/R/R-4.3.1/bin/Rscript.exe\" -e \"cat\\(paste\\(capture.output\\(getFromNamespace\\(''regress.biplot'',''biplotEZ''\\)\\), collapse=''\\\\n''\\)\\)\")",
+      "Bash(\"/c/Program Files/R/R-4.3.1/bin/Rscript.exe\" -e \"devtools::test\\(\\)\")",
+      "Bash(\"/c/Program Files/R/R-4.0.5/bin/Rscript.exe\" -e \"cat\\(''hello\\\\n''\\)\")",
+      "Bash(\"/c/Program Files/R/R-4.3.1/bin/Rscript.exe\" -e \"cat\\(''hello\\\\n''\\)\")",
+      "Bash(\"/c/Program Files/R/R-4.3.1/bin/Rscript.exe\" -e \"devtools::load_all\\(\\); cat\\(''loaded\\\\n''\\)\")",
+      "Bash(\"/c/Program Files/R/R-4.3.1/bin/Rscript.exe\" -e \"devtools::document\\(\\)\")",
+      "Bash(\"/c/Program Files/R/R-4.3.1/bin/Rscript.exe\" debug_regress.R)",
+      "Bash(\"/c/Program Files/R/R-4.3.1/bin/Rscript.exe\" debug_regress2.R)",
+      "Bash(\"/c/Program Files/R/R-4.3.1/bin/Rscript.exe\" debug_regress3.R)",
+      "Bash(\"/c/Program Files/R/R-4.3.1/bin/Rscript.exe\" debug_axes.R)",
+      "Bash(Rscript -e \"devtools::document\\(\\)\")",
+      "Bash(\"/c/Program Files/R/R-4.4.2/bin/Rscript.exe\" -e \"devtools::document\\(\\)\")",
+      "Bash(\"C:/Program Files/R/R-4.3.1/bin/Rscript.exe\" -e \"cat\\(''ok''\\)\")",
+      "Bash(\"C:/Program Files/R/R-4.3.1/bin/Rscript.exe\" -e \"devtools::document\\(\\)\")",
+      "Bash(\"C:/Program Files/R/R-4.3.1/bin/Rscript.exe\" -e \"devtools::test\\(\\)\")",
+      "Bash(/c/Users/user-pc/Documents/bipl5/test_pco.R:*)",
+      "Bash(\"C:/Program Files/R/R-4.3.1/bin/Rscript.exe\" /c/Users/user-pc/Documents/bipl5/test_pco.R)",
+      "Bash(\"C:/Program Files/R/R-4.3.1/bin/Rscript.exe\" -e \"library\\(biplotEZ\\); x <- biplot\\(iris[,1:4]\\) |> PCO\\(dist.func = sqrtManhattan\\); cat\\(x$PCOaxes, ''\\\\n''\\); cat\\(names\\(x\\)[grep\\(''spline|axes|PCO'', names\\(x\\), ignore.case=TRUE\\)], ''\\\\n''\\)\")"
     ]
   }
 }

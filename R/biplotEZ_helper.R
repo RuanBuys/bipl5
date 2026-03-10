@@ -858,7 +858,6 @@ add_TDA <- function(z.axes, x, p_ly = NULL, Z, group, Col) {
   r2 <- range(x$Z[, 2])
   len <- sqrt((r1[1] - r1[2])^2 + (r2[1] - r2[2])^2)
   dist <- len / 8
-  inflate = 1
   #start of by drawing an ellipse over all the data... used to determine
   #how far axes shifted
   bigElip <- cluster::ellipsoidhull(Z)
@@ -898,6 +897,17 @@ add_TDA <- function(z.axes, x, p_ly = NULL, Z, group, Col) {
     initial_ends = endpoints,
     swop = FALSE,
     cols = colnames(x$x)
+  )
+  # Scale each density so its tallest peak uses a fixed share of the same
+  # spacing budget that was used to move the translated axes away from the
+  # data cloud.
+  inflate <- compute_density_inflation(
+    Z = Z,
+    m = m,
+    endpoints = shift$ends,
+    group = group,
+    target_height = dist,
+    densityargs = NULL
   )
   DensCoors <- MoveDensities(
     Z = Z,
@@ -1100,44 +1110,58 @@ get_quads_axes <- function(z.axes) {
 #' @return trimmed z.axes
 #' @noRd
 shorten_axes <- function(z.axes, ellip) {
-  #first need to construct rotation matrix to determine upper and lower bounds
-  #of each line segment
   p <- length(z.axes)
-  ticks <- rep(8, p)
-  #need to use the gradient vector
-  gradient <- lapply(z.axes, FUN = function(x) {
-    return(x[1, 2] / x[1, 1])
-  })
-  thetas <- atan(Reduce(c, gradient))
-  RotMatrix <- RotationConstructor(thetas)
-  RotatedElip <- ellip %*% RotMatrix
+  gradient <- vapply(z.axes, function(x) x[1, 2] / x[1, 1], numeric(1))
+  thetas <- atan(gradient)
+  axes <- vector("list", p)
 
-  #now need to find min and max value of each x-coordinate
-  Ranges <- matrix(nrow = 2, ncol = 2)
-  axes <- list()
-  for (i in 1:p) {
-    eliptest <- ellip %*% RotationConstructor(thetas[i])
-    x_min <- min(eliptest[, 1])
-    x_max <- max(eliptest[, 1])
-    lilmat <- rbind(c(x_min, 0), c(x_max, 0))
-    zhatters <- lilmat %*% RotationConstructor(-thetas[i])
-    Ranges[1, ] <- c(min(RotatedElip[, 2 * i - 1]), 0)
-    Ranges[2, ] <- c(max(RotatedElip[, 2 * i - 1]), 0)
-    Z_ranges <- Ranges %*% RotationConstructor(-thetas[i])
+  for (i in seq_len(p)) {
+    rotate <- RotationConstructor(thetas[i])
+    back_rotate <- RotationConstructor(-thetas[i])
+
+    # Rotate the calibrated axis so selection can happen on a horizontal line
+    # while keeping the original "pretty" tick labels from z.axes[[i]][, 3].
+    rotated_axis <- cbind(
+      z.axes[[i]][, 1:2, drop = FALSE] %*% rotate,
+      z.axes[[i]][, 3]
+    )
+    rotated_ellip <- ellip %*% rotate
+
+    # The ellipse gives the approximate left/right trimming bounds once the
+    # axis has been made horizontal.
+    bounds <- rbind(
+      c(min(rotated_ellip[, 1]), 0),
+      c(max(rotated_ellip[, 1]), 0)
+    )
+    Z_ranges <- bounds %*% back_rotate
     Zhats <- obtain_zhat(Z_ranges, z.axes[[i]])
-    #okay get a pretty sequence of tickmarks and make sure lies on axis
-    interval <- pretty(Zhats, n = ticks[i])
-    ticks_x <- interpolate(interval, Ranges[, 1], Zhats)
-    ticks_coors <- cbind(ticks_x, rep(0, length(ticks_x)))
-    #hos tokkelos rotate them back
+    zhat_range <- sort(Zhats)
+    tick_vals <- rotated_axis[, 3]
 
-    if (Zhats[2] - Zhats[1] < 0) {
-      #need to reverse ordering cause pretty only ascending
-      interval <- interval[order(interval, decreasing = TRUE)]
+    # Keep all existing calibrated ticks that fall inside the trimmed range,
+    # plus the nearest tick just outside on each side so the axis starts and
+    # ends on a tick mark.
+    inside_idx <- which(
+      tick_vals >= zhat_range[1] & tick_vals <= zhat_range[2]
+    )
+    lower_idx <- which(tick_vals < zhat_range[1])
+    upper_idx <- which(tick_vals > zhat_range[2])
+
+    keep_idx <- inside_idx
+    if (length(lower_idx) > 0) {
+      keep_idx <- c(keep_idx, lower_idx[which.max(tick_vals[lower_idx])])
     }
+    if (length(upper_idx) > 0) {
+      keep_idx <- c(keep_idx, upper_idx[which.min(tick_vals[upper_idx])])
+    }
+
+    keep_idx <- sort(unique(keep_idx))
+    trimmed_axis <- rotated_axis[keep_idx, , drop = FALSE]
+    # Rotate the trimmed coordinates back to the original biplot scaffold; the
+    # tick labels are carried through unchanged.
     axes[[i]] <- cbind(
-      ticks_coors %*% RotationConstructor(-thetas[i]),
-      interval
+      trimmed_axis[, 1:2, drop = FALSE] %*% back_rotate,
+      trimmed_axis[, 3]
     )
   }
   return(axes)
@@ -1189,6 +1213,7 @@ is_correlation <- function(x) {
 #' @return Character vector
 #' @noRd
 fit_quality <- function(eigval, basis, dim_prefix = "PC") {
+  if (is.null(eigval)) return("")
   fit.quality <- paste0(
     "Quality of display = ",
     round(
@@ -1215,8 +1240,35 @@ fit_quality <- function(eigval, basis, dim_prefix = "PC") {
 #'
 #' @return matrix n x p containing predicted values
 #' @noRd
-obtain_xhat <- function(x) {
-  if (!is.null(x$Lmat)) {
+obtain_xhat <- function(x, z.axes = NULL) {
+  if ("regress" %in% class(x) && !is.null(z.axes)) {
+    # Regression biplot: interpolate predicted values from calibrated axes.
+    # For each axis, rotate Z and the axis ticks so the axis is horizontal,
+    # then linearly interpolate the tick labels at each observation's
+    # projected x-coordinate.
+    p <- x$p
+    n <- x$n
+    Xhat <- matrix(NA_real_, nrow = n, ncol = p)
+    colnames(Xhat) <- colnames(x$X)
+
+    for (i in seq_len(p)) {
+      m <- (z.axes[[i]][2, 2] - z.axes[[i]][1, 2]) /
+        (z.axes[[i]][2, 1] - z.axes[[i]][1, 1])
+      theta <- atan(m)
+      rot <- RotationConstructor(theta)
+
+      rotZ <- x$Z %*% rot
+      rot_ax <- z.axes[[i]][, 1:2, drop = FALSE] %*% rot
+
+      Xhat[, i] <- stats::approx(
+        x = rot_ax[, 1],
+        y = z.axes[[i]][, 3],
+        xout = rotZ[, 1],
+        rule = 2
+      )$y
+    }
+    return(Xhat)
+  } else if (!is.null(x$Lmat)) {
     if (nrow(x$Lmat) == ncol(x$Lmat)) {
       Xhat <- x$Z %*% solve(x$Lmat)[x$e.vects, ]
     } else {

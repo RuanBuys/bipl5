@@ -39,6 +39,59 @@ MoveLines<-function(elip,m,quadrant,d,initial_ends,swop,cols){
 
 
 
+#' Compute axis-specific inflation factors for translated densities
+#'
+#' @param Z Z coordinates of the datapoints
+#' @param m vector of slopes
+#' @param endpoints endpoints of each translated axis
+#' @param group grouping vector of data
+#' @param target_height target maximum density height per axis
+#' @param densityargs optional arguments passed to \code{stats::density()}
+#'
+#' @return numeric vector of inflation factors, one per axis
+#' @noRd
+compute_density_inflation <- function(
+  Z,
+  m,
+  endpoints,
+  group,
+  target_height,
+  densityargs = NULL
+) {
+  if (is.null(densityargs$n)) densityargs$n <- 128
+
+  groups <- unique(group)
+  p <- length(m)
+  thetas <- atan(m)
+  RotMatrix <- RotationConstructor(thetas)
+  RotatedZ <- Z %*% RotMatrix
+  target_height <- rep_len(target_height, p)
+
+  inflation <- rep(1, p)
+
+  for (i in seq_len(p)) {
+    rotend <- endpoints[[i]][, -3] %*% RotMatrix[, (2 * i - 1):(2 * i)]
+    low <- min(rotend[, 1])
+    up <- max(rotend[, 1])
+    peak_i <- 0
+
+    for (j in seq_along(groups)) {
+      densityargs$x <- RotatedZ[group == groups[j], (2 * i - 1)]
+      densityargs$from <- low
+      densityargs$to <- up
+      densdetails <- do.call(density, densityargs)
+      peak_i <- max(peak_i, densdetails$y, na.rm = TRUE)
+    }
+
+    if (is.finite(peak_i) && peak_i > 0) {
+      inflation[i] <- target_height[i] / peak_i
+    }
+  }
+
+  inflation
+}
+
+
 #' Translate densities outward toward respective axes
 #'
 #' @param Z Z coordinates of the datapoints
@@ -55,6 +108,7 @@ MoveDensities<-function(Z,m,endpoints,dist,dinflation,group,densityargs=NULL){
 
   num<-length(unique(group))
   p<-length(m)
+  dinflation <- rep_len(dinflation, p)
   thetas<-atan(m)
   RotMatrix<-RotationConstructor(thetas)
   RotatedZ<-Z%*%RotMatrix
@@ -74,7 +128,7 @@ MoveDensities<-function(Z,m,endpoints,dist,dinflation,group,densityargs=NULL){
       densityargs$from<-low
       densityargs$to<-up
       densdetails<-do.call(density,densityargs)
-      y_coo<-(densdetails$y*dinflation+dist[i])
+      y_coo<-(densdetails$y*dinflation[i]+dist[i])
       coors<-cbind(densdetails$x,y_coo)
 
       if(length(Density_per_group)<j)
@@ -86,7 +140,6 @@ MoveDensities<-function(Z,m,endpoints,dist,dinflation,group,densityargs=NULL){
   }
   return(Density_per_group)
 }
-
 
 
 

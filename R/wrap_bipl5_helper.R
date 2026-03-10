@@ -61,11 +61,15 @@ build_one_payload <- function(
   include_polygons = FALSE,
   dim_prefix = "PC",
   ax_pred = TRUE,
-  vec_dis = TRUE
+  vec_dis = TRUE,
+  z.axes = NULL
 ) {
   payl <- payload_new()
-  payl$fit_qual <- fit_quality(ez_obj$eigenvalues, ez_obj$e.vects,
-                               dim_prefix = dim_prefix)
+  payl$fit_qual <- fit_quality(
+    ez_obj$eigenvalues,
+    ez_obj$e.vects,
+    dim_prefix = dim_prefix
+  )
   payl <- plot_scaffolding_payload(
     payl,
     dpquality = payl$fit_qual,
@@ -95,9 +99,11 @@ build_one_payload <- function(
     }
   }
 
-  # Reconstructed values and axis coordinates
-  Xhat <- obtain_xhat(ez_obj)
-  z.axes <- biplotEZ::axes_coordinates(ez_obj)
+  # Axis coordinates and reconstructed values
+  if (is.null(z.axes)) {
+    z.axes <- biplotEZ::axes_coordinates(ez_obj)
+  }
+  Xhat <- obtain_xhat(ez_obj, z.axes = z.axes)
 
   # Sample points – use sample.predictivity (PCA) or
 
@@ -133,9 +139,12 @@ build_one_payload <- function(
     if (!is.null(ez_obj$Zmeans)) {
       Zmeans <- ez_obj$Zmeans
     } else {
-      Zmeans <- do.call(rbind, lapply(levels(group), function(g) {
-        colMeans(ez_obj$Z[group == g, , drop = FALSE])
-      }))
+      Zmeans <- do.call(
+        rbind,
+        lapply(levels(group), function(g) {
+          colMeans(ez_obj$Z[group == g, , drop = FALSE])
+        })
+      )
       rownames(Zmeans) <- levels(group)
     }
     payl <- insert_class_means_payload(
@@ -187,6 +196,193 @@ build_one_payload <- function(
 
   # Preserve fit_qual on the outer level for print/inspection
   bundle$fit_qual <- payl$fit_qual
+
+  new_bipl5_payload(bundle, data)
+}
+
+
+#' Build a spline-axes payload for PCO biplots
+#'
+#' Constructs a minimal payload containing only sample points, spline axis
+#' curves with tick marks, and a bounding circle.
+#' There is no \code{XHat}, no translated density axes, and no linear axes.
+#' The spline JavaScript handler is attached at plot time.
+#'
+#' @param ez_obj A biplotEZ \code{biplot} object with \code{PCO()} applied
+#'   using spline axes.
+#' @param group Factor vector of group memberships.
+#' @param color Character vector of colours, one per group level.
+#' @param symbol Character vector of plotly marker symbols.
+#' @param z.axes Pre-computed axis coordinates from
+#'   \code{biplotEZ::axes_coordinates()}.
+#'
+#' @return An object of class \code{bipl5_payload}.
+#' @noRd
+build_spline_payload <- function(ez_obj, group, color, symbol, z.axes) {
+  payl <- payload_new()
+  payl$fit_qual <- ""
+
+  # Scaffolding with no buttons active
+  payl <- plot_scaffolding_payload(
+    payl,
+    dpquality = "",
+    basis = ez_obj$e.vects,
+    PC_toggle = FALSE,
+    ax_pred = FALSE,
+    TDA = FALSE,
+    vec_dis = FALSE
+  )
+
+  # Sample points — bare-minimum hovertext (no XHat)
+  obj <- list(
+    Z = ez_obj$Z,
+    group = group,
+    n = ez_obj$n,
+    x = as.matrix(ez_obj$X),
+    XHat = NULL,
+    sample.predictivity = NULL
+  )
+  payl <- insert_Z_coo_payload(
+    payl,
+    obj,
+    p_ly_pch = symbol,
+    Col = color,
+    visible = TRUE
+  )
+
+  # Bounding circle
+  p <- ez_obj$p
+  radius <- max(abs(ez_obj$Z)) * 1.2
+  theta <- seq(0, 2 * pi, length.out = 200)
+  elipcoords <- cbind(radius * cos(theta), radius * sin(theta))
+
+  # Clip spline axes to circle
+  z.axes <- check_inside_circle(z.axes, radius, NULL)
+
+  traces <- list()
+  annotations <- list()
+
+  for (i in seq_len(p)) {
+    AxName <- paste0("<b>", colnames(ez_obj$X)[i], "</b>")
+    endp <- z.axes[[i]][which.max(z.axes[[i]][, 3]), 1:2]
+    pos <- if (endp[1] < 0) "left" else "right"
+
+    # Tick mark indices (column 4 == 1 means labelled tick)
+    idx <- which(z.axes[[i]][, 4] == 1)
+
+    # Gradients along the spline curve
+    full_m <- get_gradients(z.axes[[i]])
+    m_at_ticks <- full_m[idx]
+    if (any(is.na(m_at_ticks))) {
+      idx <- idx[!is.na(m_at_ticks)]
+      m_at_ticks <- m_at_ticks[!is.na(m_at_ticks)]
+    }
+
+    # Spline curve trace
+    traces[[length(traces) + 1]] <- list(
+      x = z.axes[[i]][, 1],
+      y = z.axes[[i]][, 2],
+      type = "scatter",
+      mode = "lines",
+      line = list(color = "grey", width = 1, simplify = FALSE),
+      name = colnames(ez_obj$X)[i],
+      legendgroup = paste0("Ax", i),
+      meta = list("axis"),
+      xaxis = "x",
+      yaxis = "y",
+      customdata = full_m,
+      visible = TRUE,
+      hovertext = round(z.axes[[i]][, 3], 1),
+      hoverinfo = "text"
+    )
+
+    # Tick label + tick mark annotations
+    if (length(idx) > 0) {
+      for (k in seq_along(idx)) {
+        ki <- idx[k]
+        ang_deg <- -atan(m_at_ticks[k]) * 180 / pi
+
+        # Tick label
+        annotations[[length(annotations) + 1]] <- list(
+          x = z.axes[[i]][ki, 1],
+          y = z.axes[[i]][ki, 2],
+          text = as.character(z.axes[[i]][ki, 3]),
+          showarrow = FALSE,
+          textangle = ang_deg,
+          visible = TRUE,
+          yshift = -12 * cos(atan(m_at_ticks[k])),
+          xshift = 12 * sin(atan(m_at_ticks[k])),
+          meta = list("axis"),
+          xref = "x",
+          yref = "y",
+          customdata = i,
+          font = list(size = 10)
+        )
+
+        # Tick mark
+        annotations[[length(annotations) + 1]] <- list(
+          x = z.axes[[i]][ki, 1],
+          y = z.axes[[i]][ki, 2],
+          text = "&#124;",
+          showarrow = FALSE,
+          textangle = ang_deg,
+          visible = TRUE,
+          meta = list("axis"),
+          xref = "x",
+          yref = "y",
+          customdata = i,
+          font = list(size = 8)
+        )
+      }
+    }
+
+    # Axis name at endpoint
+    traces[[length(traces) + 1]] <- list(
+      x = list(endp[1]),
+      y = list(endp[2]),
+      text = AxName,
+      type = "scatter",
+      mode = "text",
+      textposition = pos,
+      legendgroup = paste0("Ax", i),
+      showlegend = FALSE,
+      textfont = list(size = 12),
+      meta = list("axis"),
+      xaxis = "x",
+      yaxis = "y",
+      visible = TRUE
+    )
+  }
+
+  # Green bounding circle
+  traces[[length(traces) + 1]] <- list(
+    x = elipcoords[, 1],
+    y = elipcoords[, 2],
+    type = "scatter",
+    mode = "lines",
+    line = list(color = "green", width = 0.6),
+    name = "circle",
+    showlegend = FALSE,
+    meta = list("circle"),
+    xaxis = "x",
+    yaxis = "y",
+    visible = TRUE,
+    hoverinfo = "none"
+  )
+
+  payl <- payload_add_traces(payl, traces)
+  payl <- payload_add_layout(payl, list(annotations = annotations))
+
+  # Bundle — no slider, no TDA
+  bundle <- list()
+  bundle$payload <- payl
+  bundle$fit_qual <- ""
+
+  data <- new_bipl5_data(
+    sample_coordinates = ez_obj$Z,
+    axes_coordinates = z.axes,
+    translated_axes_coordinates = NULL
+  )
 
   new_bipl5_payload(bundle, data)
 }
