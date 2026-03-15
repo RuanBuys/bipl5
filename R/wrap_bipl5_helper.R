@@ -27,6 +27,8 @@
 #'   included in the payload.
 #' @param vec_dis Logical; whether unit-circle and vector-loading layers should
 #'   be added. This is typically \code{TRUE} for PCA and \code{FALSE} for CVA.
+#' @param fit_qual Optional override for the display-quality label shown below
+#'   the biplot.
 #'
 #' @return An object of class \code{bipl5_payload}.
 #'
@@ -62,17 +64,22 @@ build_one_payload <- function(
   dim_prefix = "PC",
   ax_pred = TRUE,
   vec_dis = TRUE,
-  z.axes = NULL
+  z.axes = NULL,
+  fit_qual = NULL
 ) {
   payl <- payload_new()
-  payl$fit_qual <- fit_quality(
-    ez_obj$eigenvalues,
-    ez_obj$e.vects,
-    dim_prefix = dim_prefix
-  )
+  if (is.null(fit_qual)) {
+    fit_qual <- fit_quality(
+      ez_obj$eigenvalues,
+      ez_obj$e.vects,
+      dim_prefix = dim_prefix
+    )
+  }
+
+  payl$fit_qual <- fit_qual
   payl <- plot_scaffolding_payload(
     payl,
-    dpquality = payl$fit_qual,
+    dpquality = fit_qual,
     basis = ez_obj$e.vects,
     PC_toggle = TRUE,
     ax_pred = ax_pred,

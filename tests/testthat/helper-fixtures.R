@@ -83,35 +83,14 @@ pco_ez <- function(axes = c("regression", "splines"), e.vects = c(1, 2)) {
     )
 }
 
-legacy_pca_mock <- function(data = as.matrix(iris[, 1:4])) {
-  pr <- prcomp(data, center = TRUE, scale. = TRUE)
-  list(
-    PCA = list(v = pr$rotation, d = pr$sdev),
-    p = ncol(data),
-    n = nrow(data),
-    x = as.matrix(data)
-  )
-}
+regress_ez <- function(non_orthogonal = FALSE) {
+  z <- prcomp(iris[, 1:4], center = TRUE, scale. = TRUE)$x[, 1:2, drop = FALSE]
+  if (isTRUE(non_orthogonal)) {
+    z[, 2] <- z[, 1] + z[, 2]
+  }
 
-legacy_vector_input <- function(data = as.matrix(iris[, 1:4])) {
-  pr <- prcomp(data, center = TRUE, scale. = TRUE)
-  v <- pr$rotation[, 1:2, drop = FALSE]
-  m <- v[, 2] / v[, 1]
-  list(
-    DisplQuality = "Quality of display = 100%",
-    basis = c(1, 2),
-    x = as.matrix(data),
-    Z = pr$x[, 1:2, drop = FALSE],
-    p = ncol(data),
-    n = nrow(data),
-    mu = colMeans(data),
-    stddev = apply(data, 2, stats::sd),
-    group = factor(rep("Data", nrow(data))),
-    m = m,
-    quads = bipl5:::getquad(v, m),
-    V = v,
-    PCA = list(v = pr$rotation, d = pr$sdev)
-  )
+  biplotEZ::biplot(iris[, 1:4]) |>
+    biplotEZ::regress(Z = z, group.aes = iris[, 5])
 }
 
 simple_polygon_aes <- function(n) {

@@ -48,10 +48,6 @@ test_that("interpolate and equation solve simple geometric relationships", {
 })
 
 test_that("quadrant helpers identify axis directions consistently", {
-  v <- rbind(c(1, 1), c(-1, 1), c(-1, -1), c(1, -1))
-  m <- c(1, -1, 1, -1)
-  expect_equal(bipl5:::getquad(v, m), c(1, 3, 2, 4))
-
   z_axes <- list(
     matrix(c(1, 1, 0, 2, 2, 1), ncol = 3, byrow = TRUE),
     matrix(c(-1, 1, 0, -2, 2, 1), ncol = 3, byrow = TRUE),

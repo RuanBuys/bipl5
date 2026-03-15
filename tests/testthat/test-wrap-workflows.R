@@ -141,3 +141,27 @@ test_that("wrap_bipl5 on a PCO object produces a bipl5_biplot with pco class", {
   expect_error(append_payload(bp, c(1, 3)), "not supported")
   expect_error(remove_payload(bp, Payload_12), "not supported")
 })
+
+test_that("wrap_bipl5 on a regression object exposes display quality", {
+  reg <- regress_ez(non_orthogonal = TRUE)
+  bp <- wrap_bipl5(reg)
+
+  expect_s3_class(bp, "bipl5_biplot")
+  expect_true("reg" %in% class(bp))
+  expect_null(bp$fit_measures)
+  expect_identical(names(bp$meta$pc_info), "Payload_12")
+  expect_match(bp$Payload_12$fit_qual, "^R\\^2_disp = ")
+  expect_match(bp$Payload_12$fit_qual, "R_1\\^2")
+  expect_match(bp$Payload_12$fit_qual, "R_\\{2\\|1\\}\\^2")
+  expect_identical(bp$meta$fit.quality, bp$Payload_12$fit_qual)
+  expect_match(as.character(bp$meta$fit.quality.plotly), "R\\^2_\\{disp\\}")
+  expect_identical(bp$Payload_12$payload$layout$xaxis$title, bp$Payload_12$fit_qual)
+
+  widget <- plot(bp)
+  expect_match(as.character(widget$x$layoutAttrs[[1]]$xaxis$title), "R\\^2_\\{disp\\}")
+  expect_true(any(vapply(
+    widget$dependencies,
+    function(dep) identical(dep$name, "mathjax") && identical(dep$script, "cdn.js"),
+    logical(1)
+  )))
+})

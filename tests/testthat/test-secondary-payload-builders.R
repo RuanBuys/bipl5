@@ -85,24 +85,13 @@ test_that("observation, class mean, polygon, and vector payload layers have stab
 test_that("fit panel payload builders return plotly-ready trace lists", {
   x <- prepared_pca_ez()
 
-  axis_pred <- bipl5:::InsertAxisDeets_payload(bipl5:::payload_new(), x, EZ = TRUE)
-  expect_length(axis_pred$trace_data, x$p + 1)
-  expect_true(all(grepl("^FitPanel\\|axis_pred$", trace_meta_tags(axis_pred$trace_data))))
-
-  legacy <- legacy_pca_mock()
-  legacy_axis <- bipl5:::InsertAxisDeets_payload(bipl5:::payload_new(), legacy, EZ = FALSE)
-  expect_length(legacy_axis$trace_data, legacy$p + 1)
-
-  adeq <- bipl5:::add_axis_adeq_payload(list(), x, EZ = TRUE)[[1]]
+  adeq <- bipl5:::add_axis_adeq_payload(list(), x)[[1]]
   expect_length(adeq, x$p)
   expect_true(all(vapply(adeq, function(tr) identical(unlist(tr$meta), c("FitPanel", "Cum. Adequacy")), logical(1))))
 
-  pred <- bipl5:::add_axis_pred_payload(list(), x, EZ = TRUE)[[1]]
+  pred <- bipl5:::add_axis_pred_payload(list(), x)[[1]]
   expect_length(pred, x$p + 1)
   expect_true(any(vapply(pred, function(tr) tr$line$dash == "solid", logical(1))))
-
-  legacy_pred <- bipl5:::add_axis_pred_payload(list(), legacy, EZ = FALSE)[[1]]
-  expect_length(legacy_pred, legacy$p + 1)
 
   var_exp <- bipl5:::add_prop_variance_payload(x)[[1]]
   expect_length(var_exp, x$p + 1)

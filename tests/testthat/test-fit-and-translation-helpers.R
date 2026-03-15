@@ -21,12 +21,28 @@ test_that("fit quality helpers produce numeric summaries for EZ objects", {
   expect_match(fit_label, "PC2")
 })
 
-test_that("legacy fit helpers accept prcomp-style mock objects", {
-  legacy <- legacy_pca_mock()
+test_that("regression fit quality decomposes non-orthogonal display coordinates", {
+  X <- matrix(c(
+    1, 2,
+    0, 1,
+    1, 0
+  ), ncol = 2, byrow = TRUE)
+  Z <- cbind(c(1, 0, 1), c(1, 1, 2))
 
-  axis_pred <- bipl5:::axis_predictivities(legacy)
-  expect_equal(dim(axis_pred), c(legacy$p + 1, legacy$p))
-  expect_identical(colnames(axis_pred), paste("Rank", 1:legacy$p))
+  fit_comp <- bipl5:::regression_fit_components(X, Z)
+  proj <- Z %*% solve(crossprod(Z), t(Z))
+
+  expect_equal(fit_comp$overall_ss, sum(fit_comp$dim_ss), tolerance = 1e-10)
+  expect_equal(fit_comp$overall_ss, sum((proj %*% X)^2), tolerance = 1e-10)
+
+  fit_label <- bipl5:::regression_fit_quality(X, Z)
+  expect_match(fit_label, "^R\\^2_disp = ")
+  expect_match(fit_label, "R_1\\^2")
+  expect_match(fit_label, "R_\\{2\\|1\\}\\^2")
+
+  fit_label_tex <- bipl5:::regression_fit_quality_tex(X, Z)
+  expect_match(as.character(fit_label_tex), "R\\^2_\\{disp\\}")
+  expect_match(as.character(fit_label_tex), "R_\\{2 \\\\\\\\mid 1\\}\\^2")
 })
 
 test_that("obtain_xhat reconstructs or falls back to existing X", {

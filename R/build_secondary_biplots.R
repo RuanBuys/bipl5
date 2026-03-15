@@ -290,59 +290,10 @@ insert_polygon_EZ_payload <- function(
 #'
 #' @param payload List containing data and layout attributes for a plotly graph
 #' @param x Object from biplotEZ package
-#' @param EZ Legacy, keep TRUE
 #'
 #' @return updated payload
 #' @noRd
-InsertAxisDeets_payload <- function(payload, x, EZ = FALSE) {
-  if (EZ) {
-    pred_deets <- axis_predictivities_EZ(x)
-    ColNames <- c(colnames(x$X), "Weighted mean = Quality")
-  } else {
-    pred_deets <- axis_predictivities(x)
-    ColNames <- c(colnames(x$x), "Weighted mean = Quality")
-  }
-
-  p <- x$p
-  n <- nrow(pred_deets)
-
-  traces <- vector("list", n)
-
-  for (i in seq_len(n)) {
-    linetype <- if (i == n) "solid" else "dashdot"
-    lwidth <- if (i == n) 3 else 2
-
-    traces[[i]] <- list(
-      x = seq_len(p),
-      y = as.numeric(pred_deets[i, ]),
-      type = "scatter",
-      mode = "lines+markers",
-      line = list(dash = linetype, width = lwidth),
-      xaxis = "x",
-      yaxis = "y",
-      hoverinfo = "skip",
-      showlegend = TRUE,
-      name = ColNames[i],
-      visible = FALSE,
-      meta = list("FitPanel", "axis_pred"),
-      legendgroup = "AxPred",
-      legendgrouptitle = list(text = "<b> Axis Predictivity <b>")
-    )
-  }
-
-  payload_add_traces(payload, traces)
-}
-
-
-#' Insert axis predictivity graph to the payload
-#'
-#' @param payload List containing data and layout attributes for a plotly graph
-#' @param x Object from biplotEZ package
-#' @param EZ Legacy, keep TRUE
-#'
-#' @return updated payload
-#' @noRd
-add_axis_adeq_payload <- function(payload, x, EZ = FALSE) {
+add_axis_adeq_payload <- function(payload, x) {
   adeq_deets <- axis_adequacies(x)
   ColNames <- colnames(x$x) %||% colnames(x$X)
 
@@ -381,18 +332,12 @@ add_axis_adeq_payload <- function(payload, x, EZ = FALSE) {
 #'
 #' @param payload List containing data and layout attributes for a plotly graph
 #' @param x Object from biplotEZ package
-#' @param EZ Legacy, keep TRUE
 #'
 #' @return updated payload
 #' @noRd
-add_axis_pred_payload <- function(payload, x, EZ = FALSE) {
-  if (EZ) {
-    pred_deets <- axis_predictivities_EZ(x)
-    ColNames <- c(colnames(x$X), "Weighted mean = Quality")
-  } else {
-    pred_deets <- axis_predictivities(x)
-    ColNames <- c(colnames(x$x), "Weighted mean = Quality")
-  }
+add_axis_pred_payload <- function(payload, x) {
+  pred_deets <- axis_predictivities_EZ(x)
+  ColNames <- c(colnames(x$X), "Weighted mean = Quality")
 
   p <- x$p
   n <- nrow(pred_deets)

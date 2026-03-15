@@ -57,7 +57,6 @@ Key features:
 - `R/build_secondary_biplots.R` — All `insert_*_payload()` and `add_*_payload()` functions that construct individual layers (observations, class means, axes, polygons, TDA, vectors, fit tables, etc.).
 - `R/payload_constructor.R` — Low-level payload primitives: `payload_new()`, `payload_add_traces()`, `payload_add_layout()`.
 - `R/biplotEZ_helper.R` — Helper functions: `obtain_xhat()`, `fit_quality()`, `hovertext_generator()`, `pch_to_plotly()`, `is_correlation()`.
-- `R/biplotEZ_plotter.R` — The **legacy** `plot_bipl5.PCA()` path (older architecture, still functional but superseded by `wrap_bipl5`).
 - `R/deps.R` — `bipl5_dependency()` and `insert_linear_js_v1()`: the bridge between R payloads and the JS event layer.
 - `inst/htmlwidgets/bipl5_plotly.js` — JS dependency: event handlers, `togglePC()`, fit panel switching, prediction lines, slider translation.
 

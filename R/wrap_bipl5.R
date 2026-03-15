@@ -313,8 +313,8 @@ wrap_bipl5.PCA <- function(x) {
 
   # ── Build fit measures ────────────────────────────────────────────────────
   fm_payl <- list()
-  fm_payl["CumPred"] <- add_axis_pred_payload(fm_payl, x, EZ = TRUE)
-  fm_payl["CumAd"] <- add_axis_adeq_payload(fm_payl, x, EZ = TRUE)
+  fm_payl["CumPred"] <- add_axis_pred_payload(fm_payl, x)
+  fm_payl["CumAd"] <- add_axis_adeq_payload(fm_payl, x)
   fm_payl["VarExp"] <- add_prop_variance_payload(x)
   fm_payl["Scree"] <- add_scree_payload(x)
 
@@ -510,14 +510,248 @@ wrap_bipl5.CVA <- function(x) {
 
 #' Construct a bipl5_biplot from a regression biplot
 #'
-#' Builds a single payload for a regression biplot.
-#' Regression biplots have no fit measures and only one fixed payload
-#' (\code{Payload_12}), so \code{append_payload()} and
-#' \code{remove_payload()} are not supported.
-#' The only active toggle button is "Translated Axes".
+#' Builds the single payload used for a linear regression biplot and documents
+#' the associated regression-biplot predictivity measures.
+#' Regression biplots do not use the multi-payload fit machinery available for
+#' PCA/CVA displays: they have one fixed payload (\code{Payload_12}),
+#' \code{append_payload()} and \code{remove_payload()} are not supported,
+#' and the only active toggle button is \dQuote{Translated Axes}.
 #'
-#' @param x An object of class \code{biplot} from the biplotEZ package with
+#' @param x An object of class \code{biplot} from the \pkg{biplotEZ} package with
 #'   \code{regress()} method applied.
+#'
+#' @details
+#' For the linear regression biplot handled by this method, let
+#' \eqn{\mathbf{X}\in\mathbb{R}^{n\times p}} denote the \emph{processed} data
+#' matrix stored in the \code{biplot} object after centring and any optional
+#' scaling performed by \code{biplot()}, and let
+#' \eqn{\mathbf{Z}\in\mathbb{R}^{n\times 2}} denote the externally supplied
+#' display coordinates of the \eqn{n} samples. Write
+#' \eqn{\mathbf{Z} = [\mathbf{z}_1\ \mathbf{z}_2]}, where
+#' \eqn{\mathbf{z}_1} and \eqn{\mathbf{z}_2} are the first and second displayed
+#' coordinates respectively. In contrast to a PCA biplot, the sample map is taken
+#' as given and the variable axes are then fitted to that map by multivariate
+#' least squares. This is the regression-biplot point of view used in the biplot
+#' literature for general low-dimensional sample maps (Gower and Hand, 1996;
+#' Gower, Lubbe and le Roux, 2011).
+#'
+#' The fitted linear model is
+#' \deqn{\mathbf{X} = \mathbf{Z}\mathbf{H}^{\top} + \mathbf{E},}
+#' where, when \eqn{\mathbf{Z}} has full column rank,
+#' \deqn{\mathbf{H}^{\top} =
+#'   (\mathbf{Z}^{\top}\mathbf{Z})^{-1}\mathbf{Z}^{\top}\mathbf{X}.}
+#' Hence the fitted values are
+#' \deqn{\widehat{\mathbf{X}} =
+#'   \mathbf{Z}\mathbf{H}^{\top} =
+#'   \mathbf{Z}(\mathbf{Z}^{\top}\mathbf{Z})^{-1}\mathbf{Z}^{\top}\mathbf{X}
+#'   = \mathbf{P}_Z\mathbf{X},}
+#' where \eqn{\mathbf{P}_Z} is the orthogonal projector onto the column space
+#' of \eqn{\mathbf{Z}}. More generally, if the supplied display coordinates are
+#' rank-deficient, the same fitted matrix \eqn{\widehat{\mathbf{X}}} is obtained
+#' by interpreting \eqn{\mathbf{P}_Z} as the orthogonal projector onto
+#' \eqn{\mathrm{col}(\mathbf{Z})}. The regression biplot therefore displays the
+#' variables through the least-squares predictions obtained from the supplied
+#' 2D sample map (Gower and Hand, 1996; Gower, Lubbe and le Roux, 2011).
+#'
+#' If \eqn{\mathbf{h}_{(j)}} denotes the \eqn{j}th column of
+#' \eqn{\mathbf{H}}, then the predicted value of variable \eqn{j} for sample
+#' \eqn{i} is
+#' \deqn{\widehat{x}_{ij} = \mathbf{z}_i^{\top}\mathbf{h}_{(j)}.}
+#' The calibrated axis for variable \eqn{j} has direction
+#' \eqn{\mathbf{h}_{(j)}}, and the point on that axis corresponding to marker
+#' value \eqn{\mu} is
+#' \deqn{\mathbf{p}_{\mu j} =
+#'   \frac{\mu}{\mathbf{h}_{(j)}^{\top}\mathbf{h}_{(j)}}\mathbf{h}_{(j)}.}
+#' This is the calibration formula used to place tick marks and to recover
+#' predicted values from projections onto the displayed axis, in direct analogy
+#' with calibrated-axis biplot constructions (Gabriel, 1971; Gower, Lubbe and
+#' le Roux, 2011). All such predicted values are on the same centred/scaled scale
+#' as the stored matrix \eqn{\mathbf{X}}; if needed, they can be back-transformed
+#' to the original variable scale using the means and standard deviations stored
+#' in the input \code{biplot} object.
+#'
+#' A regression biplot admits a natural family of \emph{predictivity} measures on
+#' the variable side. Let \eqn{\mathbf{x}_{(j)}} denote column \eqn{j} of
+#' \eqn{\mathbf{X}}, let \eqn{\widehat{\mathbf{x}}_{(j)}} denote column
+#' \eqn{j} of \eqn{\widehat{\mathbf{X}}}, and let
+#' \eqn{\mathbf{e}_{(j)} = \mathbf{x}_{(j)} - \widehat{\mathbf{x}}_{(j)}}.
+#' Since \eqn{\widehat{\mathbf{X}} = \mathbf{P}_Z\mathbf{X}} is an orthogonal
+#' projection, the residual matrix satisfies
+#' \deqn{\widehat{\mathbf{X}}^{\top}\mathbf{E} = \mathbf{0},}
+#' and therefore
+#' \deqn{\mathbf{X}^{\top}\mathbf{X} =
+#'   \widehat{\mathbf{X}}^{\top}\widehat{\mathbf{X}} +
+#'   (\mathbf{X} - \widehat{\mathbf{X}})^{\top}
+#'   (\mathbf{X} - \widehat{\mathbf{X}}).}
+#' This is the variable-side, or Type B, orthogonality that justifies
+#' variance-accounted-for ratios for the columns of \eqn{\mathbf{X}}; it is the
+#' same side of the orthogonality argument that underlies column-wise
+#' predictivities in the biplot literature (Gower, Lubbe and le Roux, 2011;
+#' Greenacre, 2010).
+#'
+#' The predictivity of variable \eqn{j} is therefore defined by
+#' \deqn{\phi_j =
+#'   \frac{\|\widehat{\mathbf{x}}_{(j)}\|^2}
+#'        {\|\mathbf{x}_{(j)}\|^2}
+#'   =
+#'   1 -
+#'   \frac{\|\mathbf{x}_{(j)} - \widehat{\mathbf{x}}_{(j)}\|^2}
+#'        {\|\mathbf{x}_{(j)}\|^2},
+#'   \qquad j=1,\ldots,p.}
+#' Thus \eqn{\phi_j} is the proportion of the sum of squares of variable
+#' \eqn{j} reproduced by the regression biplot, equivalently the ordinary
+#' multiple-regression \eqn{R^2} obtained by regressing variable \eqn{j} on the
+#' displayed coordinates \eqn{\mathbf{Z}}. Each \eqn{\phi_j} lies in
+#' \eqn{[0,1]}; values near one indicate that the variable is well predicted by
+#' the displayed map, while values near zero indicate that the variable is poorly
+#' reproduced by the chosen display (Greenacre, 2010).
+#'
+#' A natural overall quality-of-display measure is the proportion of total sum
+#' of squares reproduced by the display,
+#' \deqn{R^2_{\mathrm{disp}} =
+#'   \frac{\|\widehat{\mathbf{X}}\|_F^2}{\|\mathbf{X}\|_F^2}
+#'   =
+#'   1 - \frac{\|\mathbf{X} - \widehat{\mathbf{X}}\|_F^2}{\|\mathbf{X}\|_F^2}.}
+#' Because the column-wise decomposition above is orthogonal, this overall
+#' quality can be written as a weighted average of the variable predictivities:
+#' \deqn{R^2_{\mathrm{disp}} =
+#'   \sum_{j=1}^{p} w_j \phi_j,}
+#' where
+#' \deqn{w_j =
+#'   \frac{\|\mathbf{x}_{(j)}\|^2}{\|\mathbf{X}\|_F^2},
+#'   \qquad
+#'   \sum_{j=1}^{p} w_j = 1.}
+#' Hence variables with larger sums of squares contribute more to the overall
+#' quality. In particular, if the original call to \code{biplot()} used
+#' \code{scale = TRUE}, so that all processed variables have equal sums of
+#' squares, then the weights are equal and
+#' \deqn{R^2_{\mathrm{disp}} = \frac{1}{p}\sum_{j=1}^{p}\phi_j.}
+#' This weighted-average interpretation is often the most natural way to read the
+#' overall regression-biplot quality, since it combines the separate variable
+#' predictivities into a single display-wide summary (Greenacre, 2010).
+#'
+#' The quantities \eqn{\phi_j} and \eqn{R^2_{\mathrm{disp}}} depend only on the
+#' fitted projection \eqn{\mathbf{P}_Z\mathbf{X}} and therefore only on the
+#' subspace \eqn{\mathrm{col}(\mathbf{Z})}. They do \emph{not} depend on any
+#' particular basis chosen for that subspace. In particular, the variable
+#' predictivities \eqn{\phi_j} do not require any QR decomposition.
+#'
+#' To decompose the total display quality into separate contributions for the two
+#' displayed dimensions, this package applies an \emph{ordered orthogonalization}
+#' of the supplied display coordinates. Specifically, define
+#' \deqn{\mathbf{u}_1 = \mathbf{z}_1, \qquad
+#'   \mathbf{q}_1 = \frac{\mathbf{u}_1}{\|\mathbf{u}_1\|}}
+#' whenever \eqn{\mathbf{u}_1 \neq \mathbf{0}}, and then define
+#' \deqn{\mathbf{u}_2 =
+#'   \mathbf{z}_2 - \mathbf{q}_1\mathbf{q}_1^{\top}\mathbf{z}_2, \qquad
+#'   \mathbf{q}_2 = \frac{\mathbf{u}_2}{\|\mathbf{u}_2\|}}
+#' whenever \eqn{\mathbf{u}_2 \neq \mathbf{0}}. Equivalently,
+#' \eqn{\mathbf{Q} = [\mathbf{q}_1\ \mathbf{q}_2]} is obtained from the QR
+#' decomposition of \eqn{\mathbf{Z}}, preserving the supplied column order. The
+#' vectors \eqn{\mathbf{q}_1} and \eqn{\mathbf{q}_2} are orthonormal and span
+#' the same display subspace as the nonzero columns of \eqn{\mathbf{Z}}.
+#'
+#' Because \eqn{\mathbf{Q}} and \eqn{\mathbf{Z}} span the same subspace, the
+#' orthogonal projector may also be written as
+#' \deqn{\mathbf{P}_Z = \mathbf{Q}\mathbf{Q}^{\top}.}
+#' Consequently,
+#' \deqn{\widehat{\mathbf{X}} =
+#'   \mathbf{Q}\mathbf{Q}^{\top}\mathbf{X}
+#'   = \mathbf{q}_1\mathbf{q}_1^{\top}\mathbf{X}
+#'   + \mathbf{q}_2\mathbf{q}_2^{\top}\mathbf{X}}
+#' whenever both orthogonalized directions are present. Since
+#' \eqn{\mathbf{q}_1^{\top}\mathbf{q}_2 = 0}, the two fitted parts are
+#' orthogonal and their sums of squares add. This yields the dimension-specific
+#' contributions
+#' \deqn{R^2_1 =
+#'   \frac{\|\mathbf{q}_1\mathbf{q}_1^{\top}\mathbf{X}\|_F^2}
+#'        {\|\mathbf{X}\|_F^2},}
+#' and
+#' \deqn{R^2_{2\mid 1} =
+#'   \frac{\|\mathbf{q}_2\mathbf{q}_2^{\top}\mathbf{X}\|_F^2}
+#'        {\|\mathbf{X}\|_F^2},}
+#' so that
+#' \deqn{R^2_{\mathrm{disp}} = R^2_1 + R^2_{2\mid 1}}
+#' whenever the display space is two-dimensional.
+#'
+#' Care should be taken when interpreting this decomposition. If the columns of
+#' \eqn{\mathbf{Z}} are already orthogonal, then the two displayed contributions
+#' correspond directly to the first and second supplied display axes. If the
+#' columns of \eqn{\mathbf{Z}} are not orthogonal, however, the decomposition is
+#' \emph{ordered}. The first contribution \eqn{R^2_1} is attributable to the
+#' first supplied display coordinate \eqn{\mathbf{z}_1}. The second contribution
+#' \eqn{R^2_{2\mid 1}} is attributable to the component of the second supplied
+#' display coordinate \eqn{\mathbf{z}_2} that is orthogonal to the first.
+#' Thus \eqn{R^2_{2\mid 1}} should be interpreted as the additional contribution
+#' of \dQuote{Dim 2 given Dim 1}, not as the contribution of the raw second
+#' column of \eqn{\mathbf{Z}} considered in isolation. The ordering of the
+#' columns of \eqn{\mathbf{Z}} is therefore important for this decomposition.
+#'
+#' The same ordered orthogonalization yields a decomposition of each variable's
+#' predictivity:
+#' \deqn{\phi_j = \phi_{j1} + \phi_{j,2\mid 1},}
+#' where
+#' \deqn{\phi_{j1} =
+#'   \frac{\|\mathbf{q}_1\mathbf{q}_1^{\top}\mathbf{x}_{(j)}\|^2}
+#'        {\|\mathbf{x}_{(j)}\|^2}
+#'   =
+#'   \frac{(\mathbf{q}_1^{\top}\mathbf{x}_{(j)})^2}
+#'        {\|\mathbf{x}_{(j)}\|^2},}
+#' and
+#' \deqn{\phi_{j,2\mid 1} =
+#'   \frac{\|\mathbf{q}_2\mathbf{q}_2^{\top}\mathbf{x}_{(j)}\|^2}
+#'        {\|\mathbf{x}_{(j)}\|^2}
+#'   =
+#'   \frac{(\mathbf{q}_2^{\top}\mathbf{x}_{(j)})^2}
+#'        {\|\mathbf{x}_{(j)}\|^2}.}
+#' Thus \eqn{\phi_{j1}} is the part of variable \eqn{j}'s predictivity explained
+#' by the first supplied display dimension, while
+#' \eqn{\phi_{j,2\mid 1}} is the additional part explained by the second display
+#' dimension after removing its overlap with the first.
+#'
+#' If the supplied display coordinates are collinear, then
+#' \eqn{\mathbf{u}_2 = \mathbf{0}} and the effective display space is
+#' one-dimensional. In that case \eqn{R^2_{2\mid 1} = 0} and
+#' \eqn{\phi_{j,2\mid 1} = 0} for all variables.
+#'
+#' In contrast, a regression biplot does \emph{not} in general satisfy the
+#' sample-side decomposition
+#' \deqn{\mathbf{X}\mathbf{X}^{\top} =
+#'   \widehat{\mathbf{X}}\widehat{\mathbf{X}}^{\top} +
+#'   (\mathbf{X} - \widehat{\mathbf{X}})
+#'   (\mathbf{X} - \widehat{\mathbf{X}})^{\top}.}
+#' Consequently, PCA-style sample predictivities are not generally justified for
+#' a regression biplot. The principled fit measures are the variable
+#' predictivities \eqn{\phi_j}, the overall quality
+#' \eqn{R^2_{\mathrm{disp}}}, and the ordered dimension-specific contributions
+#' described above. This mirrors the fact that the clean orthogonality available
+#' here is on the variable side rather than the sample side (Gower, Lubbe and
+#' le Roux, 2011; Greenacre, 2010).
+#'
+#' In the wrapped \code{bipl5_biplot} object, these formulas drive the bottom
+#' display-quality label, the hover-time predicted values
+#' \eqn{\widehat{\mathbf{X}}}, and the calibrated linear axes stored in
+#' \code{Payload_12}. Since the regression display is tied to one externally
+#' supplied map, \code{wrap_bipl5.regress()} produces a single payload only.
+#' There is no PC/CV toggle and no separate PCA-style sample-fit panel.
+#'
+#' @references
+#' Gabriel, K. R. (1971). The biplot graphical display of matrices with
+#' application to principal component analysis. \emph{Biometrika},
+#' 58(3), 453--467. \doi{10.1093/biomet/58.3.453}
+#'
+#' Gower, J. C. and Hand, D. J. (1996). \emph{Biplots}. London:
+#' Chapman \& Hall.
+#'
+#' Gower, J. C., Lubbe, S. and le Roux, N. J. (2011).
+#' \emph{Understanding Biplots}. Chichester: Wiley.
+#'
+#' Greenacre, M. (2010). \emph{Biplots in Practice}. Bilbao:
+#' BBVA Foundation.
+#'
+#' la Grange, A., le Roux, N. and Gardner-Lubbe, S. (2009).
+#' BiplotGUI: Interactive Biplots in R. \emph{Journal of Statistical Software},
+#' 30(12), 1--37. \doi{10.18637/jss.v030.i12}
 #'
 #' @return An object of class \code{c("bipl5_biplot", "reg")}
 #' @export
@@ -544,6 +778,17 @@ wrap_bipl5.regress <- function(x) {
   # axes_coordinates() depends on the current state of X, so we must
   # capture them while X is still centered/scaled.
   z.axes <- biplotEZ::axes_coordinates(x)
+  pcs <- c(1, 2)
+  fit_qual <- regression_fit_quality(
+    X = x$X,
+    Z = x$Z,
+    basis = pcs,
+    dim_prefix = "Dim"
+  )
+  fit_qual_plotly <- regression_fit_quality_tex(
+    X = x$X,
+    Z = x$Z
+  )
 
   # ── Un-center/un-scale X so hovertext shows raw values ─────────────────
   if (x$scaled) {
@@ -562,7 +807,6 @@ wrap_bipl5.regress <- function(x) {
   }
 
   # ── Build single payload ────────────────────────────────────────────────
-  pcs <- c(1, 2)
   pname <- payload_name(pcs)
 
   payloads <- list()
@@ -576,7 +820,8 @@ wrap_bipl5.regress <- function(x) {
     dim_prefix = "Dim",
     ax_pred = FALSE,
     vec_dis = FALSE,
-    z.axes = z.axes
+    z.axes = z.axes,
+    fit_qual = fit_qual
   )
 
   # ── No fit measures for regression biplots ──────────────────────────────
@@ -596,7 +841,8 @@ wrap_bipl5.regress <- function(x) {
     color = color,
     symbol = symbol,
     group = group,
-    fit.quality = "",
+    fit.quality = fit_qual,
+    fit.quality.plotly = fit_qual_plotly,
     pc_info = pc_info,
     dim_prefix = "Dim"
   )
@@ -779,8 +1025,13 @@ plot.bipl5_biplot <- function(x, y = NULL, ...) {
   first_payl <- bp[[first_name]]
 
   # ── Step 1: Create plotly scaffolding ──────────────────────────────────────
+  dpquality <- first_payl$fit_qual
+  if (is_reg && !is.null(bp$meta$fit.quality.plotly)) {
+    dpquality <- bp$meta$fit.quality.plotly
+  }
+
   p_ly <- plot_scaffolding(
-    dpquality = first_payl$fit_qual,
+    dpquality = dpquality,
     basis = ez$e.vects,
     PC_toggle = use_pc_toggle,
     ax_pred = has_fm,
