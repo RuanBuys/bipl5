@@ -39,10 +39,10 @@ bipl5_dependency <- function() {
 #' @param p_ly Plotly htmlwidget.
 #' @param p Number of axes in the display.
 #' @param cols Axis color vector used for prediction-label styling.
-#' @param payload Named list of precomputed PC payloads.
-#' @param fm_payload List of precomputed fit-panel traces.
+#' @param mdsDisplay Named list of precomputed PC mdsDisplays.
+#' @param fm_mdsDisplay List of precomputed fit-panel traces.
 #' @param ax_slider Optional slider configuration (currently reserved for compatibility).
-#' @param initial_pc_key Character; the payload key initially rendered in the
+#' @param initial_pc_key Character; the mdsDisplay key initially rendered in the
 #'   plotly widget (default \code{"PC 1 & 2"}).  Passed to JavaScript so that
 #'   \code{currentPCKey} is set correctly when a non-default PC pair is shown
 #'   first.
@@ -53,8 +53,8 @@ insert_linear_js_v1 <- function(
   p_ly,
   p,
   cols,
-  payload,
-  fm_payload,
+  mdsDisplay,
+  fm_mdsDisplay,
   ax_slider = NULL,
   initial_pc_key = "PC 1 & 2"
 ) {
@@ -83,8 +83,8 @@ insert_linear_js_v1 <- function(
       p = p,
       cols = cols,
       class_mean_hover = FALSE,
-      payloads = payload,
-      fm_payload = fm_payload,
+      mdsDisplays = mdsDisplay,
+      fm_mdsDisplay = fm_mdsDisplay,
       ax_slider = ax_slider,
       initialPCKey = initial_pc_key
     )

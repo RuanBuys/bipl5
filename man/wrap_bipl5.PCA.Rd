@@ -7,22 +7,409 @@
 \method{wrap_bipl5}{PCA}(x)
 }
 \arguments{
-\item{x}{An object of class \code{biplot} from the biplotEZ package with
-PCA method applied.}
+\item{x}{An object of class \code{biplot} from the \pkg{biplotEZ} package with
+\code{PCA()} method applied.}
 }
 \value{
-An object of class \code{bipl5_biplot}
+An object of class \code{c("bipl5_biplot", "PCA")}
 }
 \description{
-Builds three payloads for the user's PC pair and two supplementary pairs,
-along with fit measures.  The user's original PC pair is always first.
-Plotting is deferred to \code{\link{plot.bipl5_biplot}}.
+Builds the mdsDisplay(s) used for a principal component analysis (PCA) biplot
+and documents the associated PCA-biplot fit, predictivity and direct-reading
+measures. In contrast to a regression biplot, the low-dimensional sample map
+is obtained internally from the singular value decomposition of the processed
+data matrix. If the wrapped object stores more than one principal-component
+pair as separate mdsDisplays, the same formulas below apply to each mdsDisplay
+separately, with the active mdsDisplay determined by the displayed pair of
+principal components.
+}
+\details{
+For the PCA biplot handled by this method, let
+\eqn{\mathbf{X}\in\mathbb{R}^{n\times p}} denote the \emph{processed} data
+matrix stored in the input \code{biplot} object after centring and any
+optional scaling performed by \code{biplot()}. Thus \eqn{\mathbf{X}} is the
+matrix on which PCA is actually carried out. Write the singular value
+decomposition as
+\deqn{\mathbf{X} = \mathbf{U}\mathbf{D}\mathbf{V}^{\top},}
+where \eqn{\mathbf{U}^{\top}\mathbf{U}=\mathbf{I}},
+\eqn{\mathbf{V}^{\top}\mathbf{V}=\mathbf{I}}, and
+\eqn{\mathbf{D}=\mathrm{diag}(d_1,\ldots,d_q)} with
+\eqn{q=\mathrm{rank}(\mathbf{X})} and
+\eqn{d_1\ge \cdots \ge d_q \ge 0}. The columns of \eqn{\mathbf{V}} are the
+principal directions, and the corresponding principal component score vectors
+are \eqn{\mathbf{z}_t = d_t\mathbf{u}_t = \mathbf{X}\mathbf{v}_t},
+\eqn{t=1,\ldots,q}. This is the standard PCA biplot construction underlying
+Gabriel's original formulation and subsequent calibrated-axis developments
+(Gabriel, 1971; Gower and Hand, 1996; Gower, Lubbe and le Roux, 2011;
+Greenacre, 2010).
+
+Suppose the user has selected two principal components
+\eqn{a<b}. Let \eqn{\mathbf{J}_{ab}} denote the diagonal
+\eqn{q\times q} selector matrix with ones in positions \eqn{a} and \eqn{b}
+and zeros elsewhere. Then the two-dimensional PCA fitted matrix is
+\deqn{\widehat{\mathbf{X}}_{ab} =
+  \mathbf{U}\mathbf{D}\mathbf{J}_{ab}\mathbf{V}^{\top}
+  = \mathbf{X}\mathbf{V}\mathbf{J}_{ab}\mathbf{V}^{\top}.}
+Equivalently, if \eqn{\mathbf{U}_{ab}} and \eqn{\mathbf{V}_{ab}} denote the
+submatrices containing columns \eqn{a} and \eqn{b}, and
+\eqn{\mathbf{D}_{ab}=\mathrm{diag}(d_a,d_b)}, then
+\deqn{\widehat{\mathbf{X}}_{ab} =
+  \mathbf{U}_{ab}\mathbf{D}_{ab}\mathbf{V}_{ab}^{\top}
+  = d_a\mathbf{u}_a\mathbf{v}_a^{\top}
+  + d_b\mathbf{u}_b\mathbf{v}_b^{\top}.}
+When \eqn{(a,b)=(1,2)}, this is the best rank-2 approximation to
+\eqn{\mathbf{X}} in Frobenius norm by the Eckart--Young theorem. For any
+other selected pair, the same formula gives the orthogonal projection of
+\eqn{\mathbf{X}} onto the chosen two-dimensional principal-component subspace,
+but it is not generally the globally optimal rank-2 approximation
+(Eckart and Young, 1936; Gabriel, 1971; Greenacre, 2010).
+
+The calibrated-axis PCA biplot may be written in the general form
+\deqn{\widehat{\mathbf{X}}_{ab} = \mathbf{Z}_{ab}\mathbf{H}_{ab}^{\top},}
+where the exact factorization depends on the type of PCA biplot being
+displayed.
+
+For the ordinary PCA biplot, which prioritizes the Euclidean geometry of the
+sample points, take
+\deqn{\mathbf{Z}_{ab} = \mathbf{U}_{ab}\mathbf{D}_{ab},
+  \qquad
+  \mathbf{H}_{ab} = \mathbf{V}_{ab}.}
+Thus the displayed sample coordinates are the selected principal component
+scores, and the fitted matrix is
+\deqn{\widehat{\mathbf{X}}_{ab} =
+  \mathbf{Z}_{ab}\mathbf{H}_{ab}^{\top}.}
+If \eqn{\mathbf{h}_{(j)}} denotes the \eqn{j}th row of
+\eqn{\mathbf{H}_{ab}} written as a column vector in \eqn{\mathbb{R}^2},
+then for sample \eqn{i}
+\deqn{\widehat{x}_{ij} =
+  \mathbf{z}_{i}^{\top}\mathbf{h}_{(j)}.}
+Hence the calibrated axis for variable \eqn{j} has direction
+\eqn{\mathbf{h}_{(j)}}, and the point on that axis corresponding to marker
+value \eqn{\mu} is
+\deqn{\mathbf{p}_{\mu j} =
+  \frac{\mu}{\mathbf{h}_{(j)}^{\top}\mathbf{h}_{(j)}}\mathbf{h}_{(j)}.}
+This is the standard calibrated-axis formula used to place tick marks and to
+recover predicted values from projections onto the displayed axis
+(Gower and Hand, 1996; Gower, Lubbe and le Roux, 2011).
+
+A second important special case is the \emph{correlation biplot}, obtained
+when the processed matrix \eqn{\mathbf{X}} is standardized and the display is
+chosen so that correlations between variables are approximated by the cosines
+of the angles between the displayed variable directions. In that case one may
+equivalently factorize
+\deqn{\widehat{\mathbf{X}}_{ab} =
+  \mathbf{U}_{ab}(\mathbf{V}_{ab}\mathbf{D}_{ab})^{\top}.}
+Hence the displayed sample coordinates are \eqn{\mathbf{U}_{ab}} and the
+variable directions are the rows of \eqn{\mathbf{V}_{ab}\mathbf{D}_{ab}}.
+If \eqn{\mathbf{c}_{(j)}} denotes the \eqn{j}th such row written as a column
+vector, then
+\deqn{\widehat{x}_{ij} =
+  \mathbf{u}_{i,ab}^{\top}\mathbf{c}_{(j)}.}
+In this standardized setting the coordinates
+\eqn{\mathbf{c}_{(j)}} are proportional to the correlations of variable
+\eqn{j} with the selected principal components, and the geometry of the
+displayed variable directions is therefore tuned to the correlation structure
+rather than to the raw score geometry of the samples. This is the sense in
+which \code{correlation.biplot = TRUE} preserves variable-correlation
+information in the display (Gabriel, 1971; Greenacre, 2010; \pkg{biplotEZ}
+manual and vignette).
+
+In either factorization, all predicted values in
+\eqn{\widehat{\mathbf{X}}_{ab}} are on the same centred/scaled scale as the
+stored matrix \eqn{\mathbf{X}}. If required, predictions can be
+back-transformed to the original variable scale using the means and standard
+deviations stored in the input \code{biplot} object.
+
+A fundamental feature of the PCA biplot is that both \emph{sample-side} and
+\emph{variable-side} orthogonal decompositions hold. Writing
+\eqn{\mathbf{E}_{ab}=\mathbf{X}-\widehat{\mathbf{X}}_{ab}}, one has
+\deqn{\mathbf{X}\mathbf{X}^{\top} =
+  \widehat{\mathbf{X}}_{ab}\widehat{\mathbf{X}}_{ab}^{\top}
+  + \mathbf{E}_{ab}\mathbf{E}_{ab}^{\top},}
+and
+\deqn{\mathbf{X}^{\top}\mathbf{X} =
+  \widehat{\mathbf{X}}_{ab}^{\top}\widehat{\mathbf{X}}_{ab}
+  + \mathbf{E}_{ab}^{\top}\mathbf{E}_{ab}.}
+The first is the \emph{Type A orthogonality}, which justifies sample-side
+measures of fit. The second is the \emph{Type B orthogonality}, which
+justifies variable-side measures of fit. For PCA both orthogonality relations
+hold simultaneously because \eqn{\widehat{\mathbf{X}}_{ab}} is obtained from
+an orthogonal principal-component projection
+(Gabriel, 1971; Gower, Lubbe and le Roux, 2011; Gardner-Lubbe, le Roux and
+Gower, 2008).
+
+Let \eqn{\mathbf{x}_{i\cdot}^{\top}} denote row \eqn{i} of \eqn{\mathbf{X}}
+and \eqn{\widehat{\mathbf{x}}_{i\cdot}^{\top}} the corresponding row of
+\eqn{\widehat{\mathbf{X}}_{ab}}. The \emph{sample predictivity} of sample
+\eqn{i} is then
+\deqn{\psi_i =
+  \frac{\|\widehat{\mathbf{x}}_{i\cdot}\|^2}
+       {\|\mathbf{x}_{i\cdot}\|^2}
+  =
+  1 -
+  \frac{\|\mathbf{x}_{i\cdot} -
+         \widehat{\mathbf{x}}_{i\cdot}\|^2}
+       {\|\mathbf{x}_{i\cdot}\|^2},
+  \qquad i=1,\ldots,n.}
+Thus \eqn{\psi_i} is the proportion of the sum of squares of sample \eqn{i}
+reproduced by the chosen two-dimensional PCA display. Because of Type A
+orthogonality, \eqn{0\le \psi_i \le 1}. Samples with \eqn{\psi_i} near one
+lie close to the displayed PCA plane, whereas samples with \eqn{\psi_i} near
+zero lie largely orthogonal to it. This is the sample-side fit measure used in
+the PCA biplot literature and in \pkg{biplotEZ}
+(Gardner-Lubbe, le Roux and Gower, 2008; \pkg{biplotEZ} vignette).
+
+Let \eqn{\mathbf{x}_{(j)}} denote column \eqn{j} of \eqn{\mathbf{X}} and
+\eqn{\widehat{\mathbf{x}}_{(j)}} the corresponding column of
+\eqn{\widehat{\mathbf{X}}_{ab}}. The \emph{axis predictivity} of variable
+\eqn{j} is
+\deqn{\phi_j =
+  \frac{\|\widehat{\mathbf{x}}_{(j)}\|^2}
+       {\|\mathbf{x}_{(j)}\|^2}
+  =
+  1 -
+  \frac{\|\mathbf{x}_{(j)} -
+         \widehat{\mathbf{x}}_{(j)}\|^2}
+       {\|\mathbf{x}_{(j)}\|^2},
+  \qquad j=1,\ldots,p.}
+Thus \eqn{\phi_j} is the proportion of the sum of squares of variable
+\eqn{j} reproduced by the chosen PCA plane. Because of Type B orthogonality,
+\eqn{0\le \phi_j \le 1}. In a calibrated-axis display, \eqn{\phi_j} is the
+natural sum-of-squares measure of how well the axis for variable \eqn{j}
+reproduces the underlying processed values. This is the quantity reported in
+\pkg{biplotEZ} as \dQuote{axis predictivity}
+(Gardner-Lubbe, le Roux and Gower, 2008; \pkg{biplotEZ} vignette;
+Greenacre, 2010).
+
+The overall quality of the displayed PCA subspace is
+\deqn{R^2_{\mathrm{disp},ab} =
+  \frac{\|\widehat{\mathbf{X}}_{ab}\|_F^2}{\|\mathbf{X}\|_F^2}
+  =
+  1 - \frac{\|\mathbf{X} - \widehat{\mathbf{X}}_{ab}\|_F^2}
+           {\|\mathbf{X}\|_F^2}.}
+Since
+\eqn{\|\widehat{\mathbf{X}}_{ab}\|_F^2 = d_a^2+d_b^2}, this may also be
+written as
+\deqn{R^2_{\mathrm{disp},ab} =
+  \frac{d_a^2+d_b^2}{\sum_{t=1}^{q} d_t^2}.}
+In particular, when \eqn{(a,b)=(1,2)}, this is the familiar proportion of
+total sum of squares explained by the first two principal components. More
+generally, it is the quality of the specific displayed pair chosen by the
+user, matching the \pkg{biplotEZ} quality measure
+(Gabriel, 1971; Greenacre, 2010; \pkg{biplotEZ} vignette).
+
+Because both Type A and Type B orthogonality hold, the overall quality can be
+expressed as a weighted average on either the sample side or the variable
+side. On the variable side,
+\deqn{R^2_{\mathrm{disp},ab} =
+  \sum_{j=1}^{p} w_j\phi_j,}
+where
+\deqn{w_j =
+  \frac{\|\mathbf{x}_{(j)}\|^2}{\|\mathbf{X}\|_F^2},
+  \qquad
+  \sum_{j=1}^{p} w_j = 1.}
+Hence variables with larger sums of squares contribute more to the overall
+display quality. If the original call to \code{biplot()} used
+\code{scale = TRUE}, so that all processed variables have equal sums of
+squares, then
+\deqn{R^2_{\mathrm{disp},ab} = \frac{1}{p}\sum_{j=1}^{p}\phi_j.}
+Thus, for a standardized PCA biplot, the overall quality is the simple average
+of the individual axis predictivities. This is the weighted-average
+interpretation requested by the present wrapper.
+
+Similarly, on the sample side,
+\deqn{R^2_{\mathrm{disp},ab} =
+  \sum_{i=1}^{n} m_i\psi_i,}
+where
+\deqn{m_i =
+  \frac{\|\mathbf{x}_{i\cdot}\|^2}{\|\mathbf{X}\|_F^2},
+  \qquad
+  \sum_{i=1}^{n} m_i = 1.}
+Hence the same overall display quality may be read as a weighted average of
+sample predictivities or as a weighted average of axis predictivities
+(Gardner-Lubbe, le Roux and Gower, 2008).
+
+Unlike the regression-biplot case, no ordered orthogonalization is required to
+decompose the quality of a PCA display into separate contributions from the
+two displayed dimensions, because principal components are already mutually
+orthogonal. Indeed,
+\deqn{\widehat{\mathbf{X}}_{ab} =
+  d_a\mathbf{u}_a\mathbf{v}_a^{\top}
+  + d_b\mathbf{u}_b\mathbf{v}_b^{\top},}
+and these two rank-1 parts are orthogonal in Frobenius inner product. Hence
+\deqn{R^2_{\mathrm{disp},ab} = R^2_a + R^2_b,}
+where
+\deqn{R^2_a = \frac{d_a^2}{\|\mathbf{X}\|_F^2},
+  \qquad
+  R^2_b = \frac{d_b^2}{\|\mathbf{X}\|_F^2}.}
+Thus the contribution of each displayed principal component is obtained
+directly from its singular value.
+
+The same orthogonal decomposition yields a per-component breakdown of each
+axis predictivity. Since
+\deqn{\widehat{\mathbf{x}}_{(j)} =
+  d_a v_{ja}\mathbf{u}_a + d_b v_{jb}\mathbf{u}_b,}
+with orthogonal components \eqn{\mathbf{u}_a} and \eqn{\mathbf{u}_b}, one has
+\deqn{\phi_j = \phi_{ja} + \phi_{jb},}
+where
+\deqn{\phi_{ja} =
+  \frac{d_a^2 v_{ja}^2}{\|\mathbf{x}_{(j)}\|^2},
+  \qquad
+  \phi_{jb} =
+  \frac{d_b^2 v_{jb}^2}{\|\mathbf{x}_{(j)}\|^2}.}
+Hence the predictivity of axis \eqn{j} can be decomposed exactly into the
+separate contributions of the two displayed principal components. This is the
+PCA analogue of the dimension-wise decomposition used elsewhere in the biplot
+literature, but here it is especially simple because the components are
+orthogonal from the outset. In particular, if the same variable is well
+aligned with one selected principal direction but not the other, this will be
+visible in the separate values \eqn{\phi_{ja}} and \eqn{\phi_{jb}}.
+
+Likewise, each sample predictivity decomposes as
+\deqn{\psi_i = \psi_{ia} + \psi_{ib},}
+where
+\deqn{\psi_{ia} =
+  \frac{d_a^2 u_{ia}^2}{\|\mathbf{x}_{i\cdot}\|^2},
+  \qquad
+  \psi_{ib} =
+  \frac{d_b^2 u_{ib}^2}{\|\mathbf{x}_{i\cdot}\|^2}.}
+Thus the contribution of each displayed principal component may be read not
+only globally through \eqn{R^2_a} and \eqn{R^2_b}, but also locally through
+the sample-wise contributions \eqn{\psi_{ia}} and \eqn{\psi_{ib}} and the
+axis-wise contributions \eqn{\phi_{ja}} and \eqn{\phi_{jb}}
+(Gardner-Lubbe, le Roux and Gower, 2008).
+
+In addition to the sum-of-squares fit measures above, this method may also
+report direct-reading diagnostics in the sense of Alves (2012). These
+quantities serve a different purpose from the predictivities
+\eqn{\phi_j} and \eqn{\psi_i}. The predictivities measure how much of the
+variation in \eqn{\mathbf{X}} is reproduced by the selected PCA plane in a
+sum-of-squares sense. By contrast, the Alves diagnostics measure how
+accurately values can be read directly from the displayed calibrated axes in
+the current two-dimensional map. This distinction is central in the predictive
+biplot literature (Alves, 2012).
+
+Let \eqn{\mathbf{g}_{(j)}\in\mathbb{R}^2} denote the displayed direction of
+variable axis \eqn{j} under the active PCA factorization. Thus
+\eqn{\mathbf{g}_{(j)}=\mathbf{h}_{(j)}} for the ordinary PCA biplot and
+\eqn{\mathbf{g}_{(j)}=\mathbf{c}_{(j)}} for the correlation biplot. Let
+\eqn{\mathbf{z}_i\in\mathbb{R}^2} denote the corresponding displayed sample
+coordinate of sample \eqn{i}. Then the value read from the graph on axis
+\eqn{j} for sample \eqn{i} is
+\deqn{\widehat{x}_{ij} = \mathbf{z}_{i}^{\top}\mathbf{g}_{(j)},}
+and the point on the calibrated axis corresponding to that reading is
+\deqn{\mathbf{p}_{ij} =
+  \frac{\widehat{x}_{ij}}
+       {\mathbf{g}_{(j)}^{\top}\mathbf{g}_{(j)}}\mathbf{g}_{(j)}.}
+Thus the direct reading from the displayed PCA axis coincides exactly with the
+fitted value from the active two-dimensional PCA approximation.
+
+Let \eqn{s_j} denote the standard deviation used to standardize variable
+\eqn{j}. When the processed matrix \eqn{\mathbf{X}} is already standardized,
+\eqn{s_j=1}. The pointwise direct-reading error for sample \eqn{i} on axis
+\eqn{j} is then
+\deqn{\delta_{ij} =
+  \frac{|x_{ij}-\widehat{x}_{ij}|}{s_j}.}
+If \eqn{\mathbf{X}} is already standardized, then
+\eqn{\delta_{ij}=|x_{ij}-\widehat{x}_{ij}|}. The corresponding axis-level mean
+direct-reading error is
+\deqn{\bar{\delta}_j =
+  \frac{1}{n}\sum_{i=1}^{n}\delta_{ij}
+  =
+  \frac{1}{n}\sum_{i=1}^{n}
+  \frac{|x_{ij}-\widehat{x}_{ij}|}{s_j}.}
+This is the two-dimensional PCA-biplot analogue of the mean standard
+predictive error of Alves (2012).
+
+Let \eqn{\tau_{\mathrm{axis}} > 0} be a user-specified
+\emph{tolerance parameter} for axis-level direct-reading error. Then the Alves
+selection rule becomes
+\deqn{\text{retain axis }j
+  \quad\Longleftrightarrow\quad
+  \bar{\delta}_j \le \tau_{\mathrm{axis}}.}
+Likewise, for an observation-level tolerance parameter
+\eqn{\tau_{\mathrm{units}} > 0}, sample \eqn{i} is flagged with respect to
+axis \eqn{j} whenever
+\deqn{\delta_{ij} > \tau_{\mathrm{units}}.}
+Hence \eqn{\bar{\delta}_j} may be used for axis selection and
+\eqn{\delta_{ij}} for observation-level checking, exactly as in the predictive
+PCA-biplot framework of Alves (2012).
+
+The Alves diagnostics and the PCA predictivities are complementary. The
+quantity \eqn{\phi_j} answers the question:
+\dQuote{How much of variable \eqn{j}'s sum of squares is reproduced by the
+selected PCA plane?} The quantity \eqn{\psi_i} answers the corresponding
+sample-side question:
+\dQuote{How much of sample \eqn{i}'s sum of squares is reproduced by the
+selected PCA plane?} By contrast, \eqn{\bar{\delta}_j} answers the distinct
+question:
+\dQuote{How accurately can values of variable \eqn{j} be read directly from
+the displayed calibrated axis?} Consequently, an axis may have high
+\eqn{\phi_j} yet still have non-negligible direct-reading error in the current
+display, while an axis with only moderate \eqn{\phi_j} may nevertheless admit
+acceptable direct readings. In this implementation, the
+\eqn{\phi_j}- and \eqn{\psi_i}-families are the primary sum-of-squares fit
+measures, whereas the Alves quantities \eqn{\bar{\delta}_j} and
+\eqn{\delta_{ij}} provide supplementary, display-specific diagnostics.
+
+In the wrapped \code{bipl5_biplot} object, these formulas drive the
+hover-time fitted values \eqn{\widehat{\mathbf{X}}_{ab}}, the calibrated tick
+markers for each active PCA mdsDisplay, the bottom display-quality label, and
+the axis/sample fit summaries attached to the active two-dimensional
+principal-component view. If several PC pairs are stored as separate mdsDisplays,
+the same construction applies to each mdsDisplay separately.
 }
 \examples{
 \dontrun{
 library(biplotEZ)
-bp <- biplot(data = iris) |> PCA() |> wrap_bipl5()
+bp <- biplot(iris[, 1:4], scale = TRUE) |>
+  PCA(e.vects = c(1, 2), group.aes = iris[, 5]) |>
+  wrap_bipl5()
 bp
 plot(bp)
+
+bp_cor <- biplot(iris[, 1:4], scale = TRUE) |>
+  PCA(
+    e.vects = c(1, 2),
+    group.aes = iris[, 5],
+    correlation.biplot = TRUE
+  ) |>
+  wrap_bipl5()
+plot(bp_cor)
+}
+}
+\references{
+Eckart, C. and Young, G. (1936). The approximation of one matrix by another of
+lower rank. \emph{Psychometrika}, 1, 211--218.
+
+Gabriel, K. R. (1971). The biplot graphical display of matrices with
+application to principal component analysis. \emph{Biometrika},
+58(3), 453--467. \doi{10.1093/biomet/58.3.453}
+
+Gower, J. C. and Hand, D. J. (1996). \emph{Biplots}. London:
+Chapman \& Hall.
+
+Gower, J. C., Lubbe, S. and le Roux, N. J. (2011).
+\emph{Understanding Biplots}. Chichester: Wiley.
+
+Greenacre, M. (2010). \emph{Biplots in Practice}. Bilbao:
+BBVA Foundation.
+
+Gardner-Lubbe, S., le Roux, N. J. and Gower, J. C. (2008).
+Measures of fit in principal component and canonical variate analyses.
+\emph{Journal of Applied Statistics}, 35(9), 947--965.
+\doi{10.1080/02664760802185399}
+
+Lubbe, S., le Roux, N. J., Nienkemper-Swanepoel, J., Ganey, R.,
+Buys, R., Adams, Z.-M. and Manefeldt, P. (2025).
+\emph{biplotEZ: EZ-to-Use Biplots}. R package version 2.2.
+
+Alves, M. R. (2012). Evaluation of the predictive power of biplot axes to
+automate the construction and layout of biplots based on the accuracy of
+direct readings from common outputs of multivariate analyses:
+\enumerate{
+\item application to principal component analysis.
+\emph{Journal of Chemometrics}, 26(5), 180--190.
+\doi{10.1002/cem.2433}
 }
 }

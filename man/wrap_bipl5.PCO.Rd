@@ -17,14 +17,14 @@ An object of class \code{c("bipl5_biplot", "pco")}
 Handles two cases depending on the axis type stored in \code{x$PCOaxes}:
 \describe{
 \item{Linear axes}{Built identically to regression biplots via
-\code{build_one_payload()}, including translated density axes.}
-\item{Spline axes}{Uses a custom payload builder
-(\code{build_spline_payload()}) that places only sample points, the
+\code{build_one_mdsDisplay()}, including translated density axes.}
+\item{Spline axes}{Uses a custom mdsDisplay builder
+(\code{build_spline_mdsDisplay()}) that places only sample points, the
 spline axis curves with tick marks, and a bounding circle.
 A custom JavaScript handler is attached at plot time.}
 }
-In both cases there is a single payload (\code{Payload_12}), no fit
-measures, and \code{append_payload()} / \code{remove_payload()} are
+In both cases there is a single mdsDisplay (\code{mdsDisplay_12}), no fit
+measures, and \code{append_mdsDisplay()} / \code{remove_mdsDisplay()} are
 disabled.
 }
 \examples{

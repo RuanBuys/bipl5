@@ -1,6 +1,6 @@
-#' Initiate the payload scaffolding
+#' Initiate the mdsDisplay scaffolding
 #'
-#' @param payload List containing data and layout attributes for a plotly graph
+#' @param mdsDisplay List containing data and layout attributes for a plotly graph
 #' @param dpquality Vector containing details of display quality
 #' @param basis Basis vectors of the plot
 #' @param PC_toggle Indicator whether to show PC toggle dropdown list
@@ -8,10 +8,10 @@
 #' @param TDA Indicator whether to show TDA button
 #' @param vec_dis Indicator whether to show vector display button
 #'
-#' @return updated payload
+#' @return updated mdsDisplay
 #' @noRd
-plot_scaffolding_payload <- function(
-  payload,
+plot_scaffolding_mdsDisplay <- function(
+  mdsDisplay,
   dpquality,
   basis,
   PC_toggle = TRUE,
@@ -138,22 +138,22 @@ plot_scaffolding_payload <- function(
     )
   )
 
-  payload <- payload_add_layout(payload, layout)
-  payload
+  mdsDisplay <- mdsDisplay_add_layout(mdsDisplay, layout)
+  mdsDisplay
 }
 
 
-#' Add the main observations to the payload
+#' Add the main observations to the mdsDisplay
 #'
-#' @param payload List containing data and layout attributes for a plotly graph
+#' @param mdsDisplay List containing data and layout attributes for a plotly graph
 #' @param x Object from biplotEZ package
 #' @param p_ly_pch Plotting characters of the observations
 #' @param Col Colors of the observations to be plotted
 #' @param visible Whether points should be visible on graph. True by default
 #'
-#' @return updated payload
+#' @return updated mdsDisplay
 #' @noRd
-insert_Z_coo_payload <- function(payload, x, p_ly_pch, Col, visible = TRUE) {
+insert_Z_coo_mdsDisplay <- function(mdsDisplay, x, p_ly_pch, Col, visible = TRUE) {
   groups <- levels(x$group)
   num_groups <- length(groups)
 
@@ -186,20 +186,20 @@ insert_Z_coo_payload <- function(payload, x, p_ly_pch, Col, visible = TRUE) {
     )
   }
 
-  payload <- payload_add_traces(payload, new_traces)
-  payload
+  mdsDisplay <- mdsDisplay_add_traces(mdsDisplay, new_traces)
+  mdsDisplay
 }
 
-#' Add class means to the payload
+#' Add class means to the mdsDisplay
 #'
-#' @param payload List containing data and layout attributes for a plotly graph
+#' @param mdsDisplay List containing data and layout attributes for a plotly graph
 #' @param Z Coordinates of the class means to be added
 #' @param symbol Plotting symbol of each class mean
 #' @param color color of each class mean observation
 #'
-#' @return updated payload
+#' @return updated mdsDisplay
 #' @noRd
-insert_class_means_payload <- function(payload, Z, symbol, color) {
+insert_class_means_mdsDisplay <- function(mdsDisplay, Z, symbol, color) {
   stopifnot(is.matrix(Z) || is.data.frame(Z))
   Z <- as.matrix(Z)
 
@@ -226,21 +226,21 @@ insert_class_means_payload <- function(payload, Z, symbol, color) {
     )
   }
 
-  payload_add_traces(payload, traces)
+  mdsDisplay_add_traces(mdsDisplay, traces)
 }
 
 
-#' Insert polygons to the payload
+#' Insert polygons to the mdsDisplay
 #'
-#' @param payload List containing data and layout attributes for a plotly graph
+#' @param mdsDisplay List containing data and layout attributes for a plotly graph
 #' @param coors coordinates of the polygons to be added wrapped in a named list
 #' @param aes Aestethics of the polygon
 #' @param leg_group Character indicating type of polygon
 #'
-#' @return updated payload
+#' @return updated mdsDisplay
 #' @noRd
-insert_polygon_EZ_payload <- function(
-  payload,
+insert_polygon_EZ_mdsDisplay <- function(
+  mdsDisplay,
   coors,
   aes,
   leg_group = "Alpha Bags"
@@ -282,18 +282,18 @@ insert_polygon_EZ_payload <- function(
     )
   }
 
-  payload_add_traces(payload, traces)
+  mdsDisplay_add_traces(mdsDisplay, traces)
 }
 
 
-#' Insert axis predictivity graph to the payload
+#' Insert axis predictivity graph to the mdsDisplay
 #'
-#' @param payload List containing data and layout attributes for a plotly graph
+#' @param mdsDisplay List containing data and layout attributes for a plotly graph
 #' @param x Object from biplotEZ package
 #'
-#' @return updated payload
+#' @return updated mdsDisplay
 #' @noRd
-add_axis_adeq_payload <- function(payload, x) {
+add_axis_adeq_mdsDisplay <- function(mdsDisplay, x) {
   adeq_deets <- axis_adequacies(x)
   ColNames <- colnames(x$x) %||% colnames(x$X)
 
@@ -328,14 +328,14 @@ add_axis_adeq_payload <- function(payload, x) {
 }
 
 
-#' Insert axis predictivity graph to the payload
+#' Insert axis predictivity graph to the mdsDisplay
 #'
-#' @param payload List containing data and layout attributes for a plotly graph
+#' @param mdsDisplay List containing data and layout attributes for a plotly graph
 #' @param x Object from biplotEZ package
 #'
-#' @return updated payload
+#' @return updated mdsDisplay
 #' @noRd
-add_axis_pred_payload <- function(payload, x) {
+add_axis_pred_mdsDisplay <- function(mdsDisplay, x) {
   pred_deets <- axis_predictivities_EZ(x)
   ColNames <- c(colnames(x$X), "Weighted mean = Quality")
 
@@ -380,7 +380,7 @@ add_axis_pred_payload <- function(payload, x) {
 #'
 #' @return A list containing stacked bar and line traces for variance components
 #' @noRd
-add_prop_variance_payload <- function(
+add_prop_variance_mdsDisplay <- function(
   x,
   axis = "x3",
   yaxis = "y3",
@@ -455,7 +455,7 @@ add_prop_variance_payload <- function(
 #'
 #' @return A list containing a single scree trace in Plotly.addTraces format
 #' @noRd
-add_scree_payload <- function(
+add_scree_mdsDisplay <- function(
   x,
   axis = "x3",
   yaxis = "y3",
@@ -499,17 +499,17 @@ add_scree_payload <- function(
 }
 
 
-#' Add vector representation to the payload
+#' Add vector representation to the mdsDisplay
 #'
-#' @param payload List containing data and layout attributes for a plotly graph
+#' @param mdsDisplay List containing data and layout attributes for a plotly graph
 #' @param PC12 First two PC's
 #' @param PC13 Legacy. Keep null
 #' @param PC23 Legacy. Keep null
 #'
-#' @return updated payload
+#' @return updated mdsDisplay
 #' @noRd
-insert_vector_annots_payload <- function(
-  payload,
+insert_vector_annots_mdsDisplay <- function(
+  mdsDisplay,
   PC12,
   PC13 = NULL,
   PC23 = NULL
@@ -559,13 +559,13 @@ insert_vector_annots_payload <- function(
     anns <- c(anns, make_vec_annots(PC23, meta = NULL, visible = FALSE))
   }
 
-  payload_add_layout(payload, list(annotations = anns))
+  mdsDisplay_add_layout(mdsDisplay, list(annotations = anns))
 }
 
 
-#' Insert TDA to the payload
+#' Insert TDA to the mdsDisplay
 #'
-#' @param payload List containing data and layout attributes for a plotly graph
+#' @param mdsDisplay List containing data and layout attributes for a plotly graph
 #' @param z.axes Output from biplotEZ - list containing tick coordinates
 #' @param x Object from biplotEZ
 #' @param Z Coordinates of the datapoints on the biplot
@@ -573,9 +573,9 @@ insert_vector_annots_payload <- function(
 #' @param Col Factor variable indicating colors of each class
 #' @param inflate Numeric - inflate the length of the densities
 #'
-#' @return updated payload
+#' @return updated mdsDisplay
 #' @noRd
-add_TDA_payload <- function(payload, z.axes, x, Z, group, Col, inflate = 1) {
+add_TDA_mdsDisplay <- function(mdsDisplay, z.axes, x, Z, group, Col, inflate = 1) {
   `%||%` <- function(a, b) if (is.null(a)) b else a
 
   # ensure group is a factor (for levels / match)
@@ -798,22 +798,22 @@ add_TDA_payload <- function(payload, z.axes, x, Z, group, Col, inflate = 1) {
     }
   }
 
-  payload <- payload_add_traces(payload, traces)
-  payload <- payload_add_layout(payload, list(annotations = annotations))
+  mdsDisplay <- mdsDisplay_add_traces(mdsDisplay, traces)
+  mdsDisplay <- mdsDisplay_add_layout(mdsDisplay, list(annotations = annotations))
 
-  list(payload = payload, m = m, shift = shift)
+  list(mdsDisplay = mdsDisplay, m = m, shift = shift)
 }
 
 
-#' Insert linear axes to the payload
+#' Insert linear axes to the mdsDisplay
 #'
-#' @param payload List containing data and layout attributes for a plotly graph
+#' @param mdsDisplay List containing data and layout attributes for a plotly graph
 #' @param z.axes Output from biplotEZ - list containing tick coordinates
 #' @param x Object from biplotEZ
 #'
-#' @return updated payload
+#' @return updated mdsDisplay
 #' @noRd
-insert_linear_axes_payload <- function(payload, z.axes, x) {
+insert_linear_axes_mdsDisplay <- function(mdsDisplay, z.axes, x) {
   `%||%` <- function(a, b) if (is.null(a)) b else a
 
   p <- x$p
@@ -950,24 +950,24 @@ insert_linear_axes_payload <- function(payload, z.axes, x) {
     hoverinfo = "none"
   )
 
-  payload <- payload_add_traces(payload, traces)
-  payload <- payload_add_layout(payload, list(annotations = annotations))
+  mdsDisplay <- mdsDisplay_add_traces(mdsDisplay, traces)
+  mdsDisplay <- mdsDisplay_add_layout(mdsDisplay, list(annotations = annotations))
 
-  list(payload = payload, grads = grads, radius = radius)
+  list(mdsDisplay = mdsDisplay, grads = grads, radius = radius)
 }
 
 #' Add unit circle to biplot
 #'
-#' @param payload List containing data and layout attributes for a plotly graph
+#' @param mdsDisplay List containing data and layout attributes for a plotly graph
 #' @param n Number of datapoints in the circle
 #' @param visible Indicator, whether to display or not. Set to false
 #' @param color Color of the circle
 #' @param width Linewidth of circle
 #'
-#' @return updated payload
+#' @return updated mdsDisplay
 #' @noRd
-insert_unit_circle_payload <- function(
-  payload,
+insert_unit_circle_mdsDisplay <- function(
+  mdsDisplay,
   n = 200,
   visible = FALSE,
   color = "red",
@@ -990,28 +990,28 @@ insert_unit_circle_payload <- function(
     visible = visible
   )
 
-  payload_add_traces(payload, list(trace))
+  mdsDisplay_add_traces(mdsDisplay, list(trace))
 }
 
 
-#' Add fit measures to the payload
+#' Add fit measures to the mdsDisplay
 #'
-#' @param payload List containing data and layout attributes for a plotly graph
+#' @param mdsDisplay List containing data and layout attributes for a plotly graph
 #' @param x object of class biplot
 #' @param domain_x domain of the table
 #' @param domain_y range of the table
 #' @param visible Logical
 #'
-#' @return updated payload
+#' @return updated mdsDisplay
 #' @noRd
-add_table_payload <- function(
-  payload,
+add_table_mdsDisplay <- function(
+  mdsDisplay,
   x,
   domain_x = c(0.5, 1),
   domain_y = c(0.15, 0.85),
   visible = TRUE
 ) {
-  stopifnot(is.list(payload))
+  stopifnot(is.list(mdsDisplay))
   stopifnot(!is.null(x$X))
 
   p <- ncol(x$X)
@@ -1036,27 +1036,27 @@ add_table_payload <- function(
     showlegend = FALSE,
     visible = visible
   )
-  payload$payload$fit_table <- list(table_trace) # IMPORTANT: list-of-traces for Plotly.addTraces
-  payload
+  mdsDisplay$mdsDisplay$fit_table <- list(table_trace) # IMPORTANT: list-of-traces for Plotly.addTraces
+  mdsDisplay
 }
 
 
-#' Add fit measures to the payload
+#' Add fit measures to the mdsDisplay
 #'
-#' @param payload List containing data and layout attributes for a plotly graph
+#' @param mdsDisplay List containing data and layout attributes for a plotly graph
 #' @param x object of class biplot
 #' @param domain_x domain of the table
 #' @param domain_y range of the table
 #' @param visible Logical
 #'
-#' @return updated payload
+#' @return updated mdsDisplay
 #' @noRd
-slider_control_payload <- function(payload, n_inside = 17, n_outside = 4) {
+slider_control_mdsDisplay <- function(mdsDisplay, n_inside = 17, n_outside = 4) {
   #vector of axis slopes; vector of intercept of equation
-  m <- payload$m
+  m <- mdsDisplay$m
   dist <- numeric(length(m))
   for (i in 1:length(m)) {
-    b <- payload$shift$ends[[i]][1, 2] - m[i] * payload$shift$ends[[i]][1, 1]
+    b <- mdsDisplay$shift$ends[[i]][1, 2] - m[i] * mdsDisplay$shift$ends[[i]][1, 1]
     x_cross <- -b / (1 / m[i] + m[i])
     y_cross <- -1 / m[i] * x_cross
     dist[i] <- sign(x_cross) * sqrt(x_cross^2 + y_cross^2)
@@ -1072,9 +1072,9 @@ slider_control_payload <- function(payload, n_inside = 17, n_outside = 4) {
 
   step_size <- 2 * radius / n_inside
 
-  payload$payload$config$slider_info <- list(
+  mdsDisplay$mdsDisplay$config$slider_info <- list(
     "slider_pos" = actual_pos,
     "step_size" = step_size
   )
-  payload
+  mdsDisplay
 }

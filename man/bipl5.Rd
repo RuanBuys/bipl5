@@ -42,15 +42,21 @@ License: \tab MIT \cr
 \section{Core Functions}{
 
 \itemize{
+\item{\link{init_biplot}}
+
+\item{\link{scale_mds}}
+
 \item{\link{wrap_bipl5}}
 
 \item{\link{extract}}
 
-\item{\link{append_payload}}
+\item{\link{append_mdsDisplay}}
 
-\item{\link{remove_payload}}
+\item{\link{remove_mdsDisplay}}
 
 \item{\link{plot.bipl5_biplot}}
+
+\item{\link{plot.bipl5_fit}}
 }
 }
 

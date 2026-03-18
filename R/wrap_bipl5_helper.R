@@ -1,9 +1,9 @@
-#' Build a single bipl5 payload for one PC combination
+#' Build a single bipl5 mdsDisplay for one PC combination
 #'
-#' Constructs a complete payload containing traces, annotations, slider
+#' Constructs a complete mdsDisplay containing traces, annotations, slider
 #' controls, a fit table, and a \code{bipl5_data} sub-object for one
 #' principal-component pair.  All layers are built uniformly through the
-#' \code{_payload} family of functions so that every PC combination shares
+#' \code{_mdsDisplay} family of functions so that every PC combination shares
 #' the same structure.
 #'
 #' @param ez_obj A biplotEZ \code{biplot} object that has already been
@@ -19,21 +19,21 @@
 #'   biplotEZ object, not necessarily \code{ez_obj}.
 #' @param include_polygons Logical; if \code{TRUE}, alpha bags and
 #'   concentration ellipses from \code{x_ref} are inserted.  Should only be
-#'   \code{TRUE} for the primary payload, because polygon coordinates are only
+#'   \code{TRUE} for the primary mdsDisplay, because polygon coordinates are only
 #'   valid in the coordinate system in which they were computed.
 #' @param dim_prefix Basis label prefix used by \code{fit_quality()}, usually
-#'   \code{"PC"} for PCA payloads or \code{"CV"} for CVA payloads.
+#'   \code{"PC"} for PCA mdsDisplays or \code{"CV"} for CVA mdsDisplays.
 #' @param ax_pred Logical; whether axis-predictivity scaffolding should be
-#'   included in the payload.
+#'   included in the mdsDisplay.
 #' @param vec_dis Logical; whether unit-circle and vector-loading layers should
 #'   be added. This is typically \code{TRUE} for PCA and \code{FALSE} for CVA.
 #' @param fit_qual Optional override for the display-quality label shown below
 #'   the biplot.
 #'
-#' @return An object of class \code{bipl5_payload}.
+#' @return An object of class \code{bipl5_mdsDisplay}.
 #'
 #' @details
-#' The payload is built in a fixed order so downstream JavaScript sees a stable
+#' The mdsDisplay is built in a fixed order so downstream JavaScript sees a stable
 #' trace layout:
 #' \enumerate{
 #'   \item plot scaffolding and fit-quality text
@@ -51,10 +51,10 @@
 #' The distinction between \code{ez_obj} and \code{x_ref} matters.  Coordinates
 #' that depend on the current basis, such as \code{Z}, \code{Zmeans}, and axis
 #' coordinates, come from \code{ez_obj}.  Display options that should remain
-#' consistent across payloads, such as polygon availability and class-mean
+#' consistent across mdsDisplays, such as polygon availability and class-mean
 #' aesthetics, are taken from \code{x_ref}.
 #' @noRd
-build_one_payload <- function(
+build_one_mdsDisplay <- function(
   ez_obj,
   group,
   color,
@@ -67,7 +67,7 @@ build_one_payload <- function(
   z.axes = NULL,
   fit_qual = NULL
 ) {
-  payl <- payload_new()
+  payl <- mdsDisplay_new()
   if (is.null(fit_qual)) {
     fit_qual <- fit_quality(
       ez_obj$eigenvalues,
@@ -77,7 +77,7 @@ build_one_payload <- function(
   }
 
   payl$fit_qual <- fit_qual
-  payl <- plot_scaffolding_payload(
+  payl <- plot_scaffolding_mdsDisplay(
     payl,
     dpquality = fit_qual,
     basis = ez_obj$e.vects,
@@ -90,14 +90,14 @@ build_one_payload <- function(
   # Polygons (only for PC 1&2, coordinates are in that space)
   if (include_polygons) {
     if (!is.null(x_ref$alpha.bags)) {
-      payl <- insert_polygon_EZ_payload(
+      payl <- insert_polygon_EZ_mdsDisplay(
         payl,
         x_ref$alpha.bags,
         x_ref$alpha.bag.aes
       )
     }
     if (!is.null(x_ref$conc.ellipses)) {
-      payl <- insert_polygon_EZ_payload(
+      payl <- insert_polygon_EZ_mdsDisplay(
         payl,
         x_ref$conc.ellipses,
         x_ref$conc.ellipse.aes,
@@ -127,7 +127,7 @@ build_one_payload <- function(
     XHat = Xhat,
     sample.predictivity = sample_pred
   )
-  payl <- insert_Z_coo_payload(
+  payl <- insert_Z_coo_mdsDisplay(
     payl,
     obj,
     p_ly_pch = symbol,
@@ -154,7 +154,7 @@ build_one_payload <- function(
       )
       rownames(Zmeans) <- levels(group)
     }
-    payl <- insert_class_means_payload(
+    payl <- insert_class_means_mdsDisplay(
       payl,
       Zmeans,
       Mean_symbol,
@@ -163,20 +163,20 @@ build_one_payload <- function(
   }
 
   # Linear axes
-  out <- insert_linear_axes_payload(payl, z.axes, ez_obj)
-  payl <- out$payload
+  out <- insert_linear_axes_mdsDisplay(payl, z.axes, ez_obj)
+  payl <- out$mdsDisplay
   grads <- out$grads
 
   # Unit circle and vector annotations (PCA only)
   if (vec_dis) {
-    payl <- insert_unit_circle_payload(payl, visible = FALSE)
+    payl <- insert_unit_circle_mdsDisplay(payl, visible = FALSE)
     temp <- list(V = ez_obj$Vr, x = ez_obj$X, p = ez_obj$p)
-    payl <- insert_vector_annots_payload(payl, temp)
+    payl <- insert_vector_annots_mdsDisplay(payl, temp)
   }
 
   # Translated Density Axes
-  tda_out <- add_TDA_payload(
-    payload = payl,
+  tda_out <- add_TDA_mdsDisplay(
+    mdsDisplay = payl,
     z.axes = z.axes,
     x = ez_obj,
     Z = ez_obj$Z,
@@ -184,15 +184,15 @@ build_one_payload <- function(
     Col = color
   )
 
-  # Bundle into the convention expected by slider_control_payload
-  # After add_TDA_payload: tda_out = list(payload=<full payload>, m=..., shift=...)
+  # Bundle into the convention expected by slider_control_mdsDisplay
+  # After add_TDA_mdsDisplay: tda_out = list(mdsDisplay=<full mdsDisplay>, m=..., shift=...)
   bundle <- list()
-  bundle$payload <- tda_out$payload
+  bundle$mdsDisplay <- tda_out$mdsDisplay
   bundle$m <- tda_out$m
   bundle$shift <- tda_out$shift
 
-  # Slider controls write into bundle$payload$...
-  bundle <- slider_control_payload(bundle, n_inside = 17, n_outside = 4)
+  # Slider controls write into bundle$mdsDisplay$...
+  bundle <- slider_control_mdsDisplay(bundle, n_inside = 17, n_outside = 4)
 
   # Build Data object
   data <- new_bipl5_data(
@@ -204,13 +204,13 @@ build_one_payload <- function(
   # Preserve fit_qual on the outer level for print/inspection
   bundle$fit_qual <- payl$fit_qual
 
-  new_bipl5_payload(bundle, data)
+  new_bipl5_mdsDisplay(bundle, data)
 }
 
 
-#' Build a spline-axes payload for PCO biplots
+#' Build a spline-axes mdsDisplay for PCO biplots
 #'
-#' Constructs a minimal payload containing only sample points, spline axis
+#' Constructs a minimal mdsDisplay containing only sample points, spline axis
 #' curves with tick marks, and a bounding circle.
 #' There is no \code{XHat}, no translated density axes, and no linear axes.
 #' The spline JavaScript handler is attached at plot time.
@@ -223,14 +223,14 @@ build_one_payload <- function(
 #' @param z.axes Pre-computed axis coordinates from
 #'   \code{biplotEZ::axes_coordinates()}.
 #'
-#' @return An object of class \code{bipl5_payload}.
+#' @return An object of class \code{bipl5_mdsDisplay}.
 #' @noRd
-build_spline_payload <- function(ez_obj, group, color, symbol, z.axes) {
-  payl <- payload_new()
+build_spline_mdsDisplay <- function(ez_obj, group, color, symbol, z.axes) {
+  payl <- mdsDisplay_new()
   payl$fit_qual <- ""
 
   # Scaffolding with no buttons active
-  payl <- plot_scaffolding_payload(
+  payl <- plot_scaffolding_mdsDisplay(
     payl,
     dpquality = "",
     basis = ez_obj$e.vects,
@@ -249,7 +249,7 @@ build_spline_payload <- function(ez_obj, group, color, symbol, z.axes) {
     XHat = NULL,
     sample.predictivity = NULL
   )
-  payl <- insert_Z_coo_payload(
+  payl <- insert_Z_coo_mdsDisplay(
     payl,
     obj,
     p_ly_pch = symbol,
@@ -377,12 +377,12 @@ build_spline_payload <- function(ez_obj, group, color, symbol, z.axes) {
     hoverinfo = "none"
   )
 
-  payl <- payload_add_traces(payl, traces)
-  payl <- payload_add_layout(payl, list(annotations = annotations))
+  payl <- mdsDisplay_add_traces(payl, traces)
+  payl <- mdsDisplay_add_layout(payl, list(annotations = annotations))
 
   # Bundle — no slider, no TDA
   bundle <- list()
-  bundle$payload <- payl
+  bundle$mdsDisplay <- payl
   bundle$fit_qual <- ""
 
   data <- new_bipl5_data(
@@ -391,5 +391,5 @@ build_spline_payload <- function(ez_obj, group, color, symbol, z.axes) {
     translated_axes_coordinates = NULL
   )
 
-  new_bipl5_payload(bundle, data)
+  new_bipl5_mdsDisplay(bundle, data)
 }

@@ -12,24 +12,47 @@ extract(object, expr, from, what)
 \arguments{
 \item{object}{A \code{bipl5_biplot} object}
 
-\item{expr}{An unquoted payload name (e.g. \code{Payload_12}) or a path
-expression using \code{$} (e.g. \code{Payload_12$Data$sample_coordinates})}
+\item{expr}{An unquoted mdsDisplay name (e.g. \code{mdsDisplay_12}) or a path
+expression using \code{$} (e.g. \code{mdsDisplay_12$Data$sample_coordinates}
+or \code{fit_measures$CumPred})}
 
 \item{from}{Unquoted name of the top-level element}
 
 \item{what}{Unquoted name of the nested element}
 }
 \value{
-A \code{bipl5_biplot} (payload subset) or the requested sub-element
+A \code{bipl5_biplot} (mdsDisplay subset), a \code{bipl5_fit} object
+for graph-based fit measures, or the requested sub-element.
 }
 \description{
 Three calling styles are supported:
 \enumerate{
-\item \strong{Payload subset}: \code{extract(bp, Payload_12)} — returns a
-new \code{bipl5_biplot} containing only that payload (plottable).
-\item \strong{Two-level}: \code{extract(bp, from = Payload_12, what = sample_coordinates)}
+\item \strong{mdsDisplay subset}: \code{extract(bp, mdsDisplay_12)} — returns a
+new \code{bipl5_biplot} containing only that mdsDisplay (plottable).
+\item \strong{Two-level}: \code{extract(bp, from = mdsDisplay_12, what = sample_coordinates)}
 — returns the nested data element.
-\item \strong{Arbitrary depth}: \code{extract(bp, Payload_12$Data$sample_coordinates)}
+\item \strong{Arbitrary depth}: \code{extract(bp, mdsDisplay_12$Data$sample_coordinates)}
 — returns the nested data element.
 }
+}
+\details{
+In addition to the mdsDisplay access patterns above, graph-based fit measures
+can be extracted directly with calls such as
+\code{extract(bp, fit_measures, CumPred)} or
+\code{extract(bp, fit_measures$CumPred)}. Supported graph-based fit measures
+are \code{CumPred}, \code{CumAd}, \code{VarExp}, and \code{Scree}. These
+calls return a \code{bipl5_fit} object that can be passed to \code{plot()} to
+obtain a static \pkg{ggplot2} version of the corresponding fit graph.
+}
+\examples{
+bp <- biplotEZ::biplot(iris[, 1:4]) |>
+  biplotEZ::PCA() |>
+  wrap_bipl5()
+
+only_12 <- extract(bp, mdsDisplay_12)
+data_obj <- extract(bp, from = mdsDisplay_12, what = Data)
+coords <- extract(bp, mdsDisplay_12$Data$sample_coordinates)
+
+fit_plot <- extract(bp, fit_measures, CumPred)
+plot(fit_plot)
 }

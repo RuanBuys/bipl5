@@ -35,15 +35,18 @@ Imports:
     biplotEZ (>= 2.0),
     cluster,
     crayon (>= 1.5.2),
+    ggplot2,
     htmltools,
     htmlwidgets (>= 1.6.2),
     knitr (>= 1.43),
     plotly (>= 4.10.2)
 Depends: 
     R (>= 2.10)
-URL: https://cran.r-project.org/web/packages/bipl5/index.html
+URL: https://www.bipl5.co.za, https://ruanbuys.github.io/bipl5/
 BugReports: https://github.com/RuanBuys/bipl5/issues
 Suggests: 
     pkgload,
+    rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+VignetteBuilder: knitr

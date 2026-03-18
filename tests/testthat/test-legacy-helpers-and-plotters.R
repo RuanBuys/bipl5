@@ -30,8 +30,8 @@ test_that("plot scaffolding and dependency helpers return configured widgets", {
     plotly::plot_ly(),
     p = 4,
     cols = c("red", "blue"),
-    payload = list("PC 1 & 2" = list(config = list())),
-    fm_payload = list(Scree = list()),
+    mdsDisplay = list("PC 1 & 2" = list(config = list())),
+    fm_mdsDisplay = list(Scree = list()),
     initial_pc_key = "PC 1 & 2"
   )
   expect_true(any(vapply(widget$dependencies, function(x) identical(x$name, "bipl5-plotly"), logical(1))))

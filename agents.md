@@ -1,9 +1,9 @@
 # agents.md — bipl5 (R + Plotly.js) Agent Guide
 
-This file explains **what this package does**, how the **biplot object** is structured, and how the **R payload layer** maps to the **Plotly.js event layer**.
+This file explains **what this package does**, how the **biplot object** is structured, and how the **R mdsDisplay layer** maps to the **Plotly.js event layer**.
 
 It is written for contributors (human or agent) who need to modify:
-- the **R-side layer builders** (traces + layout + payloads), and/or
+- the **R-side layer builders** (traces + layout + mdsDisplays), and/or
 - the **JavaScript bindings** (event handlers + dynamic updates).
 
 ---
@@ -52,12 +52,12 @@ Key features:
 
 ## 2) Repository structure (conceptual)
 
-- `R/wrap_bipl5.R` — The main file: S3 class constructors, `wrap_bipl5()` generic + PCA/CVA methods, `plot.bipl5_biplot()`, print methods, `extract()`, `remove_payload()`, `append_payload()`, and internal helpers (`subset_biplot()`, naming utilities).
-- `R/wrap_bipl5_helper.R` — `build_one_payload()`: the unified payload builder used by both PCA and CVA.
-- `R/build_secondary_biplots.R` — All `insert_*_payload()` and `add_*_payload()` functions that construct individual layers (observations, class means, axes, polygons, TDA, vectors, fit tables, etc.).
-- `R/payload_constructor.R` — Low-level payload primitives: `payload_new()`, `payload_add_traces()`, `payload_add_layout()`.
+- `R/wrap_bipl5.R` — The main file: S3 class constructors, `wrap_bipl5()` generic + PCA/CVA methods, `plot.bipl5_biplot()`, print methods, `extract()`, `remove_mdsDisplay()`, `append_mdsDisplay()`, and internal helpers (`subset_biplot()`, naming utilities).
+- `R/wrap_bipl5_helper.R` — `build_one_mdsDisplay()`: the unified mdsDisplay builder used by both PCA and CVA.
+- `R/build_secondary_biplots.R` — All `insert_*_mdsDisplay()` and `add_*_mdsDisplay()` functions that construct individual layers (observations, class means, axes, polygons, TDA, vectors, fit tables, etc.).
+- `R/mdsDisplay_constructor.R` — Low-level mdsDisplay primitives: `mdsDisplay_new()`, `mdsDisplay_add_traces()`, `mdsDisplay_add_layout()`.
 - `R/biplotEZ_helper.R` — Helper functions: `obtain_xhat()`, `fit_quality()`, `hovertext_generator()`, `pch_to_plotly()`, `is_correlation()`.
-- `R/deps.R` — `bipl5_dependency()` and `insert_linear_js_v1()`: the bridge between R payloads and the JS event layer.
+- `R/deps.R` — `bipl5_dependency()` and `insert_linear_js_v1()`: the bridge between R mdsDisplays and the JS event layer.
 - `inst/htmlwidgets/bipl5_plotly.js` — JS dependency: event handlers, `togglePC()`, fit panel switching, prediction lines, slider translation.
 
 ---
@@ -70,7 +70,7 @@ Key features:
 1. Prepares the biplotEZ object (calls `samples()`, `axes()`, `fit.measures()`, and for CVA also `means()`).
 2. Un-centers/un-scales `x$X` so hovertext shows **raw** observation values (not the internally-centered/scaled values).
 3. Enumerates all dimension pairs (PC or CV) to build.
-4. Calls `build_one_payload()` for each pair to produce a `bipl5_payload`.
+4. Calls `build_one_mdsDisplay()` for each pair to produce a `bipl5_mdsDisplay`.
 5. Assembles fit measures (PCA only; CVA has `NULL` fit measures).
 6. Bundles everything into a `bipl5_biplot`.
 
@@ -81,8 +81,8 @@ bipl5_biplot
 ├── class: c("bipl5_biplot", "pca")   ← PCA biplots
 │   or:    c("bipl5_biplot", "cva")   ← CVA biplots
 │
-├── Payload_12 <bipl5_payload>
-│   ├── payload
+├── mdsDisplay_12 <bipl5_mdsDisplay>
+│   ├── mdsDisplay
 │   │   ├── trace_data   [list of plotly trace lists]
 │   │   ├── layout       [list with $annotations]
 │   │   └── slider_info  [list: slider_pos, step_size]
@@ -93,9 +93,9 @@ bipl5_biplot
 │       ├── axes_coordinates               [list of p axis coordinate matrices]
 │       └── translated_axes_coordinates    [TDA shift data]
 │
-├── Payload_13 <bipl5_payload>
+├── mdsDisplay_13 <bipl5_mdsDisplay>
 │   └── (same structure)
-├── Payload_23 <bipl5_payload>
+├── mdsDisplay_23 <bipl5_mdsDisplay>
 │   └── (same structure)
 │
 ├── fit_measures <bipl5_fitmeasures>   ← NULL for CVA
@@ -113,7 +113,7 @@ bipl5_biplot
     ├── symbol        [character vector of plotly marker symbols]
     ├── group         [factor of group memberships]
     ├── fit.quality   [character string]
-    ├── pc_info       [named list: payload_name → {pcs, label, ft_name}]
+    ├── pc_info       [named list: mdsDisplay_name → {pcs, label, ft_name}]
     └── dim_prefix    ["PC" or "CV"]
 ```
 
@@ -121,39 +121,39 @@ bipl5_biplot
 
 | Class | Purpose | Constructor |
 |---|---|---|
-| `bipl5_biplot` | Top-level container for all payloads + fit measures + metadata. Has a secondary class (`"pca"` or `"cva"`) for type-aware dispatch. | `new_bipl5_biplot()` |
-| `bipl5_payload` | One dimension pair's complete plotly data: traces, annotations, slider info, TDA data, and a nested `bipl5_data`. | `new_bipl5_payload()` |
-| `bipl5_data` | The numeric data behind one payload: sample coordinates (Z), axis coordinates, and translated axis coordinates. | `new_bipl5_data()` |
+| `bipl5_biplot` | Top-level container for all mdsDisplays + fit measures + metadata. Has a secondary class (`"pca"` or `"cva"`) for type-aware dispatch. | `new_bipl5_biplot()` |
+| `bipl5_mdsDisplay` | One dimension pair's complete plotly data: traces, annotations, slider info, TDA data, and a nested `bipl5_data`. | `new_bipl5_mdsDisplay()` |
+| `bipl5_data` | The numeric data behind one mdsDisplay: sample coordinates (Z), axis coordinates, and translated axis coordinates. | `new_bipl5_data()` |
 | `bipl5_fitmeasures` | Collection of fit-panel plotly traces (predictivity, adequacy, variance, scree) plus per-pair summary tables. PCA only — CVA returns `NULL`. | `new_bipl5_fitmeasures()` |
 
 Each class has a `print()` method that renders a coloured tree diagram in the console (using the `crayon` package).
 
-### 3.4 Payload naming conventions
+### 3.4 mdsDisplay naming conventions
 
-Payloads are named by their dimension indices:
+mdsDisplays are named by their dimension indices:
 
-| Dimension pair | Payload name | Label (PCA) | Label (CVA) | Fit table name |
+| Dimension pair | mdsDisplay name | Label (PCA) | Label (CVA) | Fit table name |
 |---|---|---|---|---|
-| 1 & 2 | `Payload_12` | `"PC 1 & 2"` | `"CV 1 & 2"` | `fit_table_12` |
-| 1 & 3 | `Payload_13` | `"PC 1 & 3"` | `"CV 1 & 3"` | `fit_table_13` |
-| 2 & 3 | `Payload_23` | `"PC 2 & 3"` | `"CV 2 & 3"` | `fit_table_23` |
-| 4 & 5 | `Payload_45` | `"PC 4 & 5"` | `"CV 4 & 5"` | `fit_table_45` |
+| 1 & 2 | `mdsDisplay_12` | `"PC 1 & 2"` | `"CV 1 & 2"` | `fit_table_12` |
+| 1 & 3 | `mdsDisplay_13` | `"PC 1 & 3"` | `"CV 1 & 3"` | `fit_table_13` |
+| 2 & 3 | `mdsDisplay_23` | `"PC 2 & 3"` | `"CV 2 & 3"` | `fit_table_23` |
+| 4 & 5 | `mdsDisplay_45` | `"PC 4 & 5"` | `"CV 4 & 5"` | `fit_table_45` |
 
-These are generated by the helper functions `payload_name()`, `pair_label()`, and `ft_name()` at the top of `wrap_bipl5.R`.
+These are generated by the helper functions `mdsDisplay_name()`, `pair_label()`, and `ft_name()` at the top of `wrap_bipl5.R`.
 
 ### 3.5 The `pc_info` registry
 
-`meta$pc_info` is the **single source of truth** for which payloads exist and their human-readable labels. It is a named list keyed by payload name:
+`meta$pc_info` is the **single source of truth** for which mdsDisplays exist and their human-readable labels. It is a named list keyed by mdsDisplay name:
 
 ```r
 pc_info = list(
-  Payload_13 = list(pcs = c(1, 3), label = "CV 1 & 3", ft_name = "fit_table_13"),
-  Payload_12 = list(pcs = c(1, 2), label = "CV 1 & 2", ft_name = "fit_table_12"),
-  Payload_23 = list(pcs = c(2, 3), label = "CV 2 & 3", ft_name = "fit_table_23")
+  mdsDisplay_13 = list(pcs = c(1, 3), label = "CV 1 & 3", ft_name = "fit_table_13"),
+  mdsDisplay_12 = list(pcs = c(1, 2), label = "CV 1 & 2", ft_name = "fit_table_12"),
+  mdsDisplay_23 = list(pcs = c(2, 3), label = "CV 2 & 3", ft_name = "fit_table_23")
 )
 ```
 
-All downstream code — `plot.bipl5_biplot()`, `print.bipl5_biplot()`, `subset_biplot()`, `append_payload()`, `remove_payload()`, `extract()` — reads `pc_info` to discover available payloads. **The first entry in `pc_info` is always the user's originally requested dimension pair.**
+All downstream code — `plot.bipl5_biplot()`, `print.bipl5_biplot()`, `subset_biplot()`, `append_mdsDisplay()`, `remove_mdsDisplay()`, `extract()` — reads `pc_info` to discover available mdsDisplays. **The first entry in `pc_info` is always the user's originally requested dimension pair.**
 
 ---
 
@@ -166,9 +166,9 @@ All downstream code — `plot.bipl5_biplot()`, `print.bipl5_biplot()`, `subset_b
 1. **Prepares** the biplotEZ object: `samples()`, `axes()`, `fit.measures()`.
 2. **Un-scales X**: Reverses the internal centering/scaling so `x$X` holds raw observation values for hovertext.
 3. **Determines 3 PC pairs**: The user's pair is always first; the other two are chosen from `{(1,2), (1,3), (2,3)}`. If the user chose a non-standard pair (e.g., `e.vects = c(4, 5)`), the supplements are `(1,2)` and `(1,3)`.
-4. **Builds payloads** via `build_one_payload()` for each pair. For the user's pair, `include_polygons = TRUE` (alpha bags and ellipses are in that coordinate space). Secondary pairs get `include_polygons = FALSE`.
+4. **Builds mdsDisplays** via `build_one_mdsDisplay()` for each pair. For the user's pair, `include_polygons = TRUE` (alpha bags and ellipses are in that coordinate space). Secondary pairs get `include_polygons = FALSE`.
 5. **Builds fit measures**: cumulative predictivity, cumulative adequacy, variance explained, scree plot (shared across all pairs), plus per-pair summary tables.
-6. **Returns** `new_bipl5_biplot(payloads, fit_measures, meta, biplot_type = "pca")`.
+6. **Returns** `new_bipl5_biplot(mdsDisplays, fit_measures, meta, biplot_type = "pca")`.
 
 ### Key behaviours
 
@@ -188,13 +188,13 @@ All downstream code — `plot.bipl5_biplot()`, `print.bipl5_biplot()`, `subset_b
 1. **Prepares** the biplotEZ object: `samples()`, `axes()`, `fit.measures()`, `means()`.
 2. **Un-scales X**: Same reversal as PCA.
 3. **Determines CV pairs**: Computes `max_cv = min(g - 1, p)`. If `max_cv >= 2`, builds standard pairs from `{(1,2), (1,3), (2,3)}` as available. The user's pair is always first.
-4. **Builds payloads** with CVA-specific settings:
+4. **Builds mdsDisplays** with CVA-specific settings:
    - `dim_prefix = "CV"` — labels use "CV" not "PC".
    - `ax_pred = FALSE` — no axis predictivity button (fit measures not yet implemented for CVA).
    - `vec_dis = FALSE` — no unit circle or vector loading annotations (not meaningful for CVA).
 5. **Secondary CVA objects**: For non-primary pairs, a fresh `biplotEZ::biplot() |> CVA(classes, e.vects)` is constructed. `x$X` is un-centered/un-scaled for each.
 6. **Fit measures = `NULL`**: CVA fit measures are not yet implemented.
-7. **Returns** `new_bipl5_biplot(payloads, NULL, meta, biplot_type = "cva")`.
+7. **Returns** `new_bipl5_biplot(mdsDisplays, NULL, meta, biplot_type = "cva")`.
 
 ### Key differences from PCA
 
@@ -212,22 +212,22 @@ All downstream code — `plot.bipl5_biplot()`, `print.bipl5_biplot()`, `subset_b
 
 ### Class means in CVA
 
-CVA biplots always display class means. `wrap_bipl5.CVA()` ensures `biplotEZ::means(x)` is called before building payloads. In `build_one_payload()`, class mean coordinates are sourced from `ez_obj$Zmeans` (the biplotEZ CVA object's class means in the correct canonical variate space). If `Zmeans` is unavailable, they are computed as `colMeans(ez_obj$Z[group == g, ])` per group.
+CVA biplots always display class means. `wrap_bipl5.CVA()` ensures `biplotEZ::means(x)` is called before building mdsDisplays. In `build_one_mdsDisplay()`, class mean coordinates are sourced from `ez_obj$Zmeans` (the biplotEZ CVA object's class means in the correct canonical variate space). If `Zmeans` is unavailable, they are computed as `colMeans(ez_obj$Z[group == g, ])` per group.
 
-**Important serialization detail:** Class mean traces are single-point scatter traces. Their `x` and `y` coordinates must be wrapped in `list()` (e.g., `x = list(Z[i, 1])`) so that they serialize to JSON arrays (`[1.5]`) rather than bare scalars (`1.5`). Bare scalars cause `Plotly.react()` to fail silently for secondary payloads that bypass R's `plotly::add_trace()` processing.
+**Important serialization detail:** Class mean traces are single-point scatter traces. Their `x` and `y` coordinates must be wrapped in `list()` (e.g., `x = list(Z[i, 1])`) so that they serialize to JSON arrays (`[1.5]`) rather than bare scalars (`1.5`). Bare scalars cause `Plotly.react()` to fail silently for secondary mdsDisplays that bypass R's `plotly::add_trace()` processing.
 
 ---
 
-## 6) `build_one_payload()` — the unified payload builder
+## 6) `build_one_mdsDisplay()` — the unified mdsDisplay builder
 
 **File:** `R/wrap_bipl5_helper.R`
 
-This function is the **single entry point** for constructing a payload for any dimension pair, whether PCA or CVA. Both `wrap_bipl5.PCA()` and `wrap_bipl5.CVA()` call it.
+This function is the **single entry point** for constructing a mdsDisplay for any dimension pair, whether PCA or CVA. Both `wrap_bipl5.PCA()` and `wrap_bipl5.CVA()` call it.
 
 ### Signature
 
 ```r
-build_one_payload(
+build_one_mdsDisplay(
   ez_obj,              # biplotEZ object for this specific dimension pair
   group,               # factor of group memberships
   color,               # character vector of group colours
@@ -242,7 +242,7 @@ build_one_payload(
 
 ### Layer construction order
 
-1. **Scaffolding payload** — axis title, layout shell
+1. **Scaffolding mdsDisplay** — axis title, layout shell
 2. **Polygons** (if `include_polygons = TRUE`) — alpha bags, concentration ellipses from `x_ref`
 3. **Reconstructed values** (`obtain_xhat()`) and **axis coordinates** (`axes_coordinates()`)
 4. **Sample points** — observation scatter traces with hovertext (actual vs predicted values, sample predictivity)
@@ -252,7 +252,7 @@ build_one_payload(
 8. **Translated density axes (TDA)** — shifted axes with kernel density overlays
 9. **Slider controls** — step positions for the axis translation slider
 10. **Data object** — numeric coordinates bundled into a `bipl5_data`
-11. **Final assembly** — `new_bipl5_payload(bundle, data)`
+11. **Final assembly** — `new_bipl5_mdsDisplay(bundle, data)`
 
 ### The `x_ref` parameter
 
@@ -271,20 +271,20 @@ Class mean **coordinates** come from `ez_obj$Zmeans` (the current pair's biplotE
 
 ### How it works
 
-1. **Detect available payloads** by scanning `pc_info` for non-NULL entries.
+1. **Detect available mdsDisplays** by scanning `pc_info` for non-NULL entries.
 2. **Create plotly scaffolding** — empty plotly widget with update menus, dropdowns, slider.
    - For CVA: `vec_dis = FALSE`, `ax_pred = FALSE` (no vector/fit buttons).
-   - PC/CV dropdown buttons are trimmed to only available payloads.
-3. **Render the first payload** directly into the plotly widget via `plotly::add_trace()` and `plotly::layout()` (annotations).
-4. **Build `payload_for_js`** — a named list keyed by display label (e.g., `"PC 1 & 2"`):
-   - **First payload**: only `slider_info` and `fit_table` are passed (traces are already in the plotly graph).
-   - **Secondary payloads**: the full `$payload` is passed (including `trace_data`, `layout`, `slider_info`).
-5. **Build `fm_payload`** — fit measures traces (PCA only; `NULL` for CVA).
+   - PC/CV dropdown buttons are trimmed to only available mdsDisplays.
+3. **Render the first mdsDisplay** directly into the plotly widget via `plotly::add_trace()` and `plotly::layout()` (annotations).
+4. **Build `mdsDisplay_for_js`** — a named list keyed by display label (e.g., `"PC 1 & 2"`):
+   - **First mdsDisplay**: only `slider_info` and `fit_table` are passed (traces are already in the plotly graph).
+   - **Secondary mdsDisplays**: the full `$mdsDisplay` is passed (including `trace_data`, `layout`, `slider_info`).
+5. **Build `fm_mdsDisplay`** — fit measures traces (PCA only; `NULL` for CVA).
 6. **Attach JavaScript** via `insert_linear_js_v1()` which calls `htmlwidgets::onRender()`.
 
-### Why the first payload is treated differently
+### Why the first mdsDisplay is treated differently
 
-R's `plotly::add_trace()` processes traces properly (wraps scalars to arrays, normalises data structures). Secondary payloads go through JSON serialization and are injected directly into `Plotly.react()` by JavaScript. This is why trace data for secondary payloads must use JSON-safe formats (e.g., `list(value)` instead of bare scalars for single-point traces).
+R's `plotly::add_trace()` processes traces properly (wraps scalars to arrays, normalises data structures). Secondary mdsDisplays go through JSON serialization and are injected directly into `Plotly.react()` by JavaScript. This is why trace data for secondary mdsDisplays must use JSON-safe formats (e.g., `list(value)` instead of bare scalars for single-point traces).
 
 ---
 
@@ -294,68 +294,68 @@ R's `plotly::add_trace()` processes traces properly (wraps scalars to arrays, no
 
 `extract()` is an S3 generic with a `bipl5_biplot` method. It provides three calling styles for inspecting or subsetting a biplot object:
 
-### Style 1: Payload subset (returns a plottable bipl5_biplot)
+### Style 1: mdsDisplay subset (returns a plottable bipl5_biplot)
 
 ```r
 bp <- biplot(iris) |> PCA() |> wrap_bipl5()
-sub <- extract(bp, Payload_12)
+sub <- extract(bp, mdsDisplay_12)
 plot(sub)  # plots only PC 1 & 2
 ```
 
-When a bare payload name is given, `extract()` calls `subset_biplot()` internally to return a **new `bipl5_biplot`** containing only that payload (plus its fit table). The result is fully plottable — the PC toggle dropdown simply has fewer options.
+When a bare mdsDisplay name is given, `extract()` calls `subset_biplot()` internally to return a **new `bipl5_biplot`** containing only that mdsDisplay (plus its fit table). The result is fully plottable — the PC toggle dropdown simply has fewer options.
 
 ### Style 2: Two-level extraction (from + what)
 
 ```r
-extract(bp, from = Payload_12, what = Data)
+extract(bp, from = mdsDisplay_12, what = Data)
 # Returns the bipl5_data object for PC 1 & 2
 
-extract(bp, from = Payload_12, what = fit_qual)
+extract(bp, from = mdsDisplay_12, what = fit_qual)
 # Returns: "PC 1 & 2: 82.3%"
 ```
 
 ### Style 3: Arbitrary depth via `$` path expression
 
 ```r
-extract(bp, Payload_12$Data$sample_coordinates)
+extract(bp, mdsDisplay_12$Data$sample_coordinates)
 # Returns the n x 2 matrix of observation scores for PC 1 & 2
 
-extract(bp, Payload_13$Data$axes_coordinates)
+extract(bp, mdsDisplay_13$Data$axes_coordinates)
 # Returns list of axis coordinate matrices for PC 1 & 3
 ```
 
 The `$` expression is walked via `deparse_path()` which recursively decomposes the expression into a character vector of field names.
 
-**Note:** All arguments use **non-standard evaluation** (bare names, not strings). The payload names follow the `Payload_XY` convention.
+**Note:** All arguments use **non-standard evaluation** (bare names, not strings). The mdsDisplay names follow the `mdsDisplay_XY` convention.
 
 ---
 
-## 9) `remove_payload()` — dropping a dimension pair
+## 9) `remove_mdsDisplay()` — dropping a dimension pair
 
 **File:** `R/wrap_bipl5.R`, line ~997
 
 ```r
-bp2 <- remove_payload(bp, Payload_23)
+bp2 <- remove_mdsDisplay(bp, mdsDisplay_23)
 ```
 
-Removes the specified payload from the `bipl5_biplot` and returns a new object. Validates that:
-- The payload name exists in `pc_info`.
-- The payload is not `NULL`.
-- At least one payload remains after removal.
+Removes the specified mdsDisplay from the `bipl5_biplot` and returns a new object. Validates that:
+- The mdsDisplay name exists in `pc_info`.
+- The mdsDisplay is not `NULL`.
+- At least one mdsDisplay remains after removal.
 
 Internally delegates to `subset_biplot()` with the complement set.
 
 ---
 
-## 10) `append_payload()` — adding a new dimension pair
+## 10) `append_mdsDisplay()` — adding a new dimension pair
 
 **File:** `R/wrap_bipl5.R`, line ~1059
 
 ```r
-bp2 <- append_payload(bp, eigenvectors = c(4, 5))
+bp2 <- append_mdsDisplay(bp, eigenvectors = c(4, 5))
 ```
 
-Adds a new payload for an arbitrary dimension pair to an existing `bipl5_biplot`. Works for both PCA and CVA.
+Adds a new mdsDisplay for an arbitrary dimension pair to an existing `bipl5_biplot`. Works for both PCA and CVA.
 
 ### Validation
 
@@ -370,19 +370,19 @@ Adds a new payload for an arbitrary dimension pair to an existing `bipl5_biplot`
 2. Creates a fresh biplotEZ object for the new pair:
    - PCA: `biplotEZ::biplot() |> PCA(e.vects = pcs, correlation.biplot = ...) |> axes() |> fit.measures()`
    - CVA: `biplotEZ::biplot() |> CVA(classes = ..., e.vects = pcs) |> axes() |> fit.measures()`, plus un-centering/un-scaling of `X`.
-3. Calls `build_one_payload()` with `include_polygons = FALSE` (polygon coordinates are only valid in the primary pair's space).
+3. Calls `build_one_mdsDisplay()` with `include_polygons = FALSE` (polygon coordinates are only valid in the primary pair's space).
 4. For PCA: builds a new fit table for the pair and appends it to `fit_measures`.
 5. Extends `pc_info` with the new entry.
-6. Returns a new `bipl5_biplot` containing all original payloads plus the new one.
+6. Returns a new `bipl5_biplot` containing all original mdsDisplays plus the new one.
 
 ### Example: extending beyond standard pairs
 
 ```r
 bp <- biplot(state.x77) |> PCA() |> wrap_bipl5()
-bp  # has Payload_12, Payload_13, Payload_23
+bp  # has mdsDisplay_12, mdsDisplay_13, mdsDisplay_23
 
-bp2 <- append_payload(bp, c(4, 5))
-bp2  # has Payload_12, Payload_13, Payload_23, Payload_45
+bp2 <- append_mdsDisplay(bp, c(4, 5))
+bp2  # has mdsDisplay_12, mdsDisplay_13, mdsDisplay_23, mdsDisplay_45
 plot(bp2)  # dropdown now has 4 options
 ```
 
@@ -392,13 +392,13 @@ plot(bp2)  # dropdown now has 4 options
 
 **File:** `R/wrap_bipl5.R`, line ~850
 
-Not exported. Used by `extract()` (payload subset style), `remove_payload()`, and `append_payload()`.
+Not exported. Used by `extract()` (mdsDisplay subset style), `remove_mdsDisplay()`, and `append_mdsDisplay()`.
 
 ```r
-subset_biplot(bp, keep = c("Payload_12", "Payload_23"))
+subset_biplot(bp, keep = c("mdsDisplay_12", "mdsDisplay_23"))
 ```
 
-Creates a new `bipl5_biplot` containing only the specified payloads. Also subsets:
+Creates a new `bipl5_biplot` containing only the specified mdsDisplays. Also subsets:
 - `fit_measures`: keeps only the fit tables for retained pairs; shared measures (CumPred, CumAd, VarExp, Scree) are always preserved.
 - `pc_info`: filtered to retained entries.
 - Secondary class (`"pca"` / `"cva"`) is preserved.
@@ -413,7 +413,7 @@ biplotEZ internally centers and scales `x$X` during PCA/CVA processing. If left 
 
 ### The fix
 
-Both `wrap_bipl5.PCA()` and `wrap_bipl5.CVA()` reverse the transformation before building payloads:
+Both `wrap_bipl5.PCA()` and `wrap_bipl5.CVA()` reverse the transformation before building mdsDisplays:
 
 ```r
 # Un-scale
@@ -429,13 +429,13 @@ if (x$center) {
 This must happen in **three places**:
 1. The primary `wrap_bipl5.*()` method body.
 2. The loop that builds secondary biplotEZ objects (for non-primary pairs).
-3. `append_payload()` when constructing a CVA payload.
+3. `append_mdsDisplay()` when constructing a CVA mdsDisplay.
 
 The "Predicted" column in hovertext is handled by `obtain_xhat()`, which already applies the inverse transformation internally.
 
 ---
 
-## 13) High-level architecture: "layers" + "payloads" + "events"
+## 13) High-level architecture: "layers" + "mdsDisplays" + "events"
 
 ### 13.1 Layered construction (R-side)
 The biplot is built "in layers". Historically those layers were added directly using plotly verbs:
@@ -443,26 +443,26 @@ The biplot is built "in layers". Historically those layers were added directly u
 - `add_annotations()`
 - `layout()`
 
-In the newer architecture, each layer has a **payload equivalent**:
+In the newer architecture, each layer has a **mdsDisplay equivalent**:
 - **Old style**: `insert_*()` functions mutate a `plotly` object.
-- **Payload style**: `add_*_payload()` / `insert_*_payload()` functions mutate a **payload list** with:
+- **mdsDisplay style**: `add_*_mdsDisplay()` / `insert_*_mdsDisplay()` functions mutate a **mdsDisplay list** with:
   - `trace_data` (array of traces)
   - `layout` (layout, including `annotations`)
-  - optional additional named payload elements (e.g., `fit_table`, fit graphs, slider state)
+  - optional additional named mdsDisplay elements (e.g., `fit_table`, fit graphs, slider state)
 
 This enables:
-- fast switching between PC/CV pairs (swap payloads)
+- fast switching between PC/CV pairs (swap mdsDisplays)
 - avoiding reconstructing all layers repeatedly
 - JS-side dynamic injection/removal of precomputed traces (Fit panel, tables, etc.)
 
-### 13.2 Payloads keyed by display label (JS side)
-`data.payloads` is a JS-visible object shaped like:
+### 13.2 mdsDisplays keyed by display label (JS side)
+`data.mdsDisplays` is a JS-visible object shaped like:
 
 ```js
-data.payloads = {
+data.mdsDisplays = {
   "PC 1 & 2": {           // or "CV 1 & 2" for CVA
-    trace_data: [...],     // biplot traces (only for secondary payloads)
-    layout: {...},         // layout + annotations (only for secondary payloads)
+    trace_data: [...],     // biplot traces (only for secondary mdsDisplays)
+    layout: {...},         // layout + annotations (only for secondary mdsDisplays)
     bipl5: {...},          // persisted interaction state
     fit_table: [...],      // optional prebuilt table traces (PCA only)
     slider_info: {         // slider state
@@ -477,9 +477,9 @@ data.payloads = {
 }
 ```
 
-**Important:** The first payload initially has **no** `trace_data` or `layout` in JS — those traces are already in the plotly widget from R's `add_trace()`. The first time the user toggles away, the current `el.data` traces are captured and saved into `data.payloads[oldKey].trace_data`.
+**Important:** The first mdsDisplay initially has **no** `trace_data` or `layout` in JS — those traces are already in the plotly widget from R's `add_trace()`. The first time the user toggles away, the current `el.data` traces are captured and saved into `data.mdsDisplays[oldKey].trace_data`.
 
-**Important:** When saving back into `data.payloads[oldKey]`, do not discard other elements.
+**Important:** When saving back into `data.mdsDisplays[oldKey]`, do not discard other elements.
 Use merging (e.g. `Object.assign({}, prev, {trace_data, layout, bipl5})`) to preserve existing keys like `fit_table`.
 
 ### 13.3 JS event layer
@@ -514,7 +514,7 @@ el.bipl5 = {
 
 ### Design principle
 - `el.bipl5` stores **interaction state for the currently rendered plot**
-- `data.payloads[PCKey].bipl5` stores state snapshots per PC/CV display
+- `data.mdsDisplays[PCKey].bipl5` stores state snapshots per PC/CV display
 - `is_visible` is copied across toggles so the fit panel state persists
 - `currentFMKey` is copied across toggles so the selected fit measure persists
 
@@ -668,7 +668,7 @@ Recommended approach:
 - When toggling PC:
   - preserve current fit traces/table
   - swap only non-fit traces + biplot annotations
-  - if current FM mode is `"Summary Table"`, rebuild RHS table from the new PC payload.
+  - if current FM mode is `"Summary Table"`, rebuild RHS table from the new PC mdsDisplay.
 
 CVA biplots have no fit panel (`fit_measures = NULL`, `has_fm = FALSE`). The fit panel button is hidden by `plot.bipl5_biplot()` via `ax_pred = has_fm` in the scaffolding.
 
@@ -705,9 +705,9 @@ Removal:
 - Turning `Edit: Axes` off hides dropdown + slider and re-arms the `"Select Axis"` prompt for next use.
 
 ### 20.2 State storage
-Per PC/CV payload:
+Per PC/CV mdsDisplay:
 ```js
-payload.slider_info = {
+mdsDisplay.slider_info = {
   slider_pos: [<step idx per axis>],
   slider_axis_idx: 0,
   step_size: <number>,
@@ -716,7 +716,7 @@ payload.slider_info = {
 ```
 - `axis_chosen === false`: prompt mode (`"Select Axis"` visible), slider hidden.
 - `axis_chosen === true`: a concrete axis is selected; slider visible when edit mode is on.
-- This state is saved/restored per PC/CV payload when switching via `PC_toggle`.
+- This state is saved/restored per PC/CV mdsDisplay when switching via `PC_toggle`.
 
 ### 20.3 Event handling
 - `plotly_buttonclicked` with `menu.name === "Slider_toggle"`:
@@ -727,7 +727,7 @@ payload.slider_info = {
     - show slider
     - if that axis is hidden (`legendonly`), emit a `plotly_legendclick` for that axis to make it visible.
 - `plotly_sliderchange`:
-  - `dist = (newActive - prevActive) * step_size` (using payload-local state)
+  - `dist = (newActive - prevActive) * step_size` (using mdsDisplay-local state)
   - shift:
     - selected `ExpAx` trace(s)
     - linked density traces
@@ -767,29 +767,29 @@ Use a single `Plotly.update()` when possible.
 
 ---
 
-## 22) Payload functions mirror legacy insert_* functions
+## 22) mdsDisplay functions mirror legacy insert_* functions
 
-Payload functions should:
-- accept `(payload, x, ...)`
-- return modified `payload`
+mdsDisplay functions should:
+- accept `(mdsDisplay, x, ...)`
+- return modified `mdsDisplay`
 - append to:
-  - `payload$trace_data`
-  - `payload$layout$annotations`
-  - or feature-specific keys (e.g. `payload$fit_table`)
+  - `mdsDisplay$trace_data`
+  - `mdsDisplay$layout$annotations`
+  - or feature-specific keys (e.g. `mdsDisplay$fit_table`)
 
-Key payload functions in `R/build_secondary_biplots.R`:
+Key mdsDisplay functions in `R/build_secondary_biplots.R`:
 
 | Function | What it adds | Meta tag |
 |---|---|---|
-| `insert_Z_coo_payload()` | Observation scatter traces (one per group) | `"data"` |
-| `insert_class_means_payload()` | Class mean point traces (one per group) | `"ClassMean"` |
-| `insert_linear_axes_payload()` | Calibrated axis traces + tick annotations | `"axis"` / `"Ax"` |
-| `insert_polygon_EZ_payload()` | Alpha bag / ellipse polygon traces | `"polygon"` |
-| `insert_unit_circle_payload()` | Unit circle trace | `"veccircle"` |
-| `insert_vector_annots_payload()` | Vector loading arrow annotations | `"vecload"` |
-| `add_TDA_payload()` | Translated axes + density traces | `"ExpAx"` / `"density"` |
-| `add_table_payload()` | Summary table traces | `"FitPanel"` |
-| `slider_control_payload()` | Slider step positions | (modifies `slider_info`) |
+| `insert_Z_coo_mdsDisplay()` | Observation scatter traces (one per group) | `"data"` |
+| `insert_class_means_mdsDisplay()` | Class mean point traces (one per group) | `"ClassMean"` |
+| `insert_linear_axes_mdsDisplay()` | Calibrated axis traces + tick annotations | `"axis"` / `"Ax"` |
+| `insert_polygon_EZ_mdsDisplay()` | Alpha bag / ellipse polygon traces | `"polygon"` |
+| `insert_unit_circle_mdsDisplay()` | Unit circle trace | `"veccircle"` |
+| `insert_vector_annots_mdsDisplay()` | Vector loading arrow annotations | `"vecload"` |
+| `add_TDA_mdsDisplay()` | Translated axes + density traces | `"ExpAx"` / `"density"` |
+| `add_table_mdsDisplay()` | Summary table traces | `"FitPanel"` |
+| `slider_control_mdsDisplay()` | Slider step positions | (modifies `slider_info`) |
 
 ---
 
@@ -807,19 +807,19 @@ Key payload functions in `R/build_secondary_biplots.R`:
 ```
 
 ### 23.2 R dependency helper and bridge
-`R/deps.R` contains `insert_linear_js_v1()` which bridges R payloads to JS:
+`R/deps.R` contains `insert_linear_js_v1()` which bridges R mdsDisplays to JS:
 
 ```r
-insert_linear_js_v1(p_ly, p, cols, payload, fm_payload, initial_pc_key)
+insert_linear_js_v1(p_ly, p, cols, mdsDisplay, fm_mdsDisplay, initial_pc_key)
 ```
 
 The `data` list passed to `htmlwidgets::onRender()`:
 - `data.p` — number of variables
 - `data.cols` — axis tick label colours
 - `data.class_mean_hover` — `FALSE` (hover effects for class means)
-- `data.payloads` — the named payload list (keyed by display label)
-- `data.fm_payload` — fit measures traces (`NULL` for CVA)
-- `data.initialPCKey` — the display label of the first payload (e.g., `"CV 1 & 3"`)
+- `data.mdsDisplays` — the named mdsDisplay list (keyed by display label)
+- `data.fm_mdsDisplay` — fit measures traces (`NULL` for CVA)
+- `data.initialPCKey` — the display label of the first mdsDisplay (e.g., `"CV 1 & 3"`)
 
 ### 23.3 Common failure
 `Uncaught TypeError: window.bipl5Attach is not a function`
@@ -877,20 +877,20 @@ bp <- biplot(iris[,1:4]) |> CVA(classes = iris[,5]) |> wrap_bipl5()
 
 # ── Inspection ────────────────────────────────────────────────
 bp                    # coloured tree diagram
-bp$Payload_12         # print a single payload
-bp$Payload_12$Data    # print the data sub-object
+bp$mdsDisplay_12         # print a single mdsDisplay
+bp$mdsDisplay_12$Data    # print the data sub-object
 
 # ── Plotting ──────────────────────────────────────────────────
 plot(bp)              # full interactive plotly widget
 
 # ── Extraction ────────────────────────────────────────────────
-extract(bp, Payload_12)                            # subset → plottable bipl5_biplot
-extract(bp, from = Payload_12, what = Data)        # → bipl5_data
-extract(bp, Payload_12$Data$sample_coordinates)    # → n x 2 matrix
+extract(bp, mdsDisplay_12)                            # subset → plottable bipl5_biplot
+extract(bp, from = mdsDisplay_12, what = Data)        # → bipl5_data
+extract(bp, mdsDisplay_12$Data$sample_coordinates)    # → n x 2 matrix
 
 # ── Modification ──────────────────────────────────────────────
-bp2 <- remove_payload(bp, Payload_23)              # drop a pair
-bp3 <- append_payload(bp, eigenvectors = c(4, 5))  # add a new pair
+bp2 <- remove_mdsDisplay(bp, mdsDisplay_23)              # drop a pair
+bp3 <- append_mdsDisplay(bp, eigenvectors = c(4, 5))  # add a new pair
 ```
 
 ---
@@ -899,7 +899,7 @@ bp3 <- append_payload(bp, eigenvectors = c(4, 5))  # add a new pair
 
 This package is **event-driven**: the JS logic is only as reliable as the trace/annotation metadata conventions.
 
-When modifying R builders or payload functions, preserve:
+When modifying R builders or mdsDisplay functions, preserve:
 - `meta` values
 - `legendgroup` patterns
 - `customdata` semantics

@@ -17,7 +17,7 @@
 A plotly htmlwidget
 }
 \description{
-Initialises a plotly graph, populates it with the first available payload
-traces and annotations, then attaches the remaining payloads and fit
+Initialises a plotly graph, populates it with the first available mdsDisplay
+traces and annotations, then attaches the remaining mdsDisplays and fit
 measures to the JavaScript event handler.
 }

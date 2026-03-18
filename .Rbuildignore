@@ -13,3 +13,8 @@
 ^bipl5_junk$
 ^\.claude$
 ^agents\.md$
+^doc$
+^Meta$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

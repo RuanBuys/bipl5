@@ -14,11 +14,11 @@
 An object of class \code{c("bipl5_biplot", "reg")}
 }
 \description{
-Builds the single payload used for a linear regression biplot and documents
-the associated regression-biplot predictivity measures.
-Regression biplots do not use the multi-payload fit machinery available for
-PCA/CVA displays: they have one fixed payload (\code{Payload_12}),
-\code{append_payload()} and \code{remove_payload()} are not supported,
+Builds the single mdsDisplay used for a linear regression biplot and documents
+the associated regression-biplot fit and predictivity measures.
+Regression biplots do not use the multi-mdsDisplay fit machinery available for
+PCA/CVA displays: they have one fixed mdsDisplay (\code{mdsDisplay_12}),
+\code{append_mdsDisplay()} and \code{remove_mdsDisplay()} are not supported,
 and the only active toggle button is \dQuote{Translated Axes}.
 }
 \details{
@@ -215,6 +215,106 @@ If the supplied display coordinates are collinear, then
 one-dimensional. In that case \eqn{R^2_{2\mid 1} = 0} and
 \eqn{\phi_{j,2\mid 1} = 0} for all variables.
 
+In addition to the sum-of-squares fit measures above, this method may also
+report direct-reading error diagnostics in the sense of Alves (2012). The
+purpose of these diagnostics is different from that of the predictivities
+\eqn{\phi_j}. The quantities \eqn{\phi_j}, \eqn{\phi_{j1}},
+\eqn{\phi_{j,2\mid 1}} and \eqn{R^2_{\mathrm{disp}}} measure how much of the
+variation in \eqn{\mathbf{X}} is reproduced by the fitted regression biplot.
+By contrast, the Alves diagnostics measure how accurately values can be read
+directly from a displayed calibrated axis in the current two-dimensional map.
+Alves (2012) proposed this idea for predictive PCA biplots; in the present
+two-dimensional regression-biplot setting the same principle applies in a
+particularly simple form because there is only one displayed map.
+
+For each sample \eqn{i=1,\ldots,n} and variable axis
+\eqn{j=1,\ldots,p}, the reading taken from the displayed axis of variable
+\eqn{j} is precisely the fitted value
+\deqn{\widehat{x}_{ij} = \mathbf{z}_i^{\top}\mathbf{h}_{(j)}.}
+The corresponding point on the calibrated axis is
+\deqn{\mathbf{p}_{ij} =
+  \frac{\widehat{x}_{ij}}
+       {\mathbf{h}_{(j)}^{\top}\mathbf{h}_{(j)}}\mathbf{h}_{(j)},}
+obtained by substituting \eqn{\mu = \widehat{x}_{ij}} into the calibration
+formula. Thus the direct reading from the graph and the fitted value from the
+regression model coincide.
+
+Let \eqn{s_j} denote the standard deviation used to standardize variable
+\eqn{j}. When \code{scale = TRUE}, the processed matrix \eqn{\mathbf{X}}
+already has unit-variance columns and hence \eqn{s_j = 1}. The
+pointwise direct-reading error for sample \eqn{i} on variable axis
+\eqn{j} is defined by
+\deqn{\delta_{ij} =
+  \frac{|x_{ij} - \widehat{x}_{ij}|}{s_j}.}
+If the processed matrix is already standardized, then
+\eqn{\delta_{ij} = |x_{ij} - \widehat{x}_{ij}|}; in that case
+\eqn{\delta_{ij}} is the direct analogue of Alves's standard predictive error.
+More generally, dividing by \eqn{s_j} expresses the discrepancy on a
+comparable variable-wise scale. The quantity \eqn{\delta_{ij}} is therefore a
+sample-by-axis direct-reading error.
+
+The corresponding axis-level mean direct-reading error is
+\deqn{\bar{\delta}_j =
+  \frac{1}{n}\sum_{i=1}^{n}\delta_{ij}
+  =
+  \frac{1}{n}\sum_{i=1}^{n}
+  \frac{|x_{ij} - \widehat{x}_{ij}|}{s_j}.}
+This is the two-dimensional regression-biplot analogue of the mean standard
+predictive error of Alves (2012). Small values of \eqn{\bar{\delta}_j}
+indicate that the calibrated axis for variable \eqn{j} supports accurate
+direct readings on average across the displayed observations, whereas large
+values indicate that direct readings from that axis are unreliable in the
+current display.
+
+Let \eqn{\tau_{\mathrm{axis}} > 0} be a user-specified
+\emph{tolerance parameter} for axis-level direct-reading error. Then the
+Alves selection rule specialized to the present two-dimensional regression
+biplot is
+\deqn{\text{retain axis }j
+  \quad\Longleftrightarrow\quad
+  \bar{\delta}_j \le \tau_{\mathrm{axis}}.}
+Thus an axis is shown only when its average direct-reading error is at most
+the allowed tolerance. Larger values of \eqn{\tau_{\mathrm{axis}}} retain
+more axes and therefore produce denser displays; smaller values enforce
+stricter axis selection and lead to sparser, more conservative displays.
+In Alves (2012), values around 0.5 are discussed as a practical starting
+point in conventional settings, but no universal default should be assumed.
+
+In addition to axis selection, Alves (2012) proposed a second
+\emph{tolerance parameter} for individual sample-axis discrepancies. Let
+\eqn{\tau_{\mathrm{units}} > 0}. A sample \eqn{i} is then flagged as an
+outlier with respect to axis \eqn{j} whenever
+\deqn{\delta_{ij} > \tau_{\mathrm{units}}.}
+Such a flag indicates that, even if axis \eqn{j} is acceptable on average,
+the direct reading for sample \eqn{i} from that axis is poor in the current
+display. Alves (2012) discusses values around 0.75 as a practical starting
+point for this tolerance parameter, again subject to the application and the
+scale of the analysis.
+
+Because this wrapper is tied to a single two-dimensional regression-biplot
+display, the quantities \eqn{\delta_{ij}} and \eqn{\bar{\delta}_j} are
+display-specific diagnostics. They are not measures of the quality of the
+underlying fitted subspace in the sum-of-squares sense; rather, they quantify
+the numerical accuracy of direct readings from the currently displayed axes.
+This distinction is central in Alves (2012), who emphasizes that direct-reading
+error is conceptually different from earlier axis-predictivity measures.
+
+The Alves diagnostics and the regression-biplot predictivities are therefore
+complementary. The quantity \eqn{\phi_j} is a variance-accounted-for ratio
+justified by Type B orthogonality and answers the question:
+\dQuote{How much of variable \eqn{j}'s sum of squares is reproduced by the
+displayed regression biplot?} The quantity \eqn{\bar{\delta}_j} is a mean
+absolute direct-reading error and answers the different question:
+\dQuote{How accurately can values of variable \eqn{j} be read from the
+displayed calibrated axis?} Consequently, a variable may have high
+\eqn{\phi_j} and still have a non-negligible direct-reading error, while a
+variable with moderate \eqn{\phi_j} may nevertheless support acceptable
+average direct readings. In this implementation, the \eqn{\phi_j}-family is
+the primary set of sum-of-squares fit measures, whereas the Alves quantities
+\eqn{\bar{\delta}_j} and \eqn{\delta_{ij}} provide supplementary,
+display-specific diagnostics for axis selection and observation-level
+checking.
+
 In contrast, a regression biplot does \emph{not} in general satisfy the
 sample-side decomposition
 \deqn{\mathbf{X}\mathbf{X}^{\top} =
@@ -222,18 +322,17 @@ sample-side decomposition
   (\mathbf{X} - \widehat{\mathbf{X}})
   (\mathbf{X} - \widehat{\mathbf{X}})^{\top}.}
 Consequently, PCA-style sample predictivities are not generally justified for
-a regression biplot. The principled fit measures are the variable
-predictivities \eqn{\phi_j}, the overall quality
+a regression biplot. The principled sum-of-squares fit measures are the
+variable predictivities \eqn{\phi_j}, the overall quality
 \eqn{R^2_{\mathrm{disp}}}, and the ordered dimension-specific contributions
-described above. This mirrors the fact that the clean orthogonality available
-here is on the variable side rather than the sample side (Gower, Lubbe and
-le Roux, 2011; Greenacre, 2010).
+described above, with the Alves direct-reading errors providing a distinct
+supplementary perspective on the quality of the displayed axes.
 
 In the wrapped \code{bipl5_biplot} object, these formulas drive the bottom
 display-quality label, the hover-time predicted values
 \eqn{\widehat{\mathbf{X}}}, and the calibrated linear axes stored in
-\code{Payload_12}. Since the regression display is tied to one externally
-supplied map, \code{wrap_bipl5.regress()} produces a single payload only.
+\code{mdsDisplay_12}. Since the regression display is tied to one externally
+supplied map, \code{wrap_bipl5.regress()} produces a single mdsDisplay only.
 There is no PC/CV toggle and no separate PCA-style sample-fit panel.
 }
 \examples{
@@ -263,4 +362,11 @@ BBVA Foundation.
 la Grange, A., le Roux, N. and Gardner-Lubbe, S. (2009).
 BiplotGUI: Interactive Biplots in R. \emph{Journal of Statistical Software},
 30(12), 1--37. \doi{10.18637/jss.v030.i12}
+
+Alves, M. R. (2012). Evaluation of the predictive power of biplot axes to
+automate the construction and layout of biplots based on the accuracy of
+direct readings from common outputs of multivariate analyses:
+application to principal component analysis.
+\emph{Journal of Chemometrics}, 26(5), 180--190.
+\doi{10.1002/cem.2433}
 }

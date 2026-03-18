@@ -12,8 +12,8 @@
     };
 
 
-    Object.keys(data.payloads).forEach(k => {
-      data.payloads[k].bipl5 = deepClone(el.bipl5)
+    Object.keys(data.mdsDisplays).forEach(k => {
+      data.mdsDisplays[k].bipl5 = deepClone(el.bipl5)
 
     });
 
@@ -105,13 +105,13 @@
 
     /**
      * Normalizes persisted `bipl5` state to include current button schema.
-     * Preserves old payloads that were saved before newer buttons existed.
+     * Preserves old mdsDisplays that were saved before newer buttons existed.
      *
      * @param {Object} state - Potentially old bipl5 state object.
      * @returns {Object} Normalized state with aligned `but_names` and `rel_but`.
      */
     function normalizeBipl5State(state) {
-      // Keep backward compatibility with payloads saved before EditAxes existed.
+      // Keep backward compatibility with mdsDisplays saved before EditAxes existed.
       const out = (state && typeof state === "object") ? state : {};
       const fallbackNames = ["PC", "AxisStats", "TransAxes", "vecload", "EditAxes"];
       const names = Array.isArray(out.but_names) ? out.but_names.slice() : fallbackNames.slice();
@@ -127,14 +127,14 @@
     }
 
     /**
-     * Checks whether a payload contains translated-axis traces.
+     * Checks whether a mdsDisplay contains translated-axis traces.
      *
-     * @param {Object} payload - PC payload object.
+     * @param {Object} mdsDisplay - PC mdsDisplay object.
      * @returns {boolean} True when at least one `meta === "ExpAx"` trace exists.
      */
-    function payloadHasExpAxes(payload) {
-      // Used to decide whether EditAxes can be shown for a payload.
-      const traces = payload && Array.isArray(payload.trace_data) ? payload.trace_data : [];
+    function mdsDisplayHasExpAxes(mdsDisplay) {
+      // Used to decide whether EditAxes can be shown for a mdsDisplay.
+      const traces = mdsDisplay && Array.isArray(mdsDisplay.trace_data) ? mdsDisplay.trace_data : [];
       for (let i = 0; i < traces.length; i++) {
         if (metaTag(traces[i]) === "ExpAx") return true;
       }
@@ -224,21 +224,21 @@
     }
 
     /**
-     * Persists current slider selection/position into a payload bucket.
+     * Persists current slider selection/position into a mdsDisplay bucket.
      *
-     * @param {Object} payload - Payload object for current PC view.
+     * @param {Object} mdsDisplay - mdsDisplay object for current PC view.
      * @returns {void}
      */
-    function syncPayloadSliderFromLayout(payload) {
-      // Persist current axis selection + current slider step to this payload.
+    function syncmdsDisplaySliderFromLayout(mdsDisplay) {
+      // Persist current axis selection + current slider step to this mdsDisplay.
       const p = data.p;
       const sliderActiveNow =
         (el.layout.sliders && el.layout.sliders[0] && Number.isFinite(el.layout.sliders[0].active))
           ? el.layout.sliders[0].active
           : 0;
 
-      ensureSliderInfo(payload, p, sliderActiveNow);
-      const si = payload.config.slider_info;
+      ensureSliderInfo(mdsDisplay, p, sliderActiveNow);
+      const si = mdsDisplay.config.slider_info;
       si.axis_chosen = false;
 
       // Only persist active axis choice when slider is visible (user selected an axis).
@@ -292,10 +292,10 @@
       }
     }
     /**
-     * Switches the active PC payload while preserving interaction state.
+     * Switches the active PC mdsDisplay while preserving interaction state.
      * Keeps fit-panel traces where possible and restores per-PC slider/edit state.
      *
-     * @param {Object} d - Plotly button-click payload for `PC_toggle`.
+     * @param {Object} d - Plotly button-click mdsDisplay for `PC_toggle`.
      * @returns {void}
      */
     function togglePC(d){
@@ -306,7 +306,7 @@
         // ignore if user re-clicks same dropdown option
         const oldKey = el.bipl5.currentPCKey || _initPCKey;
         if (newKey === oldKey) return;
-        data.payloads = data.payloads || {};
+        data.mdsDisplays = data.mdsDisplays || {};
 
         // ---- A) capture CURRENT RHS (fit panel) state BEFORE we switch ----
         const fitPanelActive =
@@ -319,50 +319,50 @@
         const currentFitPanelTraces = deepClone(el.data.filter(isFitPanelTrace));
 
 
-        // ---- B) save CURRENT LHS (biplot) into payloads[oldKey]
-        const prev = data.payloads[oldKey] || {};
-        // Save per-payload slider selection before leaving this PC view.
-        syncPayloadSliderFromLayout(prev);
+        // ---- B) save CURRENT LHS (biplot) into mdsDisplays[oldKey]
+        const prev = data.mdsDisplays[oldKey] || {};
+        // Save per-mdsDisplay slider selection before leaving this PC view.
+        syncmdsDisplaySliderFromLayout(prev);
         const curBiplotTraces = deepClone(el.data.filter(tr => !isFitPanelTrace(tr)));
 
 
-        // Save CURRENT state into payloads[oldKey]
+        // Save CURRENT state into mdsDisplays[oldKey]
         // (this is where "PC 1 & 2" gets created the first time)
 
 
-        data.payloads[oldKey] = Object.assign({}, prev, {
+        data.mdsDisplays[oldKey] = Object.assign({}, prev, {
           trace_data: curBiplotTraces,
           layout: deepClone(el.layout),
           bipl5: deepClone(el.bipl5)
         });
 
 
-        // ----C) Load the NEW payload for LHS display
-        const nextPayload = data.payloads[newKey];
-        if (!nextPayload) return; // nothing to switch to
+        // ----C) Load the NEW mdsDisplay for LHS display
+        const nextmdsDisplay = data.mdsDisplays[newKey];
+        if (!nextmdsDisplay) return; // nothing to switch to
 
-        const next_bipl5=normalizeBipl5State(deepClone(nextPayload.bipl5));
+        const next_bipl5=normalizeBipl5State(deepClone(nextmdsDisplay.bipl5));
         next_bipl5.is_visible=deepClone(el.bipl5.is_visible);
         next_bipl5.currentFMKey=deepClone(el.bipl5.currentFMKey || "Cum. Predictivity");
         el.bipl5=next_bipl5;
 
 
 
-        const nextBiplotTraces = deepClone(nextPayload.trace_data || []);
+        const nextBiplotTraces = deepClone(nextmdsDisplay.trace_data || []);
         // Build RHS traces to carry over
         let nextFitPanelTraces = currentFitPanelTraces;
 
         // Corner case: Summary Table must update when PC changes
         if (showingSummary) {
-          const tableTraces = nextPayload.fit_table;
+          const tableTraces = nextmdsDisplay.fit_table;
           nextFitPanelTraces = deepClone(tableTraces);
         }
          // ---- D) merge layout: need to change title and button names
         var newLayout = Object.assign({}, el.layout || {});
         newLayout.annotations = stripFitCaptionAnnotations(
-          deepClone((nextPayload.layout && nextPayload.layout.annotations) || [])
+          deepClone((nextmdsDisplay.layout && nextmdsDisplay.layout.annotations) || [])
         );
-        newLayout.xaxis.title = deepClone((nextPayload.layout && nextPayload.layout.xaxis.title) || []);
+        newLayout.xaxis.title = deepClone((nextmdsDisplay.layout && nextmdsDisplay.layout.xaxis.title) || []);
         newLayout.xaxis.autorange=true;
         newLayout.yaxis.autorange=true;
         if (fitPanelActive) {
@@ -374,22 +374,22 @@
         const transOnForLabel = transIdxForLabel >= 0 && el.bipl5.rel_but[transIdxForLabel] === 1;
         setTransAxesButtonLabel(newLayout, transOnForLabel);
 
-        // Restore per-payload slider axis + step selection in UI state.
-        const nextCfgSI = nextPayload.config && nextPayload.config.slider_info;
+        // Restore per-mdsDisplay slider axis + step selection in UI state.
+        const nextCfgSI = nextmdsDisplay.config && nextmdsDisplay.config.slider_info;
         const seedActive =
           (nextCfgSI && Array.isArray(nextCfgSI.slider_pos) &&
            Number.isFinite(nextCfgSI.slider_pos[0]))
             ? nextCfgSI.slider_pos[0]
             : 0;
-        ensureSliderInfo(nextPayload, data.p, seedActive);
-        const nextSI = nextPayload.config.slider_info;
+        ensureSliderInfo(nextmdsDisplay, data.p, seedActive);
+        const nextSI = nextmdsDisplay.config.slider_info;
         let nextAxisIdx = Number(nextSI.slider_axis_idx);
         if (!Number.isFinite(nextAxisIdx) || nextAxisIdx < 0 || nextAxisIdx >= data.p) nextAxisIdx = 0;
         nextSI.slider_axis_idx = nextAxisIdx;
         let nextSliderActive = Number(nextSI.slider_pos[nextAxisIdx]);
         if (!Number.isFinite(nextSliderActive)) nextSliderActive = 0;
         nextSI.slider_pos[nextAxisIdx] = nextSliderActive;
-        // Per-payload flag: false means keep prompt visible and slider hidden.
+        // Per-mdsDisplay flag: false means keep prompt visible and slider hidden.
         const nextAxisChosen = !!nextSI.axis_chosen;
 
         const sliderButtons = nextAxisChosen
@@ -410,8 +410,8 @@
             );
           }
         }
-//        if(nextPayload.layout.updatemenus[0].buttons){
-//          newLayout.updatemenus[0].buttons=deepClone(nextPayload.layout.updatemenus[0].buttons);
+//        if(nextmdsDisplay.layout.updatemenus[0].buttons){
+//          newLayout.updatemenus[0].buttons=deepClone(nextmdsDisplay.layout.updatemenus[0].buttons);
 //        } else {
 //          newLayout.updatemenus[0].buttons[1].label = "Translated Axes"
 //        }
@@ -419,17 +419,17 @@
         // ---- E) one redraw ----
         const newData = nextBiplotTraces.concat(nextFitPanelTraces);
 
-        // 3) Switch the plot and then restore EditAxes visibility for the new payload state.
+        // 3) Switch the plot and then restore EditAxes visibility for the new mdsDisplay state.
         Plotly.react(el, newData, newLayout).then(() => {
           // 4) Update current key
           el.bipl5.currentPCKey = newKey;
 
           const transIdx = el.bipl5.but_names.indexOf("TransAxes");
           const editIdx = el.bipl5.but_names.indexOf("EditAxes");
-          const hasExpAxes = payloadHasExpAxes(nextPayload);
+          const hasExpAxes = mdsDisplayHasExpAxes(nextmdsDisplay);
           const transOn = transIdx >= 0 && el.bipl5.rel_but[transIdx] === 1;
 
-          // If translated axes are unavailable or not active in this payload,
+          // If translated axes are unavailable or not active in this mdsDisplay,
           // EditAxes must reset and remain hidden.
           if (!hasExpAxes || !transOn) {
             if (editIdx >= 0) el.bipl5.rel_but[editIdx] = 0;
@@ -499,14 +499,14 @@
      */
     function getFitTracesByKey(key) {
       const pcKey = el.bipl5.currentPCKey || _initPCKey;
-      const payload = data.payloads?.[pcKey];
+      const mdsDisplay = data.mdsDisplays?.[pcKey];
 
       // pick the right source
-      if (key === "Cum. Predictivity") return data.fm_payload.CumPred;
-      if (key === "Cum. Adequacy")     return data.fm_payload.CumAd;
-      if (key === "Scree Plot")        return data.fm_payload.Scree;
-      if (key === "Variance Explained")return data.fm_payload.VarExp;
-      if (key === "Summary Table")     return payload?.fit_table;
+      if (key === "Cum. Predictivity") return data.fm_mdsDisplay.CumPred;
+      if (key === "Cum. Adequacy")     return data.fm_mdsDisplay.CumAd;
+      if (key === "Scree Plot")        return data.fm_mdsDisplay.Scree;
+      if (key === "Variance Explained")return data.fm_mdsDisplay.VarExp;
+      if (key === "Summary Table")     return mdsDisplay?.fit_table;
 
       return null;
     }
@@ -519,8 +519,8 @@
      * @returns {{xTitle: string, yTitle: string, caption: string, isTable: boolean}}
      */
     function fitPanelTextByKey(key, pcKey) {
-      // Build table numbering dynamically from available payload keys
-      const pcKeys = Object.keys(data.payloads);
+      // Build table numbering dynamically from available mdsDisplay keys
+      const pcKeys = Object.keys(data.mdsDisplays);
       const tableNumMap = {};
       pcKeys.forEach(function(k, i) { tableNumMap[k] = i + 1; });
       const tableNum = tableNumMap[pcKey] || 1;
@@ -679,7 +679,7 @@
     /**
      * Handles fit-menu selection and swaps the active fit-panel traces.
      *
-     * @param {Object} d - Plotly button-click payload for `Fit_toggle`.
+     * @param {Object} d - Plotly button-click mdsDisplay for `Fit_toggle`.
      * @returns {Promise<boolean>|boolean} Plotly promise on update, else false.
      */
     function toggleFit(d){
@@ -726,10 +726,10 @@
     }
 
 /**
- * Resolves clicked button index from Plotly button-click payload.
+ * Resolves clicked button index from Plotly button-click mdsDisplay.
  * Falls back from `_index` to menu active index to name/label matching.
  *
- * @param {Object} d - Plotly button-click payload.
+ * @param {Object} d - Plotly button-click mdsDisplay.
  * @returns {number} Zero-based index, or -1 when unresolved.
  */
 function getButtonIndex(d) {
@@ -749,19 +749,19 @@ function getButtonIndex(d) {
 }
 
 /**
- * Ensures payload-local slider state exists and has consistent dimensions.
+ * Ensures mdsDisplay-local slider state exists and has consistent dimensions.
  * Initializes per-axis slider positions, selected axis index, and axis-chosen flag.
  *
- * @param {Object} payload - Payload object for the current PC view.
+ * @param {Object} mdsDisplay - mdsDisplay object for the current PC view.
  * @param {number} p - Number of available axes.
  * @param {number} defaultActive - Default slider step index used for initialization.
  * @returns {void}
  */
-function ensureSliderInfo(payload, p, defaultActive) {
-  payload.config = payload.config || {};
-  payload.config.slider_info = payload.config.slider_info || {};
+function ensureSliderInfo(mdsDisplay, p, defaultActive) {
+  mdsDisplay.config = mdsDisplay.config || {};
+  mdsDisplay.config.slider_info = mdsDisplay.config.slider_info || {};
 
-  const si = payload.config.slider_info;
+  const si = mdsDisplay.config.slider_info;
 
   if (!Array.isArray(si.slider_pos)) {
     si.slider_pos = new Array(p).fill(defaultActive);
@@ -861,25 +861,25 @@ function titleTextFromSpec(titleSpec) {
   return "";
 }
 
-function activePayloadForCurrentPC() {
+function activemdsDisplayForCurrentPC() {
   const pcKey = el.bipl5.currentPCKey || _initPCKey;
-  data.payloads = data.payloads || {};
-  return data.payloads[pcKey] || (data.payloads[pcKey] = {});
+  data.mdsDisplays = data.mdsDisplays || {};
+  return data.mdsDisplays[pcKey] || (data.mdsDisplays[pcKey] = {});
 }
 
 function cacheCurrentQualityTitle() {
-  const payload = activePayloadForCurrentPC();
-  ensureSliderInfo(payload, data.p, 0);
-  const si = payload.config.slider_info;
+  const mdsDisplay = activemdsDisplayForCurrentPC();
+  ensureSliderInfo(mdsDisplay, data.p, 0);
+  const si = mdsDisplay.config.slider_info;
 
   if (typeof si.quality_title === "string" && si.quality_title.length > 0) {
     return si.quality_title;
   }
 
-  const fromPayload = titleTextFromSpec(payload?.layout?.xaxis?.title);
-  if (fromPayload) {
-    si.quality_title = fromPayload;
-    return fromPayload;
+  const frommdsDisplay = titleTextFromSpec(mdsDisplay?.layout?.xaxis?.title);
+  if (frommdsDisplay) {
+    si.quality_title = frommdsDisplay;
+    return frommdsDisplay;
   }
 
   const fromLayout = titleTextFromSpec(el?.layout?.xaxis?.title);
@@ -892,15 +892,15 @@ function cacheCurrentQualityTitle() {
 }
 
 /**
- * Returns the quality-of-display title for the current PC payload.
- * Prefers payload layout title and falls back to current live layout title.
+ * Returns the quality-of-display title for the current PC mdsDisplay.
+ * Prefers mdsDisplay layout title and falls back to current live layout title.
  *
  * @returns {string} Current quality title text (possibly empty).
  */
 function currentQualityTitleText() {
-  const payload = activePayloadForCurrentPC();
-  ensureSliderInfo(payload, data.p, 0);
-  const cached = payload.config.slider_info.quality_title;
+  const mdsDisplay = activemdsDisplayForCurrentPC();
+  ensureSliderInfo(mdsDisplay, data.p, 0);
+  const cached = mdsDisplay.config.slider_info.quality_title;
   if (typeof cached === "string" && cached.length > 0) return cached;
   return cacheCurrentQualityTitle();
 }
@@ -966,13 +966,13 @@ function setEditAxesUI(opts) {
  * Handles axis dropdown selection for translated-axis slider editing.
  * Persists per-PC slider state and updates dropdown/slider UI.
  *
- * @param {Object} d - Plotly button-click payload for `Slider_toggle`.
+ * @param {Object} d - Plotly button-click mdsDisplay for `Slider_toggle`.
  * @returns {Promise|boolean} Plotly relayout promise on change, else false.
  */
 function toggleSlider(d) {
   const pcKey = el.bipl5.currentPCKey || _initPCKey;
-  data.payloads = data.payloads || {};
-  const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
+  data.mdsDisplays = data.mdsDisplays || {};
+  const mdsDisplay = data.mdsDisplays[pcKey] || (data.mdsDisplays[pcKey] = {});
 
   const p = data.p;
 
@@ -982,10 +982,10 @@ function toggleSlider(d) {
       : null;
   const sliderActiveNow = Number.isFinite(sliderActiveRaw) ? sliderActiveRaw : 0;
 
-  // Keep slider selection state isolated per payload (per PC view).
-  ensureSliderInfo(payload, p, sliderActiveNow);
+  // Keep slider selection state isolated per mdsDisplay (per PC view).
+  ensureSliderInfo(mdsDisplay, p, sliderActiveNow);
 
-  const si = payload.config.slider_info;
+  const si = mdsDisplay.config.slider_info;
 
   // Selected axis name (button)
   const axisName = d.button && (d.button.name || d.button.label);
@@ -1148,14 +1148,14 @@ function toggleSlider(d) {
         // Edit mode is only available while translated axes are active.
         const transOn = el.bipl5.rel_but[el.bipl5.but_names.indexOf("TransAxes")] === 1;
         const pcKey = el.bipl5.currentPCKey || _initPCKey;
-        data.payloads = data.payloads || {};
-        const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
+        data.mdsDisplays = data.mdsDisplays || {};
+        const mdsDisplay = data.mdsDisplays[pcKey] || (data.mdsDisplays[pcKey] = {});
         const sliderActiveNow =
           (el.layout.sliders && el.layout.sliders[0] && Number.isFinite(el.layout.sliders[0].active))
             ? el.layout.sliders[0].active
             : 0;
-        ensureSliderInfo(payload, data.p, sliderActiveNow);
-        const si = payload.config.slider_info;
+        ensureSliderInfo(mdsDisplay, data.p, sliderActiveNow);
+        const si = mdsDisplay.config.slider_info;
 
         if (!transOn) {
           si.axis_chosen = false;
@@ -1214,10 +1214,10 @@ function toggleSlider(d) {
           const editBtnStateIdx = el.bipl5.but_names.indexOf("EditAxes");
           if (editBtnStateIdx >= 0) el.bipl5.rel_but[editBtnStateIdx] = 0;
           const pcKey = el.bipl5.currentPCKey || _initPCKey;
-          data.payloads = data.payloads || {};
-          const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
-          ensureSliderInfo(payload, data.p, 0);
-          payload.config.slider_info.axis_chosen = false;
+          data.mdsDisplays = data.mdsDisplays || {};
+          const mdsDisplay = data.mdsDisplays[pcKey] || (data.mdsDisplays[pcKey] = {});
+          ensureSliderInfo(mdsDisplay, data.p, 0);
+          mdsDisplay.config.slider_info.axis_chosen = false;
           // When TransAxes turns on: show EditAxes button, but keep controls hidden.
           setEditAxesUI({ editButtonVisible: true, dropdownVisible: false, sliderVisible: false, usePrompt: true });
           //searchAnnot("vecload",false);
@@ -1264,10 +1264,10 @@ function toggleSlider(d) {
           const editBtnStateIdx = el.bipl5.but_names.indexOf("EditAxes");
           if (editBtnStateIdx >= 0) el.bipl5.rel_but[editBtnStateIdx] = 0;
           const pcKey = el.bipl5.currentPCKey || _initPCKey;
-          data.payloads = data.payloads || {};
-          const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
-          ensureSliderInfo(payload, data.p, 0);
-          payload.config.slider_info.axis_chosen = false;
+          data.mdsDisplays = data.mdsDisplays || {};
+          const mdsDisplay = data.mdsDisplays[pcKey] || (data.mdsDisplays[pcKey] = {});
+          ensureSliderInfo(mdsDisplay, data.p, 0);
+          mdsDisplay.config.slider_info.axis_chosen = false;
           // When TransAxes turns off: hide EditAxes button and controls.
           setEditAxesUI({ editButtonVisible: false, dropdownVisible: false, sliderVisible: false, usePrompt: true });
 
@@ -1454,7 +1454,7 @@ function toggleSlider(d) {
      */
     function customAxisRef(tr) {
       // Density traces can reference an axis in two shapes depending on builder:
-      // - customdata: ["ExpAx3"]  (current payload style)
+      // - customdata: ["ExpAx3"]  (current mdsDisplay style)
       // - customdata: "ExpAx3"    (legacy style)
       // This helper normalizes both to the same string key.
       if (!tr) return null;
@@ -1571,6 +1571,124 @@ function toggleSlider(d) {
     return { visible: isShown ? "legendonly" : true };
     }
 
+    /**
+     * Parses metadata for dummy sample-legend traces.
+     *
+     * @param {Object} tr - Plotly trace object.
+     * @returns {{kind:string,key:string}|null} Legend bucket info.
+     */
+    function sampleLegendInfo(tr) {
+      if (!hasMeta(tr, "sample-legend")) return null;
+
+      const meta = Array.isArray(tr.meta) ? tr.meta : [tr.meta];
+      let kind = null;
+      let key = null;
+
+      for (let i = 0; i < meta.length; i++) {
+        const item = meta[i];
+        if (item === "color" || item === "symbol") {
+          kind = item;
+          continue;
+        }
+        if (typeof item !== "string") continue;
+        if (item.indexOf("color:") === 0) {
+          kind = "color";
+          key = item.slice(6);
+          continue;
+        }
+        if (item.indexOf("symbol:") === 0) {
+          kind = "symbol";
+          key = item.slice(7);
+        }
+      }
+
+      if (!kind || key === null) return null;
+      return { kind: kind, key: key };
+    }
+
+    /**
+     * Parses metadata for sample combination traces used in dual stratification.
+     *
+     * @param {Object} tr - Plotly trace object.
+     * @returns {{color:string|null,symbol:string|null}|null} Combination metadata.
+     */
+    function sampleComboInfo(tr) {
+      if (!hasMeta(tr, "sample-combo")) return null;
+
+      const meta = Array.isArray(tr.meta) ? tr.meta : [tr.meta];
+      let colorKey = null;
+      let symbolKey = null;
+
+      for (let i = 0; i < meta.length; i++) {
+        const item = meta[i];
+        if (typeof item !== "string") continue;
+        if (item.indexOf("color:") === 0) {
+          colorKey = item.slice(6);
+          continue;
+        }
+        if (item.indexOf("symbol:") === 0) {
+          symbolKey = item.slice(7);
+        }
+      }
+
+      if (colorKey === null && symbolKey === null) return null;
+      return { color: colorKey, symbol: symbolKey };
+    }
+
+    /**
+     * Returns active sample-legend keys for one stratification kind.
+     *
+     * @param {string} kind - Either "color" or "symbol".
+     * @returns {Set<string>|null} Active keys, or null when that legend section is absent.
+     */
+    function activeSampleLegendKeys(kind) {
+      const active = new Set();
+      let found = false;
+
+      for (let i = 0; i < el.data.length; i++) {
+        const info = sampleLegendInfo(el.data[i]);
+        if (!info || info.kind !== kind) continue;
+        found = true;
+        if (isTraceVisible(el.data[i])) active.add(info.key);
+      }
+
+      return found ? active : null;
+    }
+
+    /**
+     * Recomputes visibility of sample combination traces from legend filters.
+     *
+     * @returns {boolean} True when combination traces were updated.
+     */
+    function applySampleLegendFilters() {
+      const activeColors = activeSampleLegendKeys("color");
+      const activeSymbols = activeSampleLegendKeys("symbol");
+      const indices = [];
+      const visible = [];
+
+      for (let i = 0; i < el.data.length; i++) {
+        const info = sampleComboInfo(el.data[i]);
+        if (!info) continue;
+
+        let keep = true;
+        if (activeColors && info.color !== null) {
+          keep = keep && activeColors.has(info.color);
+        }
+        if (activeSymbols && info.symbol !== null) {
+          keep = keep && activeSymbols.has(info.symbol);
+        }
+
+        const nextVisible = keep ? true : "legendonly";
+        el.data[i].visible = nextVisible;
+        indices.push(i);
+        visible.push(nextVisible);
+      }
+
+      if (!indices.length) return false;
+      Plotly.restyle(el.id, { visible: visible }, indices);
+      return true;
+    }
+
     el.on("plotly_legendclick", function (dat) {
       if (dat.event.detail === 2) {
         //is hierdie 'n double click?
@@ -1588,6 +1706,15 @@ function toggleSlider(d) {
         return false;
       }
       //purely toggle a trace
+
+      const sampleLegend = sampleLegendInfo(tr);
+      if (sampleLegend) {
+        const update = toggleLegendOnly(tr);
+        tr.visible = update.visible;
+        Plotly.restyle(el.id, update, dat.curveNumber);
+        applySampleLegendFilters();
+        return false;
+      }
 
       if (tag === "data") {
         // Toggle clicked data class and mirror that state to its linked densities.
@@ -1720,22 +1847,22 @@ function shiftNumericArray(arr, delta) {
       const transOn = el.bipl5.rel_but[el.bipl5.but_names.indexOf("TransAxes")] === 1;
       if (!transOn) return;
 
-      // Each PC pair has its own slider state. Resolve/create that payload bucket first.
+      // Each PC pair has its own slider state. Resolve/create that mdsDisplay bucket first.
       const pcKey = el.bipl5.currentPCKey || _initPCKey;
-      data.payloads = data.payloads || {};
-      const payload = data.payloads[pcKey] || (data.payloads[pcKey] = {});
+      data.mdsDisplays = data.mdsDisplays || {};
+      const mdsDisplay = data.mdsDisplays[pcKey] || (data.mdsDisplays[pcKey] = {});
 
       // Plotly slider UI state at the moment of this event.
-      // We use this as a fallback if event payload is partial.
+      // We use this as a fallback if event mdsDisplay is partial.
       const sliderActiveNow =
         (el.layout.sliders && el.layout.sliders[0] && Number.isFinite(el.layout.sliders[0].active))
           ? el.layout.sliders[0].active
           : 0;
 
-      // Ensure payload.config.slider_info has expected shape:
+      // Ensure mdsDisplay.config.slider_info has expected shape:
       // slider_pos[axisIndex], slider_axis_idx, and step_size.
-      ensureSliderInfo(payload, data.p, sliderActiveNow);
-      const si = payload.config.slider_info;
+      ensureSliderInfo(mdsDisplay, data.p, sliderActiveNow);
+      const si = mdsDisplay.config.slider_info;
 
       // Axis currently selected in the "Slider_toggle" dropdown (0-based).
       const axisIdx0 = si.slider_axis_idx; // 0-based
@@ -1745,14 +1872,14 @@ function shiftNumericArray(arr, delta) {
       const axisNum = axisIdx0 + 1;         // your annotations use customdata = 1..p
       const axisKey = "ExpAx" + axisNum;    // your traces use legendgroup "ExpAx<i>"
 
-      // Slider step index from event payload.
+      // Slider step index from event mdsDisplay.
       // Fallback to layout value to be robust across Plotly event differences.
       const activeIdx =
         (e && e.slider && Number.isFinite(e.slider.active))
           ? e.slider.active
           : sliderActiveNow;
 
-      // Geometry scalar from R payload: movement distance in plot units per slider step.
+      // Geometry scalar from R mdsDisplay: movement distance in plot units per slider step.
       const step = Number(si.step_size);
       if (!Number.isFinite(step)) return;
 
@@ -1892,7 +2019,7 @@ function shiftNumericArray(arr, delta) {
      * Computes orthogonal projection of a clicked point onto an axis trace.
      * Also interpolates the projected z-hat value along that axis.
      *
-     * @param {Object} d - Plotly click event payload.
+     * @param {Object} d - Plotly click event mdsDisplay.
      * @param {number} idx - Axis trace index in `el.data`.
      * @returns {[number, number, number, number]} [xCross, yCross, zhat, slope].
      */

@@ -14,7 +14,7 @@ CVA method applied.}
 An object of class \code{c("bipl5_biplot", "cva")}
 }
 \description{
-Builds payloads for the user's CV pair and available supplementary pairs,
+Builds mdsDisplays for the user's CV pair and available supplementary pairs,
 along with a dropdown menu.  Fit measures are not yet computed for CVA
 biplots and will be \code{NULL}.
 Plotting is deferred to \code{\link{plot.bipl5_biplot}}.
