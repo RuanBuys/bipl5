@@ -129,7 +129,7 @@ check_inside_circle<-function(ticks,r,thetas){
     inside<-ticks[[i]][,1]^2+ticks[[i]][,2]^2 <= r^2
     #bound1<-c(r*cos(thetas[i]),r*sin(thetas[i]),NA)
     #bound2<-c(r*cos(thetas[i]-pi),r*sin(thetas[i]-pi),NA)
-    ticks[[i]]<-ticks[[i]][inside,]
+    ticks[[i]]<-ticks[[i]][inside,, drop = FALSE]
 
   }
   return(ticks)

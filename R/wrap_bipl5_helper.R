@@ -83,6 +83,21 @@ ensure_outside_circle <- function(z.axes, x, tol = 1e-10) {
 }
 
 #' @noRd
+has_two_inside_circle_ticks <- function(axis_ticks, radius, tol = 1e-10) {
+  if (is.null(axis_ticks)) {
+    return(FALSE)
+  }
+
+  axis_ticks <- as.matrix(axis_ticks)
+  if (nrow(axis_ticks) < 2 || ncol(axis_ticks) < 3) {
+    return(FALSE)
+  }
+
+  inside <- axis_ticks[, 1]^2 + axis_ticks[, 2]^2 <= radius^2 + tol
+  sum(inside) >= 2
+}
+
+#' @noRd
 keep_pretty_axis_ticks <- function(z.axes, n = 8, tol = 1e-10) {
   lapply(z.axes, function(ax) {
     if (is.null(ax)) {
@@ -111,11 +126,23 @@ keep_pretty_axis_ticks <- function(z.axes, n = 8, tol = 1e-10) {
 
 #' @noRd
 clean_linear_axes_coordinates <- function(x, z.axes = biplotEZ::axes_coordinates(x)) {
+  radius <- max(abs(x$Z)) * 1.2
   z.axes <- zero_to_near_zero(z.axes)
-  z.axes <- ensure_outside_circle(z.axes, x)
-  z.axes <- keep_pretty_axis_ticks(z.axes, n = 8)
-  z.axes <- ensure_outside_circle(z.axes, x)
-  z.axes
+  extended_axes <- extend_linear_axis_ticks(z.axes, r = radius)
+  pretty_axes <- keep_pretty_axis_ticks(extended_axes, n = 8)
+  pretty_axes <- extend_linear_axis_ticks(pretty_axes, r = radius)
+
+  Map(
+    function(pretty_axis, fallback_axis) {
+      if (has_two_inside_circle_ticks(pretty_axis, radius)) {
+        return(pretty_axis)
+      }
+
+      fallback_axis
+    },
+    pretty_axes,
+    extended_axes
+  )
 }
 
 #' @noRd

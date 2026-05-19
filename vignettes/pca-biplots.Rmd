@@ -19,7 +19,9 @@ options(crayon.enabled = FALSE)
 ```
 
 ```{r setup}
-suppressPackageStartupMessages(library(bipl5))
+#suppressPackageStartupMessages(library(bipl5))
+library(devtools)
+load_all()
 ```
 
 This vignette focuses on the modern `bipl5` workflow for principal component
