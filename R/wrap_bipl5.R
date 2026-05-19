@@ -215,7 +215,7 @@ new_bipl5_biplot <- function(
 
 #' Convert a biplotEZ object to a bipl5_biplot
 #'
-#' @param x A biplotEZ biplot object
+#' @param x A \code{biplotEZ} biplot object
 #'
 #' @return An object of class \code{bipl5_biplot}
 #' @export
@@ -1289,7 +1289,7 @@ wrap_bipl5.regress <- function(x) {
 
   # axes_coordinates() depends on the current state of X, so we must
   # capture them while X is still centered/scaled.
-  z.axes <- biplotEZ::axes_coordinates(x)
+  z.axes <- clean_linear_axes_coordinates(x)
   pcs <- c(1, 2)
   fit_qual <- regression_fit_quality(
     X = x$X,
@@ -1413,7 +1413,7 @@ wrap_bipl5.PCO <- function(x) {
   # This does not affect the final mdsDisplay because we restore x$raw.X immediately after.
   temp <- x$raw.X
   x$raw.X <- x$X
-  z.axes <- biplotEZ::axes_coordinates(x)
+  z.axes <- zero_to_near_zero(biplotEZ::axes_coordinates(x))
   x$raw.X <- temp
 
   # ── Un-center/un-scale X so hovertext shows raw values ─────────────────
@@ -1437,6 +1437,10 @@ wrap_bipl5.PCO <- function(x) {
   pname <- mdsDisplay_name(pcs)
 
   is_spline <- identical(x$PCOaxes, "splines")
+
+  if (!is_spline) {
+    z.axes <- clean_linear_axes_coordinates(x, z.axes)
+  }
 
   mdsDisplays <- list()
 
@@ -1494,6 +1498,85 @@ wrap_bipl5.PCO <- function(x) {
 # plot.bipl5_biplot
 # ─────────────────────────────────────────────────────────────────────────────
 
+resolve_fit_display_mode <- function(bp, fit_display = c("inherit", "panel", "overlay")) {
+  fit_display <- match.arg(fit_display)
+
+  if (fit_display == "inherit") {
+    stored <- bp$meta$plot_options$fit_display %||% "panel"
+    fit_display <- match.arg(stored, c("panel", "overlay"))
+  }
+
+  if (is.null(bp$fit_measures)) {
+    return("panel")
+  }
+
+  fit_display
+}
+
+fit_display_config <- function(mode = "panel") {
+  list(
+    mode = mode,
+    panel = list(
+      xaxis_domain = c(0, 0.5),
+      xaxis3_domain = c(0.65, 1),
+      yaxis3_domain = c(0.15, 0.85),
+      yaxis3_position = 0.65,
+      yaxis3_side = "left",
+      table_domain_x = c(0.5, 1),
+      table_domain_y = c(0.15, 0.85),
+      slider_len = 0.5,
+      menu_pad_right = 0
+    ),
+    overlay = list(
+      xaxis_domain = c(0, 1),
+      xaxis3_domain = c(0, 1),
+      yaxis3_domain = c(0.15, 0.85),
+      yaxis3_position = 0,
+      yaxis3_side = "left",
+      table_domain_x = c(0, 1),
+      table_domain_y = c(0.15, 0.85),
+      slider_len = 1,
+      menu_pad_right = 60
+    )
+  )
+}
+
+#' Store a default fit-measure display mode on a biplot
+#'
+#' `overlay_fit()` is a convenience helper for pipelines. It does not refit the
+#' underlying ordination; it only stores whether fit measures should default to
+#' the right-hand panel or an overlay view when [plot()] is called.
+#'
+#' A later call to `plot(x, fit_display = ...)` always takes precedence over the
+#' stored default.
+#'
+#' @param x A `bipl5_biplot` object with fit measures.
+#' @param overlay Logical scalar. `TRUE` stores `"overlay"`; `FALSE` stores
+#'   `"panel"`.
+#'
+#' @return A modified `bipl5_biplot`.
+#' @export
+overlay_fit <- function(x, overlay = TRUE) {
+  if (!inherits(x, "bipl5_biplot")) {
+    stop("'x' must inherit from 'bipl5_biplot'.", call. = FALSE)
+  }
+  if (is.null(x$fit_measures)) {
+    stop("overlay_fit() requires a biplot with fit measures.", call. = FALSE)
+  }
+  if (!is.logical(overlay) || length(overlay) != 1L || is.na(overlay)) {
+    stop("'overlay' must be TRUE or FALSE.", call. = FALSE)
+  }
+
+  out <- x
+  plot_options <- out$meta$plot_options
+  if (is.null(plot_options)) {
+    plot_options <- list()
+  }
+  plot_options$fit_display <- if (overlay) "overlay" else "panel"
+  out$meta$plot_options <- plot_options
+  out
+}
+
 #' Plot a bipl5_biplot object
 #'
 #' Initialises a plotly graph, populates it with the first available mdsDisplay
@@ -1502,12 +1585,20 @@ wrap_bipl5.PCO <- function(x) {
 #'
 #' @param x A \code{bipl5_biplot} object
 #' @param y Ignored (for S3 consistency)
+#' @param fit_display How fit measures should be shown for biplots that support
+#'   them: inherit the object's stored preference, render them in the right-hand
+#'   panel, or render them as an overlay over the full plot width.
 #' @param ... Additional arguments (ignored)
 #'
 #' @return A plotly htmlwidget
 #' @export
 #' @method plot bipl5_biplot
-plot.bipl5_biplot <- function(x, y = NULL, ...) {
+plot.bipl5_biplot <- function(
+  x,
+  y = NULL,
+  fit_display = c("inherit", "panel", "overlay"),
+  ...
+) {
   bp <- x
   ez <- bp$meta$x
   pc_info <- bp$meta$pc_info
@@ -1516,6 +1607,8 @@ plot.bipl5_biplot <- function(x, y = NULL, ...) {
   is_reg <- "reg" %in% class(bp)
   is_pco <- "pco" %in% class(bp)
   is_spline <- isTRUE(bp$meta$spline)
+  fit_display_mode <- resolve_fit_display_mode(bp, fit_display)
+  fit_display_cfg <- fit_display_config(fit_display_mode)
 
   # ── Detect available mdsDisplays ──────────────────────────────────────────────
   all_names <- names(pc_info)
@@ -1615,6 +1708,7 @@ plot.bipl5_biplot <- function(x, y = NULL, ...) {
       cols = ez$axes$tick.label.col,
       mdsDisplay = mdsDisplay_for_js,
       fm_mdsDisplay = fm_mdsDisplay,
+      fit_display_cfg = fit_display_cfg,
       initial_pc_key = pc_map[first_name]
     )
   }
@@ -1667,8 +1761,16 @@ fit_plot_labels <- function(key) {
 
 plotly_default_colorway <- function() {
   c(
-    "#1F77B4", "#FF7F0E", "#2CA02C", "#D62728", "#9467BD",
-    "#8C564B", "#E377C2", "#7F7F7F", "#BCBD22", "#17BECF"
+    "#1F77B4",
+    "#FF7F0E",
+    "#2CA02C",
+    "#D62728",
+    "#9467BD",
+    "#8C564B",
+    "#E377C2",
+    "#7F7F7F",
+    "#BCBD22",
+    "#17BECF"
   )
 }
 
@@ -1689,15 +1791,25 @@ trace_meta_values <- function(trace) {
 infer_bipl5_fit_key <- function(trace_data) {
   is_var_exp <- vapply(
     trace_data,
-    function(tr) identical(tr$type, "bar") || identical(tr$legendgroup, "VarExplained"),
+    function(tr) {
+      identical(tr$type, "bar") || identical(tr$legendgroup, "VarExplained")
+    },
     logical(1)
   )
   if (any(is_var_exp)) {
     return("Variance Explained")
   }
 
-  meta_vals <- unique(unlist(lapply(trace_data, trace_meta_values), use.names = FALSE))
-  known <- c("Cum. Predictivity", "Cum. Adequacy", "Scree Plot", "Variance Explained")
+  meta_vals <- unique(unlist(
+    lapply(trace_data, trace_meta_values),
+    use.names = FALSE
+  ))
+  known <- c(
+    "Cum. Predictivity",
+    "Cum. Adequacy",
+    "Scree Plot",
+    "Variance Explained"
+  )
   hit <- intersect(known, meta_vals)
 
   if (length(hit) > 0) {
@@ -1743,7 +1855,12 @@ fit_trace_legend_title <- function(trace_data) {
 }
 
 fit_trace_color <- function(trace, fallback) {
-  as.character(trace$line$color %||% trace$marker$color %||% trace$marker$line$color %||% fallback)
+  as.character(
+    trace$line$color %||%
+      trace$marker$color %||%
+      trace$marker$line$color %||%
+      fallback
+  )
 }
 
 fit_trace_width <- function(trace, default = 1.25) {
@@ -1770,10 +1887,19 @@ build_bipl5_fit_line_plot <- function(trace_data, fit_key) {
   labels <- fit_plot_labels(fit_key)
   palette <- plotly_default_colorway()
   legend_title <- fit_trace_legend_title(trace_data)
-  series_levels <- vapply(trace_data, function(tr) tr$name %||% labels$title, character(1))
+  series_levels <- vapply(
+    trace_data,
+    function(tr) tr$name %||% labels$title,
+    character(1)
+  )
   colors <- vapply(
     seq_along(trace_data),
-    function(i) fit_trace_color(trace_data[[i]], palette[((i - 1) %% length(palette)) + 1]),
+    function(i) {
+      fit_trace_color(
+        trace_data[[i]],
+        palette[((i - 1) %% length(palette)) + 1]
+      )
+    },
     character(1)
   )
   linetypes <- vapply(
@@ -1792,7 +1918,13 @@ build_bipl5_fit_line_plot <- function(trace_data, fit_key) {
     p <- p +
       ggplot2::geom_line(
         data = df,
-        mapping = ggplot2::aes(x = x, y = y, color = series, linetype = series, group = series),
+        mapping = ggplot2::aes(
+          x = x,
+          y = y,
+          color = series,
+          linetype = series,
+          group = series
+        ),
         linewidth = widths[[i]],
         na.rm = TRUE
       )
@@ -1808,7 +1940,10 @@ build_bipl5_fit_line_plot <- function(trace_data, fit_key) {
     }
   }
 
-  x_breaks <- sort(unique(unlist(lapply(trace_data, function(tr) as.numeric(unlist(tr$x))), use.names = FALSE)))
+  x_breaks <- sort(unique(unlist(
+    lapply(trace_data, function(tr) as.numeric(unlist(tr$x))),
+    use.names = FALSE
+  )))
   color_scale <- stats::setNames(colors, series_levels)
   linetype_scale <- stats::setNames(linetypes, series_levels)
 
@@ -1844,7 +1979,11 @@ build_bipl5_fit_line_plot <- function(trace_data, fit_key) {
 build_bipl5_fit_variance_plot <- function(trace_data) {
   labels <- fit_plot_labels("Variance Explained")
   palette <- plotly_default_colorway()
-  is_bar <- vapply(trace_data, function(tr) identical(tr$type, "bar"), logical(1))
+  is_bar <- vapply(
+    trace_data,
+    function(tr) identical(tr$type, "bar"),
+    logical(1)
+  )
   bar_traces <- trace_data[is_bar]
   line_traces <- trace_data[!is_bar]
   bar_title <- fit_trace_legend_title(bar_traces)
@@ -1854,15 +1993,26 @@ build_bipl5_fit_variance_plot <- function(trace_data) {
   x_breaks <- numeric(0)
 
   if (length(bar_traces) > 0) {
-    bar_levels <- vapply(bar_traces, function(tr) tr$name %||% "Trace", character(1))
+    bar_levels <- vapply(
+      bar_traces,
+      function(tr) tr$name %||% "Trace",
+      character(1)
+    )
     bar_colors <- vapply(
       seq_along(bar_traces),
-      function(i) fit_trace_color(bar_traces[[i]], palette[((i - 1) %% length(palette)) + 1]),
+      function(i) {
+        fit_trace_color(
+          bar_traces[[i]],
+          palette[((i - 1) %% length(palette)) + 1]
+        )
+      },
       character(1)
     )
     bar_df <- do.call(
       rbind,
-      lapply(seq_along(bar_traces), function(i) fit_trace_data_frame(bar_traces[[i]], bar_levels[[i]]))
+      lapply(seq_along(bar_traces), function(i) {
+        fit_trace_data_frame(bar_traces[[i]], bar_levels[[i]])
+      })
     )
     bar_df$series <- factor(bar_df$series, levels = bar_levels)
     x_breaks <- c(x_breaks, bar_df$x)
@@ -1884,10 +2034,19 @@ build_bipl5_fit_variance_plot <- function(trace_data) {
   }
 
   if (length(line_traces) > 0) {
-    line_levels <- vapply(line_traces, function(tr) tr$name %||% labels$title, character(1))
+    line_levels <- vapply(
+      line_traces,
+      function(tr) tr$name %||% labels$title,
+      character(1)
+    )
     line_colors <- vapply(
       seq_along(line_traces),
-      function(i) fit_trace_color(line_traces[[i]], palette[((i - 1) %% length(palette)) + 1]),
+      function(i) {
+        fit_trace_color(
+          line_traces[[i]],
+          palette[((i - 1) %% length(palette)) + 1]
+        )
+      },
       character(1)
     )
     line_linetypes <- vapply(
@@ -1904,7 +2063,13 @@ build_bipl5_fit_variance_plot <- function(trace_data) {
       p <- p +
         ggplot2::geom_line(
           data = df,
-          mapping = ggplot2::aes(x = x, y = y, color = series, linetype = series, group = series),
+          mapping = ggplot2::aes(
+            x = x,
+            y = y,
+            color = series,
+            linetype = series,
+            group = series
+          ),
           linewidth = line_widths[[i]],
           na.rm = TRUE
         )
@@ -1937,7 +2102,10 @@ build_bipl5_fit_variance_plot <- function(trace_data) {
           order = 1
         ),
         color = ggplot2::guide_legend(title = line_title %||% NULL, order = 2),
-        linetype = ggplot2::guide_legend(title = line_title %||% NULL, order = 2)
+        linetype = ggplot2::guide_legend(
+          title = line_title %||% NULL,
+          order = 2
+        )
       )
   }
 

@@ -25,8 +25,8 @@
 #'   \code{"PC"} for PCA mdsDisplays or \code{"CV"} for CVA mdsDisplays.
 #' @param ax_pred Logical; whether axis-predictivity scaffolding should be
 #'   included in the mdsDisplay.
-#' @param vec_dis Logical; whether unit-circle and vector-loading layers should
-#'   be added. This is typically \code{TRUE} for PCA and \code{FALSE} for CVA.
+#' @param vec_dis Logical; whether vector-loading layers should be added. This
+#'   is typically \code{TRUE} for PCA and \code{FALSE} for CVA.
 #' @param fit_qual Optional override for the display-quality label shown below
 #'   the biplot.
 #'
@@ -53,6 +53,71 @@
 #' coordinates, come from \code{ez_obj}.  Display options that should remain
 #' consistent across mdsDisplays, such as polygon availability and class-mean
 #' aesthetics, are taken from \code{x_ref}.
+#' @noRd
+zero_to_near_zero <- function(z.axes, tol = 1e-12) {
+  lapply(z.axes, function(ax) {
+    if (is.null(ax)) {
+      return(ax)
+    }
+
+    ax <- as.matrix(ax)
+    if (ncol(ax) >= 3) {
+      ticks <- ax[, 3]
+      ticks[abs(ticks) < tol] <- 0
+      ax[, 3] <- ticks
+    }
+
+    ax
+  })
+}
+
+#' @noRd
+zero_near_zero_axis_ticks <- function(z.axes, tol = 1e-12) {
+  zero_to_near_zero(z.axes, tol = tol)
+}
+
+#' @noRd
+ensure_outside_circle <- function(z.axes, x, tol = 1e-10) {
+  radius <- max(abs(x$Z)) * 1.2
+  extend_linear_axis_ticks(z.axes, r = radius, tol = tol)
+}
+
+#' @noRd
+keep_pretty_axis_ticks <- function(z.axes, n = 8, tol = 1e-10) {
+  lapply(z.axes, function(ax) {
+    if (is.null(ax)) {
+      return(ax)
+    }
+
+    ax <- as.matrix(ax)
+    if (nrow(ax) == 0 || ncol(ax) < 3) {
+      return(ax)
+    }
+
+    target_ticks <- pretty(ax[, 3], n = n)
+    keep <- vapply(
+      ax[, 3],
+      function(tick) any(abs(tick - target_ticks) < tol),
+      logical(1)
+    )
+
+    if (!any(keep)) {
+      return(ax)
+    }
+
+    ax[keep, , drop = FALSE]
+  })
+}
+
+#' @noRd
+clean_linear_axes_coordinates <- function(x, z.axes = biplotEZ::axes_coordinates(x)) {
+  z.axes <- zero_to_near_zero(z.axes)
+  z.axes <- ensure_outside_circle(z.axes, x)
+  z.axes <- keep_pretty_axis_ticks(z.axes, n = 8)
+  z.axes <- ensure_outside_circle(z.axes, x)
+  z.axes
+}
+
 #' @noRd
 build_one_mdsDisplay <- function(
   ez_obj,
@@ -108,7 +173,7 @@ build_one_mdsDisplay <- function(
 
   # Axis coordinates and reconstructed values
   if (is.null(z.axes)) {
-    z.axes <- biplotEZ::axes_coordinates(ez_obj)
+    z.axes <- clean_linear_axes_coordinates(ez_obj)
   }
   Xhat <- obtain_xhat(ez_obj, z.axes = z.axes)
 
@@ -167,10 +232,9 @@ build_one_mdsDisplay <- function(
   payl <- out$mdsDisplay
   grads <- out$grads
 
-  # Unit circle and vector annotations (PCA only)
+  # Vector annotations (PCA only)
   if (vec_dis) {
-    payl <- insert_unit_circle_mdsDisplay(payl, visible = FALSE)
-    temp <- list(V = ez_obj$Vr, x = ez_obj$X, p = ez_obj$p)
+    temp <- list(V = ez_obj$Vr, x = ez_obj$X, p = ez_obj$p, Z = ez_obj$Z)
     payl <- insert_vector_annots_mdsDisplay(payl, temp)
   }
 

@@ -61,6 +61,7 @@ plot_scaffolding_mdsDisplay <- function(
 
     yaxis3 = list(
       zeroline = TRUE,
+      anchor = "free",
       side = "left",
       position = 0.65,
       showgrid = TRUE,
@@ -76,6 +77,7 @@ plot_scaffolding_mdsDisplay <- function(
         y = 0.8,
         type = "buttons",
         x = 0,
+        pad = list(r = 0), # JS bumps this to 60 only while overlay fit measures are open
         showactive = TRUE,
         active = -1,
         buttons = list(
@@ -116,6 +118,7 @@ plot_scaffolding_mdsDisplay <- function(
       list(
         type = "dropdown",
         x = 0,
+        pad = list(r = 0), # JS bumps this to 60 only while overlay fit measures are open
         visible = PC_toggle,
         buttons = list(
           list(
@@ -153,7 +156,13 @@ plot_scaffolding_mdsDisplay <- function(
 #'
 #' @return updated mdsDisplay
 #' @noRd
-insert_Z_coo_mdsDisplay <- function(mdsDisplay, x, p_ly_pch, Col, visible = TRUE) {
+insert_Z_coo_mdsDisplay <- function(
+  mdsDisplay,
+  x,
+  p_ly_pch,
+  Col,
+  visible = TRUE
+) {
   groups <- levels(x$group)
   num_groups <- length(groups)
 
@@ -517,18 +526,32 @@ insert_vector_annots_mdsDisplay <- function(
   make_vec_annots <- function(PC, meta = NULL, visible = FALSE, text = NULL) {
     stopifnot(!is.null(PC$V), ncol(PC$V) >= 2)
     p <- PC$p %||% nrow(PC$V)
+    alpha <- 1
+
+    if (!is.null(PC$Z)) {
+      Z <- as.matrix(PC$Z)
+      if (ncol(Z) >= 2 && nrow(Z) > 0) {
+        alpha <- max(sqrt(Z[, 1]^2 + Z[, 2]^2), na.rm = TRUE)
+        if (!is.finite(alpha)) {
+          alpha <- 1
+        }
+      }
+    }
 
     if (is.null(text)) {
       text <- colnames(PC$x) %||% paste0("Var", seq_len(p))
     }
+
+    V_scaled <- PC$V
+    V_scaled[, 1:2] <- alpha * V_scaled[, 1:2, drop = FALSE]
 
     anns <- vector("list", p)
     for (i in seq_len(p)) {
       anns[[i]] <- list(
         x = 0,
         y = 0,
-        ax = PC$V[i, 1],
-        ay = PC$V[i, 2],
+        ax = V_scaled[i, 1],
+        ay = V_scaled[i, 2],
         xref = "x",
         yref = "y",
         axref = "x",
@@ -575,7 +598,15 @@ insert_vector_annots_mdsDisplay <- function(
 #'
 #' @return updated mdsDisplay
 #' @noRd
-add_TDA_mdsDisplay <- function(mdsDisplay, z.axes, x, Z, group, Col, inflate = 1) {
+add_TDA_mdsDisplay <- function(
+  mdsDisplay,
+  z.axes,
+  x,
+  Z,
+  group,
+  Col,
+  inflate = 1
+) {
   `%||%` <- function(a, b) if (is.null(a)) b else a
 
   # ensure group is a factor (for levels / match)
@@ -799,7 +830,10 @@ add_TDA_mdsDisplay <- function(mdsDisplay, z.axes, x, Z, group, Col, inflate = 1
   }
 
   mdsDisplay <- mdsDisplay_add_traces(mdsDisplay, traces)
-  mdsDisplay <- mdsDisplay_add_layout(mdsDisplay, list(annotations = annotations))
+  mdsDisplay <- mdsDisplay_add_layout(
+    mdsDisplay,
+    list(annotations = annotations)
+  )
 
   list(mdsDisplay = mdsDisplay, m = m, shift = shift)
 }
@@ -951,48 +985,13 @@ insert_linear_axes_mdsDisplay <- function(mdsDisplay, z.axes, x) {
   )
 
   mdsDisplay <- mdsDisplay_add_traces(mdsDisplay, traces)
-  mdsDisplay <- mdsDisplay_add_layout(mdsDisplay, list(annotations = annotations))
+  mdsDisplay <- mdsDisplay_add_layout(
+    mdsDisplay,
+    list(annotations = annotations)
+  )
 
   list(mdsDisplay = mdsDisplay, grads = grads, radius = radius)
 }
-
-#' Add unit circle to biplot
-#'
-#' @param mdsDisplay List containing data and layout attributes for a plotly graph
-#' @param n Number of datapoints in the circle
-#' @param visible Indicator, whether to display or not. Set to false
-#' @param color Color of the circle
-#' @param width Linewidth of circle
-#'
-#' @return updated mdsDisplay
-#' @noRd
-insert_unit_circle_mdsDisplay <- function(
-  mdsDisplay,
-  n = 200,
-  visible = FALSE,
-  color = "red",
-  width = 1.2
-) {
-  theta <- seq(0, 2 * pi, length.out = n)
-
-  trace <- list(
-    x = cos(theta),
-    y = sin(theta),
-    type = "scatter",
-    mode = "lines",
-    line = list(color = color, width = width),
-    name = "Unit Circle",
-    showlegend = FALSE,
-    meta = list("veccircle"), # array form plays nicely with metaTag()
-    xaxis = "x",
-    yaxis = "y",
-    hoverinfo = "name",
-    visible = visible
-  )
-
-  mdsDisplay_add_traces(mdsDisplay, list(trace))
-}
-
 
 #' Add fit measures to the mdsDisplay
 #'
@@ -1051,12 +1050,17 @@ add_table_mdsDisplay <- function(
 #'
 #' @return updated mdsDisplay
 #' @noRd
-slider_control_mdsDisplay <- function(mdsDisplay, n_inside = 17, n_outside = 4) {
+slider_control_mdsDisplay <- function(
+  mdsDisplay,
+  n_inside = 17,
+  n_outside = 4
+) {
   #vector of axis slopes; vector of intercept of equation
   m <- mdsDisplay$m
   dist <- numeric(length(m))
   for (i in 1:length(m)) {
-    b <- mdsDisplay$shift$ends[[i]][1, 2] - m[i] * mdsDisplay$shift$ends[[i]][1, 1]
+    b <- mdsDisplay$shift$ends[[i]][1, 2] -
+      m[i] * mdsDisplay$shift$ends[[i]][1, 1]
     x_cross <- -b / (1 / m[i] + m[i])
     y_cross <- -1 / m[i] * x_cross
     dist[i] <- sign(x_cross) * sqrt(x_cross^2 + y_cross^2)

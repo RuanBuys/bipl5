@@ -1,0 +1,277 @@
+// Title-slide font (matches the previous SASA 2024 deck)
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;800&display=swap');
+
+/*-- scss:defaults --*/
+
+// ── bipl5 brand palette (ColorBrewer "Dark2") ───────────────────────────────
+$bipl5-green:  #1B9E77;
+$bipl5-orange: #D95F02;
+$bipl5-violet: #7570B3;
+$bipl5-ink:    #20242a;
+$bipl5-muted:  #5b616b;
+$bipl5-line:   #d9dde5;
+$bipl5-paper:  #ffffff;
+$bipl5-mist:   #f4f6f8;
+
+// ── Fonts ───────────────────────────────────────────────────────────────────
+$font-family-sans-serif: "Segoe UI", "Helvetica Neue", Arial, sans-serif !default;
+$presentation-heading-font: "Segoe UI", "Helvetica Neue", Arial, sans-serif !default;
+$font-family-monospace: "Cascadia Mono", "Consolas", "SFMono-Regular", Menlo, monospace !default;
+
+// ── Base colours ────────────────────────────────────────────────────────────
+$body-bg: $bipl5-paper;
+$body-color: $bipl5-ink;
+$presentation-heading-color: $bipl5-ink;
+$link-color: $bipl5-green;
+$link-color-hover: darken($bipl5-green, 10%);
+$selection-bg: rgba($bipl5-green, 0.22);
+$selection-color: $bipl5-ink;
+
+// ── Type scale ──────────────────────────────────────────────────────────────
+$presentation-font-size-root: 30px;
+$presentation-line-height: 1.4;
+$presentation-h1-font-size: 1.95em;
+$presentation-h2-font-size: 1.30em;
+$presentation-h3-font-size: 1.02em;
+$presentation-heading-font-weight: 650;
+$presentation-title-slide-text-align: left;
+
+// ── Code blocks ─────────────────────────────────────────────────────────────
+$code-block-bg: $bipl5-mist;
+$code-block-border-color: $bipl5-line;
+$code-block-font-size: 0.60em;
+$code-color: $bipl5-orange;
+
+/*-- scss:rules --*/
+
+// ── Headings: accent rule under every slide title ───────────────────────────
+.reveal h2 {
+  margin-bottom: 0.55em;
+  padding-bottom: 0.18em;
+  border-bottom: 3px solid $bipl5-green;
+  line-height: 1.2;
+}
+
+.reveal h3 {
+  color: $bipl5-ink;
+  font-weight: 650;
+}
+
+.reveal p,
+.reveal li {
+  color: $bipl5-ink;
+}
+
+.reveal strong {
+  color: $bipl5-ink;
+  font-weight: 650;
+}
+
+// ── Bullet lists: tighter, branded markers ──────────────────────────────────
+.reveal ul {
+  list-style: none;
+  margin-left: 0.4em;
+}
+
+.reveal ul li {
+  position: relative;
+  padding-left: 1.1em;
+  margin-bottom: 0.32em;
+}
+
+.reveal ul li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.52em;
+  width: 0.42em;
+  height: 0.42em;
+  border-radius: 50%;
+  background: $bipl5-green;
+}
+
+// ── Inline + block code ─────────────────────────────────────────────────────
+.reveal code {
+  color: $bipl5-orange;
+}
+
+.reveal pre {
+  box-shadow: none;
+  width: 100%;
+}
+
+.reveal pre code {
+  border: 1px solid $bipl5-line;
+  border-radius: 8px;
+  padding: 0.7em 0.9em;
+  color: $bipl5-ink;
+  background: $bipl5-mist;
+  max-height: 560px;
+}
+
+// Knitr output blocks (the "#>" lines)
+.reveal pre:not(.sourceCode) code,
+.reveal .cell-output pre code {
+  background: #fbfbfc;
+  color: $bipl5-muted;
+}
+
+// ── Title slide (campus-background style, matches the SASA 2024 deck) ────────
+#title-slide {
+  text-align: center;
+  top: 0 !important;
+}
+
+#title-slide .title {
+  font-family: 'Raleway', 'Segoe UI', sans-serif;
+  color: rgb(100, 51, 53);
+  font-size: 3.4em;
+  font-weight: 800;
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0.05em;
+  text-shadow: 0 1px 8px rgba(255, 255, 255, 0.65);
+}
+
+#title-slide .subtitle {
+  font-family: 'Raleway', 'Segoe UI', sans-serif;
+  color: rgb(100, 51, 53);
+  font-weight: 600;
+  font-size: 1.0em;
+  text-shadow: 0 1px 6px rgba(255, 255, 255, 0.55);
+}
+
+#title-slide .subtitle b {
+  font-weight: 700;
+}
+
+#title-slide .author,
+#title-slide .quarto-title-author-name {
+  font-family: 'Raleway', 'Segoe UI', sans-serif;
+  color: rgb(100, 51, 53);
+  font-weight: 600;
+}
+
+#title-slide .date {
+  font-family: 'Raleway', 'Segoe UI', sans-serif;
+  color: #ffffff;
+  font-weight: 800;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+}
+
+// ── Section divider slides ──────────────────────────────────────────────────
+.reveal section.divider h1,
+.reveal section.divider h2 {
+  color: #ffffff;
+  border-bottom: none;
+  font-size: 1.8em;
+}
+
+.reveal section.divider .divider-tag {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.55em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+// ── Function-map cards ──────────────────────────────────────────────────────
+.function-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 0.6rem;
+}
+
+.function-card {
+  border: 1px solid $bipl5-line;
+  border-top: 6px solid $bipl5-line;
+  border-radius: 10px;
+  padding: 0.8rem 0.95rem;
+  background: $bipl5-paper;
+  box-shadow: 0 2px 8px rgba(32, 36, 42, 0.06);
+}
+
+.function-card:nth-child(1) { border-top-color: $bipl5-green; }
+.function-card:nth-child(2) { border-top-color: $bipl5-orange; }
+.function-card:nth-child(3) { border-top-color: $bipl5-violet; }
+
+.function-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.45rem;
+  font-size: 0.82em;
+}
+
+.function-card p {
+  font-size: 0.6em;
+  color: $bipl5-muted;
+  line-height: 1.35;
+}
+
+.function-card ul {
+  font-size: 0.62em;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.function-card ul li {
+  margin-bottom: 0.15rem;
+}
+
+.function-card ul li::before {
+  top: 0.48em;
+  width: 0.34em;
+  height: 0.34em;
+}
+
+.function-card code {
+  color: $bipl5-orange;
+  font-size: 1em;
+}
+
+// ── Takeaway / callout block ────────────────────────────────────────────────
+.takeaway {
+  border-left: 6px solid $bipl5-green;
+  background: $bipl5-mist;
+  border-radius: 0 8px 8px 0;
+  padding: 0.9rem 1.2rem;
+  color: $bipl5-ink;
+  font-size: 0.95em;
+}
+
+.small-note {
+  color: $bipl5-muted;
+  font-size: 0.72em;
+}
+
+.lead {
+  font-size: 1.05em;
+  color: $bipl5-muted;
+}
+
+// ── htmlwidget / plotly framing ─────────────────────────────────────────────
+.reveal .cell .html-widget,
+.reveal .cell div[id^="htmlwidget"] {
+  margin: 0 auto;
+}
+
+.reveal .cell-output-display {
+  margin-top: 0.2em;
+}
+
+// Two-column helper spacing
+.reveal .columns {
+  align-items: center;
+}
+
+// ── Footer + slide number ───────────────────────────────────────────────────
+.reveal .footer {
+  color: $bipl5-muted;
+  font-size: 0.5em;
+}
+
+.reveal .slide-number {
+  background-color: transparent;
+  color: $bipl5-muted;
+  font-size: 0.6em;
+}

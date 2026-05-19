@@ -4,12 +4,16 @@
 \alias{plot.bipl5_biplot}
 \title{Plot a bipl5_biplot object}
 \usage{
-\method{plot}{bipl5_biplot}(x, y = NULL, ...)
+\method{plot}{bipl5_biplot}(x, y = NULL, fit_display = c("inherit", "panel", "overlay"), ...)
 }
 \arguments{
 \item{x}{A \code{bipl5_biplot} object}
 
 \item{y}{Ignored (for S3 consistency)}
+
+\item{fit_display}{How fit measures should be shown for biplots that support
+them: inherit the object's stored preference, render them in the right-hand
+panel, or render them as an overlay over the full plot width.}
 
 \item{...}{Additional arguments (ignored)}
 }

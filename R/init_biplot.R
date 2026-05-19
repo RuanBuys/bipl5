@@ -684,7 +684,7 @@ scale_mds_compile_regress_biplot <- function(x) {
   }
   x <- biplotEZ::axes(x)
 
-  z.axes <- biplotEZ::axes_coordinates(x)
+  z.axes <- clean_linear_axes_coordinates(x)
   pcs <- c(1, 2)
   fit_qual <- regression_fit_quality(
     X = x$X,
@@ -737,7 +737,7 @@ scale_mds_compile_pco_biplot <- function(x) {
 
   temp <- x$raw.X
   x$raw.X <- x$X
-  z.axes <- biplotEZ::axes_coordinates(x)
+  z.axes <- zero_to_near_zero(biplotEZ::axes_coordinates(x))
   x$raw.X <- temp
 
   x <- scale_mds_restore_raw_x(x)
@@ -745,6 +745,10 @@ scale_mds_compile_pco_biplot <- function(x) {
 
   pcs <- c(1, 2)
   is_spline <- identical(x$PCOaxes, "splines")
+
+  if (!is_spline) {
+    z.axes <- clean_linear_axes_coordinates(x, z.axes)
+  }
 
   if (is_spline) {
     payl <- build_spline_mdsDisplay(

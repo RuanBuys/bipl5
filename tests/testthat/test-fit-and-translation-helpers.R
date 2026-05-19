@@ -96,6 +96,37 @@ test_that("tickmark helpers shorten and filter axes sensibly", {
   expect_true(all(vapply(shortened, ncol, integer(1)) == 3))
 })
 
+test_that("linear-axis ticks extend evenly before later trimming", {
+  ticks <- list(
+    matrix(
+      c(
+        -1, 0, -1,
+         0, 0,  0,
+         1, 0,  1
+      ),
+      ncol = 3,
+      byrow = TRUE
+    )
+  )
+
+  x <- list(Z = matrix(c(-2, 0, 2, 0), ncol = 2, byrow = TRUE))
+  prepared <- bipl5:::ensure_outside_circle(ticks, x)
+
+  expect_equal(prepared[[1]][, 3], c(-3, -2, -1, 0, 1, 2, 3))
+  expect_true(any(prepared[[1]][, 1]^2 + prepared[[1]][, 2]^2 > (max(abs(x$Z)) * 1.2)^2))
+})
+
+test_that("pretty thinning keeps a smaller subset of existing tick labels", {
+  ticks <- list(
+    cbind(seq(-10, 10, by = 1), 0, seq(-10, 10, by = 1))
+  )
+
+  thinned <- bipl5:::keep_pretty_axis_ticks(ticks, n = 8)
+
+  expect_lt(nrow(thinned[[1]]), nrow(ticks[[1]]))
+  expect_true(all(thinned[[1]][, 3] %in% pretty(ticks[[1]][, 3], n = 8)))
+})
+
 test_that("shorten_axes trims to existing calibrated ticks", {
   x <- prepared_pca_ez()
   z_axes <- biplotEZ::axes_coordinates(x)

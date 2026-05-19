@@ -1,0 +1,398 @@
+---
+title: "**bipl5**"
+subtitle: "An R Package for Reactive Biplots<br><br><p style='color:white;'><b>Ruan Buys<br>Sugnet Lubbe<br>Luca Steyn</b></p>"
+date: "19 May 2026"
+title-slide-attributes:
+  data-background-color: "rgb(255,255,255)"
+  data-background-image: "background.jpg"
+  data-background-size: "cover"
+  data-background-opacity: "1"
+  data-background-position: "15% 90%"
+format:
+  revealjs:
+    theme: [default, bipl5-theme.scss]
+    width: 1280
+    height: 720
+    margin: 0.07
+    slide-number: c/t
+    show-slide-number: all
+    auto-stretch: false
+    transition: fade
+    transition-speed: fast
+    chalkboard: false
+    preview-links: false
+    code-line-numbers: false
+    code-overflow: wrap
+    highlight-style: github
+execute:
+  warning: false
+  message: false
+  echo: true
+  cache: false
+---
+
+```{r setup}
+#| include: false
+knitr::opts_chunk$set(
+  comment = "#>",
+  collapse = TRUE
+)
+
+options(crayon.enabled = FALSE, width = 78)
+
+suppressPackageStartupMessages({
+  library(biplotEZ)
+  library(plotly)
+})
+
+if (requireNamespace("devtools", quietly = TRUE)) {
+  devtools::load_all(".", quiet = TRUE)
+} else {
+  suppressPackageStartupMessages(library(bipl5))
+}
+
+species_cols <- c("#1B9E77", "#D95F02", "#7570B3")
+species_pch  <- c(16, 17, 15)
+
+# Render a bipl5 plotly widget as a FIXED-SIZE canvas.
+#
+# reveal.js scales each slide with a CSS `transform: scale()`. plotly's
+# responsive handler re-reads its container size on every window resize --
+# and a transformed container reports an inflated size on large screens,
+# so plotly redraws bigger and the (already transformed) widget overflows.
+#
+# Setting an explicit layout width/height with autosize = FALSE and
+# disabling the responsive listener makes plotly draw once at a fixed
+# pixel size; reveal.js then scales that canvas proportionally with the
+# rest of the slide, at any window size.
+stage <- function(bp, height = 560, width = 1100, ...) {
+  p <- plot(bp, ...)
+  p <- plotly::layout(p, width = width, height = height, autosize = FALSE)
+  p <- plotly::config(p, responsive = FALSE)
+  p$width  <- width
+  p$height <- height
+  p
+}
+```
+
+## Today's Goal
+
+[`bipl5` turns PCA, CVA, regression and PCO biplots into **interactive Plotly htmlwidgets**.]{.lead}
+
+In this webinar we cover three things:
+
+- Build a biplot directly with the **standalone `bipl5` workflow**.
+- **Wrap an existing `biplotEZ` object** and render it with `bipl5`.
+- Drop the resulting widget straight into a **Quarto presentation**.
+
+. . .
+
+All examples use the `iris` data set.
+
+## Function Map
+
+```{=html}
+<div class="function-grid">
+  <div class="function-card">
+    <h3>Construct</h3>
+    <ul>
+      <li><code>init_biplot()</code></li>
+      <li><code>scale_mds()</code></li>
+      <li><code>format_samples()</code></li>
+      <li><code>colorpal()</code></li>
+      <li><code>Symbol_List()</code></li>
+    </ul>
+  </div>
+  <div class="function-card">
+    <h3>Wrap biplotEZ</h3>
+    <p>Use this when a biplot is already built with <code>biplotEZ::PCA()</code>, <code>CVA()</code>, <code>regress()</code> or <code>PCO()</code>.</p>
+    <ul>
+      <li><code>wrap_bipl5()</code></li>
+    </ul>
+  </div>
+  <div class="function-card">
+    <h3>Traverse</h3>
+    <ul>
+      <li><code>plot()</code></li>
+      <li><code>append_mdsDisplay()</code></li>
+      <li><code>remove_mdsDisplay()</code></li>
+      <li><code>extract()</code></li>
+      <li><code>overlay_fit()</code></li>
+    </ul>
+  </div>
+</div>
+```
+
+# Standalone Construction {.divider background-color="#1B9E77"}
+
+[Part 1 — building a biplot from raw data]{.divider-tag}
+
+## Build the Biplot {.smaller .scrollable}
+
+`init_biplot()` ingests the data and `scale_mds()` chooses the method and
+subspace. Grouping aesthetics are set in the pipeline with `format_samples()`.
+
+```{r standalone-build}
+library(bipl5)
+library(biplotEZ)
+
+bp_standalone <- init_biplot(iris) |>
+  scale_mds(type = "pca", eigenvectors = c(1, 2)) |>
+  format_samples(stratify = "col", by = Species, col = species_cols)
+
+bp_standalone
+```
+
+## The Standalone Plot
+
+```{r standalone-plot}
+#| echo: true
+stage(bp_standalone, height = 560)
+```
+
+## Styling the Sample Layer {.smaller}
+
+`format_samples()` restyles the rendered sample layer — no rebuild needed.
+
+```{r standalone-format}
+#| results: hide
+bp_species <- bp_standalone |>
+  format_samples(
+    stratify = "col",
+    by = Species,
+    col = species_cols
+  ) |>
+  format_samples(
+    stratify = "symbol",
+    by = Species,
+    pch = species_pch
+  )
+```
+
+Colour and plotting character are set per group from the `Species` factor.
+
+## Styled Biplot
+
+```{r styled-plot}
+stage(bp_species, height = 560)
+```
+
+## A Second Stratifying Variable {.smaller}
+
+`format_samples()` can stratify by **two different variables at once** — colour
+by one, plotting symbol by another. The sample traces are rebuilt internally as
+the observed `Species × Band` combinations, with a separate legend section per
+variable.
+
+```{r dual-stratify}
+#| results: hide
+iris_banded <- iris
+iris_banded$Band <- factor(
+  rep(c("A", "B", "C", "D"), length.out = nrow(iris_banded))
+)
+
+bp_dual <- init_biplot(iris_banded) |>
+  scale_mds(type = "pca", eigenvectors = c(1, 2)) |>
+  format_samples(stratify = "col", by = Species, col = species_cols) |>
+  format_samples(stratify = "symbol", by = Band, pch = c(15, 16, 17, 18))
+```
+
+## Two-Variable Stratification
+
+```{r dual-stratify-plot}
+stage(bp_dual, height = 560)
+```
+
+## Adding More Displays {.smaller}
+
+A single object can hold several displays. `append_mdsDisplay()` adds another
+eigenvector pair to the dropdown.
+
+```{r append-displays}
+bp_multi <- bp_species |>
+  append_mdsDisplay(c(1, 3)) |>
+  append_mdsDisplay(c(2, 3))
+
+names(bp_multi$meta$pc_info)
+```
+
+## Multi-Display Biplot
+
+::: {.small-note}
+Switch eigenvector pairs live with the dropdown in the top-left of the widget.
+:::
+
+```{r multi-display-plot}
+stage(bp_multi, height = 530)
+```
+
+## Traversing the Object {.smaller}
+
+`extract()` and `remove_mdsDisplay()` navigate a multi-display object.
+
+```{r traversing-code}
+bp_one_view   <- extract(bp_multi, mdsDisplay_13)
+bp_without_23 <- remove_mdsDisplay(bp_multi, mdsDisplay_23)
+
+iris_scores <- extract(bp_multi, mdsDisplay_12$Data$sample_coordinates)
+head(iris_scores, 5)
+```
+
+## An Extracted View
+
+::: {.small-note}
+`bp_one_view` keeps only the PC 1 – PC 3 display pulled from the multi-display object.
+:::
+
+```{r extracted-view-plot}
+stage(bp_one_view, height = 530)
+```
+
+## Fit-Panel Layout {.smaller}
+
+`overlay_fit()` stores a plotting preference: render the fit summaries as an
+overlay across the full plot width rather than in a side panel.
+
+```{r overlay-fit}
+#| results: hide
+bp_overlay <- bp_multi |>
+  overlay_fit()
+```
+
+Open the **fit panel** from the widget toolbar to see the effect.
+
+## Overlay Fit
+
+```{r overlay-fit-plot}
+stage(bp_overlay, height = 560)
+```
+
+# biplotEZ Wrapper {.divider background-color="#D95F02"}
+
+[Part 2 — when you already have a biplotEZ pipeline]{.divider-tag}
+
+## Wrapping a biplotEZ Pipeline {.smaller}
+
+Use `wrap_bipl5()` when your starting point is an existing `biplotEZ` pipeline.
+
+```{r wrapper-pca-build}
+#| results: hide
+bp_ez_pca <- biplotEZ::biplot(iris[, 1:4]) |>
+  biplotEZ::PCA() |>
+  wrap_bipl5()
+```
+
+`wrap_bipl5()` consumes the `biplotEZ` object and returns a `bipl5` object —
+ready for `plot()` and every traversing function.
+
+## Wrapped PCA Biplot
+
+```{r wrapper-pca-plot}
+stage(bp_ez_pca, height = 560)
+```
+
+## Wrapped CVA — Build {.smaller}
+
+The same wrapper handles a CVA biplot; just pass the class variable.
+
+```{r wrapper-cva-build}
+#| results: hide
+bp_ez_cva <- biplotEZ::biplot(iris[, 1:4]) |>
+  biplotEZ::CVA(classes = iris$Species) |>
+  wrap_bipl5()
+```
+
+## Wrapped CVA Biplot
+
+```{r wrapper-cva-plot}
+stage(bp_ez_cva, height = 560)
+```
+
+## Regression Biplot — Build {.smaller}
+
+A regression biplot calibrates axes onto an **externally supplied** sample map.
+Here the target is a Sammon scaling of the `rock` data.
+
+```{r wrapper-reg-build}
+#| results: hide
+target_map <- MASS::sammon(dist(scale(rock)), trace = FALSE)$points
+
+bp_ez_reg <- biplotEZ::biplot(rock) |>
+  biplotEZ::regress(Z = target_map) |>
+  wrap_bipl5()
+```
+
+## Regression Biplot
+
+```{r wrapper-reg-plot}
+stage(bp_ez_reg, height = 560)
+```
+
+## Spline Axes — Build {.smaller}
+
+`PCO(axes = "splines")` calibrates **non-linear** axes — useful when a straight
+axis would distort how a variable maps onto the display.
+
+```{r wrapper-spline-build}
+#| results: hide
+bp_ez_spline <- biplotEZ::biplot(rock, scale = TRUE) |>
+  biplotEZ::PCO(axes = "splines") |>
+  wrap_bipl5()
+```
+
+## Spline-Axis Biplot
+
+```{r wrapper-spline-plot}
+stage(bp_ez_spline, height = 560)
+```
+
+## Alpha-Bag Biplot — Build {.smaller}
+
+`biplotEZ` enhancements survive the wrap. Adding `alpha.bags()` to the pipeline
+draws an **alpha bag** around each group, and `wrap_bipl5()` carries it through.
+
+```{r wrapper-bags-build}
+#| results: hide
+bp_ez_bags <- biplotEZ::biplot(iris[, 1:4], group.aes = iris$Species) |>
+  biplotEZ::PCA() |>
+  biplotEZ::alpha.bags() |>
+  wrap_bipl5()
+```
+
+## Alpha-Bag Biplot
+
+```{r wrapper-bags-plot}
+stage(bp_ez_bags, height = 560)
+```
+
+# Wrap-Up {.divider background-color="#7570B3"}
+
+[What to demonstrate live]
+
+## What to Show Live {.smaller}
+
+- **Hover** over observations to see the original `iris` measurements.
+- Use the **dropdown** to switch between stored eigenvector displays.
+- **Click** an observation to draw prediction lines onto the calibrated axes.
+- Use the **legend** to toggle sample groups, axes, translated axes and densities.
+- Open the **fit panel** on PCA biplots for supporting summaries.
+
+## Takeaway
+
+::: {.takeaway}
+`plot()` returns a **Plotly htmlwidget**, so the same `bipl5` object works
+interactively in RStudio, saves as standalone HTML, embeds in Quarto
+documents, and presents in a Quarto slide deck — from one code path.
+:::
+
+. . .
+
+::: {.small-note}
+Pin the widget height (here via the `stage()` helper) so it always fits the slide.
+:::
+
+```{r session-info}
+#| echo: false
+#| results: hide
+invisible(sessionInfo())
+```

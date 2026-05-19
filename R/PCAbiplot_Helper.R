@@ -135,6 +135,99 @@ check_inside_circle<-function(ticks,r,thetas){
   return(ticks)
 }
 
+#' Extend evenly spaced linear-axis ticks to the bounding circle
+#'
+#' @param ticks list of tick marks
+#' @param r radius of the bounding circle
+#' @param tol numeric tolerance for circle inclusion and zero-length steps
+#'
+#' @return list of tick marks extended toward the bounding circle
+#' @noRd
+extend_linear_axis_ticks<-function(ticks,r,tol=1e-10){
+  lapply(ticks, function(axis_ticks) {
+    if (is.null(axis_ticks)) {
+      return(axis_ticks)
+    }
+
+    axis_ticks <- as.matrix(axis_ticks)
+    if (nrow(axis_ticks) < 2 || ncol(axis_ticks) < 3) {
+      return(axis_ticks)
+    }
+
+    inside <- axis_ticks[, 1]^2 + axis_ticks[, 2]^2 <= r^2 + tol
+    if (!all(inside)) {
+      return(axis_ticks)
+    }
+
+    step_xy <- apply(diff(axis_ticks[, 1:2, drop = FALSE]), 2, stats::median)
+    step_tick <- stats::median(diff(axis_ticks[, 3]))
+
+    if (
+      any(!is.finite(step_xy)) ||
+      !is.finite(step_tick) ||
+      sqrt(sum(step_xy^2)) < tol ||
+      abs(step_tick) < tol
+    ) {
+      return(axis_ticks)
+    }
+
+    prepend <- list()
+    current <- axis_ticks[1, , drop = FALSE]
+    repeat {
+      candidate <- current
+      candidate[1, 1:2] <- candidate[1, 1:2] - step_xy
+      candidate[1, 3] <- candidate[1, 3] - step_tick
+
+      prepend[[length(prepend) + 1]] <- candidate
+
+      if (sum(candidate[1, 1:2]^2) > r^2 + tol) {
+        break
+      }
+
+      current <- candidate
+    }
+
+    append <- list()
+    current <- axis_ticks[nrow(axis_ticks), , drop = FALSE]
+    repeat {
+      candidate <- current
+      candidate[1, 1:2] <- candidate[1, 1:2] + step_xy
+      candidate[1, 3] <- candidate[1, 3] + step_tick
+
+      append[[length(append) + 1]] <- candidate
+
+      if (sum(candidate[1, 1:2]^2) > r^2 + tol) {
+        break
+      }
+
+      current <- candidate
+    }
+
+    pieces <- c(
+      if (length(prepend) > 0) rev(prepend) else list(),
+      list(axis_ticks),
+      append
+    )
+
+    do.call(rbind, pieces)
+  })
+}
+
+#' Prepare linear-axis ticks for plotting against the bounding circle
+#'
+#' @param ticks list of tick marks
+#' @param r radius of the bounding circle
+#'
+#' @return list of tick marks extended and trimmed to the circle
+#' @noRd
+prepare_linear_axis_ticks<-function(ticks,r){
+  check_inside_circle(
+    extend_linear_axis_ticks(ticks, r = r),
+    r = r,
+    thetas = NULL
+  )
+}
+
 
 
 

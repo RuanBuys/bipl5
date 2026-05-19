@@ -68,16 +68,19 @@ test_that("observation, class mean, polygon, and vector mdsDisplay layers have s
 
   mdsDisplay <- bipl5:::insert_vector_annots_mdsDisplay(
     mdsDisplay,
-    list(V = x$Vr, x = x$X, p = x$p)
+    list(V = x$Vr, x = x$X, p = x$p, Z = x$Z)
   )
+  alpha <- max(sqrt(x$Z[, 1]^2 + x$Z[, 2]^2))
   expect_length(mdsDisplay$layout$annotations, x$p)
   expect_identical(unlist(mdsDisplay$layout$annotations[[1]]$meta), "vecload")
+  expect_equal(mdsDisplay$layout$annotations[[1]]$ax, alpha * x$Vr[1, 1])
+  expect_equal(mdsDisplay$layout$annotations[[1]]$ay, alpha * x$Vr[1, 2])
 
   extra_ann <- bipl5:::insert_vector_annots_mdsDisplay(
     bipl5:::mdsDisplay_new(),
-    list(V = x$Vr, x = x$X, p = x$p),
-    PC13 = list(V = x$Vr, x = x$X, p = x$p),
-    PC23 = list(V = x$Vr, x = x$X, p = x$p)
+    list(V = x$Vr, x = x$X, p = x$p, Z = x$Z),
+    PC13 = list(V = x$Vr, x = x$X, p = x$p, Z = x$Z),
+    PC23 = list(V = x$Vr, x = x$X, p = x$p, Z = x$Z)
   )
   expect_length(extra_ann$layout$annotations, 3 * x$p)
 })
@@ -105,6 +108,21 @@ test_that("fit panel mdsDisplay builders return plotly-ready trace lists", {
   expect_identical(short_scree[[1]]$x, 1:3)
 })
 
+test_that("near-zero axis ticks are replaced with exact zero", {
+  z_axes <- list(
+    cbind(1:3, 4:6, c(-1e-17, 0.25, 1e-18)),
+    cbind(1:2, 3:4, c(-0.5, 1e-13))
+  )
+
+  cleaned <- bipl5:::zero_to_near_zero(z_axes)
+
+  expect_identical(cleaned[[1]][1, 3], 0)
+  expect_identical(cleaned[[1]][2, 3], 0.25)
+  expect_identical(cleaned[[1]][3, 3], 0)
+  expect_identical(cleaned[[2]][1, 3], -0.5)
+  expect_identical(cleaned[[2]][2, 3], 0)
+})
+
 test_that("linear axes, TDA, fit table, and slider builders enrich mdsDisplays", {
   x <- prepared_pca_ez()
   z_axes <- biplotEZ::axes_coordinates(x)
@@ -115,10 +133,14 @@ test_that("linear axes, TDA, fit table, and slider builders enrich mdsDisplays",
   expect_true(any(trace_meta_tags(linear$mdsDisplay$trace_data) == "OuterCircle"))
   expect_true(any(vapply(linear$mdsDisplay$layout$annotations, function(ann) identical(unlist(ann$meta), "Ax"), logical(1))))
 
-  unit <- bipl5:::insert_unit_circle_mdsDisplay(linear$mdsDisplay, visible = TRUE)
-  expect_true(any(trace_meta_tags(unit$trace_data) == "veccircle"))
-
-  tda <- bipl5:::add_TDA_mdsDisplay(unit, z_axes, x, Z = x$Z, group = x$group.aes, Col = x$samples$col)
+  tda <- bipl5:::add_TDA_mdsDisplay(
+    linear$mdsDisplay,
+    z_axes,
+    x,
+    Z = x$Z,
+    group = x$group.aes,
+    Col = x$samples$col
+  )
   expect_named(tda, c("mdsDisplay", "m", "shift"))
   expect_length(tda$m, x$p)
   metas <- trace_meta_tags(tda$mdsDisplay$trace_data)
@@ -160,7 +182,11 @@ test_that("build_one_mdsDisplay composes a complete PCA and CVA mdsDisplay", {
   expect_s3_class(payl, "bipl5_mdsDisplay")
   expect_s3_class(payl$Data, "bipl5_data")
   expect_true(any(trace_meta_tags(payl$mdsDisplay$trace_data) == "polygon"))
-  expect_true(any(trace_meta_tags(payl$mdsDisplay$trace_data) == "veccircle"))
+  expect_true(any(vapply(
+    payl$mdsDisplay$layout$annotations,
+    function(ann) identical(unlist(ann$meta), "vecload"),
+    logical(1)
+  )))
 
   cva <- prepared_cva_ez()
   cva_no_means <- cva
@@ -180,6 +206,10 @@ test_that("build_one_mdsDisplay composes a complete PCA and CVA mdsDisplay", {
     vec_dis = FALSE
   )
   cva_metas <- trace_meta_tags(cva_payl$mdsDisplay$trace_data)
-  expect_false(any(cva_metas == "veccircle"))
   expect_true(any(cva_metas == "ClassMean"))
+  expect_false(any(vapply(
+    cva_payl$mdsDisplay$layout$annotations,
+    function(ann) identical(unlist(ann$meta), "vecload"),
+    logical(1)
+  )))
 })

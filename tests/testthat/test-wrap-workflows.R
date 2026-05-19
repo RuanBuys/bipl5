@@ -32,7 +32,22 @@ test_that("wrap_bipl5.CVA builds CV registries and omits fit measures", {
   expect_gt(length(built$x$data), 0)
 })
 
-test_that("plot.bipl5_biplot exposes mdsDisplays and fit measures to JS hooks", {
+test_that("overlay_fit stores a plot default without mutating the original object", {
+  bp <- wrapped_pca()
+  reg_bp <- wrap_bipl5(regress_ez())
+  overlaid <- overlay_fit(bp)
+  panel <- overlay_fit(overlaid, overlay = FALSE)
+
+  expect_null(bp$meta$plot_options)
+  expect_identical(overlaid$meta$plot_options$fit_display, "overlay")
+  expect_identical(panel$meta$plot_options$fit_display, "panel")
+  expect_error(
+    overlay_fit(reg_bp),
+    "requires a biplot with fit measures"
+  )
+})
+
+test_that("plot.bipl5_biplot exposes fit display config and respects overrides", {
   bp <- wrapped_pca()
   widget <- plot(bp)
   hook_data <- widget$jsHooks$render[[1]]$data
@@ -42,10 +57,46 @@ test_that("plot.bipl5_biplot exposes mdsDisplays and fit measures to JS hooks", 
   expect_true(is.null(hook_data$mdsDisplays[["PC 1 & 2"]]$trace_data))
   expect_false(is.null(hook_data$mdsDisplays[["PC 1 & 3"]]$trace_data))
   expect_named(hook_data$fm_mdsDisplay, c("CumPred", "CumAd", "VarExp", "Scree"))
+  expect_identical(hook_data$fitDisplay$mode, "panel")
+  expect_named(hook_data$fitDisplay, c("mode", "panel", "overlay"))
+  expect_identical(hook_data$fitDisplay$panel$xaxis_domain, c(0, 0.5))
+  expect_identical(hook_data$fitDisplay$overlay$xaxis3_domain, c(0, 1))
+  expect_identical(hook_data$fitDisplay$overlay$yaxis3_domain, c(0.15, 0.85))
+  expect_identical(hook_data$fitDisplay$overlay$yaxis3_side, "left")
+  expect_identical(hook_data$fitDisplay$overlay$yaxis3_position, 0)
+
+  override_widget <- plot(bp, fit_display = "overlay")
+  expect_identical(
+    override_widget$jsHooks$render[[1]]$data$fitDisplay$mode,
+    "overlay"
+  )
+
+  stored_widget <- plot(overlay_fit(bp))
+  expect_identical(
+    stored_widget$jsHooks$render[[1]]$data$fitDisplay$mode,
+    "overlay"
+  )
 
   built <- build_plotly(widget)
   expect_gt(length(built$x$data), 0)
   expect_gt(length(built$x$layout$annotations), 0)
+})
+
+test_that("overlay_fit works for scale_mds PCA biplots and plot override wins", {
+  bp <- init_biplot(iris) |>
+    scale_mds(type = "pca", eigenvectors = c(1, 2))
+  reg_bp <- wrap_bipl5(regress_ez())
+
+  stored <- overlay_fit(bp)
+  expect_identical(
+    plot(stored)$jsHooks$render[[1]]$data$fitDisplay$mode,
+    "overlay"
+  )
+  expect_identical(
+    plot(stored, fit_display = "panel")$jsHooks$render[[1]]$data$fitDisplay$mode,
+    "panel"
+  )
+  expect_silent(plot(reg_bp, fit_display = "overlay"))
 })
 
 test_that("subset_biplot preserves order and matching fit tables", {

@@ -72,6 +72,7 @@ plot_scaffolding <- function(
       ),
       yaxis3 = list(
         zeroline = TRUE,
+        anchor = "free",
         side = "left",
         position = 0.65,
         showgrid = TRUE,
@@ -87,6 +88,7 @@ plot_scaffolding <- function(
           y = 0.8,
           type = "buttons",
           x = 0,
+          pad = list(r = 0), # JS bumps this to 60 only while overlay fit measures are open
           showactive = TRUE,
           active = -1,
           buttons = list(
@@ -127,6 +129,7 @@ plot_scaffolding <- function(
         list(
           type = "dropdown",
           x = 0,
+          pad = list(r = 0), # JS bumps this to 60 only while overlay fit measures are open
           visible = PC_toggle,
           name = "PC_toggle",
           buttons = list(
@@ -350,7 +353,9 @@ is_correlation <- function(x) {
 #' @return Character vector
 #' @noRd
 fit_quality <- function(eigval, basis, dim_prefix = "PC") {
-  if (is.null(eigval)) return("")
+  if (is.null(eigval)) {
+    return("")
+  }
   fit.quality <- paste0(
     "Quality of display = ",
     round(
@@ -360,11 +365,13 @@ fit_quality <- function(eigval, basis, dim_prefix = "PC") {
     "%",
     " = ",
     round((eigval[basis[1]] / sum(eigval)) * 100, digits = 2),
-    "% (", dim_prefix,
+    "% (",
+    dim_prefix,
     basis[1],
     ") + ",
     round((eigval[basis[2]] / sum(eigval)) * 100, digits = 2),
-    "% (", dim_prefix,
+    "% (",
+    dim_prefix,
     basis[2],
     ")"
   )
@@ -389,11 +396,11 @@ regression_fit_components <- function(X, Z) {
 
   if (
     is.null(dim(X)) ||
-    is.null(dim(Z)) ||
-    nrow(X) == 0L ||
-    nrow(Z) == 0L ||
-    nrow(X) != nrow(Z) ||
-    ncol(Z) == 0L
+      is.null(dim(Z)) ||
+      nrow(X) == 0L ||
+      nrow(Z) == 0L ||
+      nrow(X) != nrow(Z) ||
+      ncol(Z) == 0L
   ) {
     return(list(total_ss = 0, overall_ss = 0, dim_ss = numeric(0)))
   }
@@ -454,8 +461,8 @@ regression_fit_quality <- function(
 
   if (
     n_terms == 0L ||
-    !is.finite(fit_comp$total_ss) ||
-    fit_comp$total_ss <= 0
+      !is.finite(fit_comp$total_ss) ||
+      fit_comp$total_ss <= 0
   ) {
     return("")
   }
@@ -463,28 +470,36 @@ regression_fit_quality <- function(
   dim_pct <- 100 * fit_comp$dim_ss[seq_len(n_terms)] / fit_comp$total_ss
   overall_pct <- 100 * fit_comp$overall_ss / fit_comp$total_ss
 
-  labels <- vapply(seq_len(n_terms), function(i) {
-    if (i == 1L) {
-      return("R_1^2")
-    }
+  labels <- vapply(
+    seq_len(n_terms),
+    function(i) {
+      if (i == 1L) {
+        return("R_1^2")
+      }
 
-    paste0(
-      "R_{",
-      i,
-      "|",
-      paste(seq_len(i - 1L), collapse = ","),
-      "}^2"
-    )
-  }, character(1))
+      paste0(
+        "R_{",
+        i,
+        "|",
+        paste(seq_len(i - 1L), collapse = ","),
+        "}^2"
+      )
+    },
+    character(1)
+  )
 
-  pieces <- vapply(seq_len(n_terms), function(i) {
-    paste0(
-      round(dim_pct[i], digits),
-      "% (",
-      labels[i],
-      ")"
-    )
-  }, character(1))
+  pieces <- vapply(
+    seq_len(n_terms),
+    function(i) {
+      paste0(
+        round(dim_pct[i], digits),
+        "% (",
+        labels[i],
+        ")"
+      )
+    },
+    character(1)
+  )
 
   paste0(
     "R^2_disp = ",
@@ -508,8 +523,8 @@ regression_fit_quality_tex <- function(X, Z, digits = 2) {
 
   if (
     n_terms == 0L ||
-    !is.finite(fit_comp$total_ss) ||
-    fit_comp$total_ss <= 0
+      !is.finite(fit_comp$total_ss) ||
+      fit_comp$total_ss <= 0
   ) {
     return("")
   }
@@ -517,28 +532,36 @@ regression_fit_quality_tex <- function(X, Z, digits = 2) {
   dim_pct <- 100 * fit_comp$dim_ss / fit_comp$total_ss
   overall_pct <- 100 * fit_comp$overall_ss / fit_comp$total_ss
 
-  labels <- vapply(seq_len(n_terms), function(i) {
-    if (i == 1L) {
-      return("R_1^2")
-    }
+  labels <- vapply(
+    seq_len(n_terms),
+    function(i) {
+      if (i == 1L) {
+        return("R_1^2")
+      }
 
-    paste0(
-      "R_{",
-      i,
-      " \\\\mid ",
-      paste(seq_len(i - 1L), collapse = ","),
-      "}^2"
-    )
-  }, character(1))
+      paste0(
+        "R_{",
+        i,
+        " \\\\mid ",
+        paste(seq_len(i - 1L), collapse = ","),
+        "}^2"
+      )
+    },
+    character(1)
+  )
 
-  pieces <- vapply(seq_len(n_terms), function(i) {
-    paste0(
-      round(dim_pct[i], digits),
-      "\\%\\,(",
-      labels[i],
-      ")"
-    )
-  }, character(1))
+  pieces <- vapply(
+    seq_len(n_terms),
+    function(i) {
+      paste0(
+        round(dim_pct[i], digits),
+        "\\%\\,(",
+        labels[i],
+        ")"
+      )
+    },
+    character(1)
+  )
 
   plotly::TeX(
     paste0(

@@ -1,0 +1,133 @@
+// Include theme-specific fonts
+
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Quicksand&family=Raleway:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Quicksand&family=Raleway:wght@500&family=Roboto+Mono:wght@300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Mono:wght@300&family=Quicksand&family=Raleway:wght@500&family=Roboto+Mono:wght@300&display=swap');
+
+
+/*-- scss:defaults --*/
+// Override theme settings (see ../template/settings.scss)
+// Base settings for all themes that can optionally be
+// overridden by the super-theme
+
+// Background of the presentation
+$backgroundColor: #FFFFFF;
+
+// Primary/body text
+$mainFont: 'Quicksand', sans-serif;
+$mainFontSize: 20px;
+$mainColor: rgb(77,83,86);
+
+// Vertical spacing between blocks of text
+$blockMargin: 15px;
+
+// Headings
+$headingMargin: 0 0 $blockMargin 0;
+$headingFont: 'Raleway', sans-serif;
+$headingColor: rgb(183,153,98);
+$headingLineHeight: 1.1;
+$headingLetterSpacing: normal;
+$headingTextTransform: none;
+$headingTextShadow: none;
+$headingFontWeight: normal;
+$heading1TextShadow: $headingTextShadow;
+
+$heading1Size: 3.00em;
+$heading2Size: 2.11em;
+$heading3Size: 1.55em;
+$heading4Size: 1.00em;
+
+// Code
+$codeFont: 'Noto Sans Mono', monospace;
+$codeFontSize: 50em;
+$code-block-font-size: 1em;
+$code-color: #82ccae;
+$code-block-bg: rgb(255, 255, 255);
+
+// Links
+$linkcolor: rgb(44,204,211);
+
+/* unvisited link */
+a:link {
+  color: rgb(44,204,211) ;
+}
+
+/* visited link */
+a:visited {
+  color:rgb(44,204,211);
+}
+
+// Text selection
+$selectionBackgroundColor: rgb(44,204,211);
+$selectionColor: #FFFFFF;
+
+// start using css here
+h1 {
+  font-family: 'Raleway', sans-serif;
+  color: rgb(183,153,98);
+  font-size: 72px;
+  font-weight: bold;
+}
+
+#title-slide > h1 {
+  font-family: 'Raleway', sans-serif;
+  color: rgb(100,51,53);
+  font-size: 72px;
+  font-weight: bold;
+}
+
+#title-slide .subtitle {
+  font-family: 'Raleway', sans-serif;
+  color: rgb(100,51,53);
+  position: relative;
+  font-weight: medium;
+}
+
+#title-slide .author {
+  font-family: 'Raleway', sans-serif;
+  color: rgb(100,51,53);
+  position: relative;
+  font-weight: medium;
+}
+
+#title-slide .date {
+  font-family: 'Raleway', sans-serif;
+  color: rgb(166,10,61);
+  position: relative;
+  font-weight: medium;
+}
+
+#title-slide {
+  top: 0 !important;
+}
+
+#title-slide > .author:first-of-type {
+  margin-top: 100px;
+}
+
+#title-slide > .footer {
+  color: rgba(77,83,86);
+}
+
+#remark-code {
+  font-size: 50px;
+}
+
+.reveal .slide-logo {
+  height: 100px !important;
+  width: 90px !important;
+  max-width: unset !important;
+  max-height: unset !important;
+}
+
+.reveal .slides section {
+  margin-bottom: 10px; /* Decrease the space between fragments */
+}
+
+.bibliography {
+  font-size: 120px;  /* Increase the font size */
+  line-height: 1.6;  /* Adjust line height for readability */
+  font-family: "Raleway", sans-serif;
+  color: #61223b;
+}

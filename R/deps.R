@@ -41,6 +41,8 @@ bipl5_dependency <- function() {
 #' @param cols Axis color vector used for prediction-label styling.
 #' @param mdsDisplay Named list of precomputed PC mdsDisplays.
 #' @param fm_mdsDisplay List of precomputed fit-panel traces.
+#' @param fit_display_cfg Fit-measure display configuration passed through to
+#'   JavaScript.
 #' @param ax_slider Optional slider configuration (currently reserved for compatibility).
 #' @param initial_pc_key Character; the mdsDisplay key initially rendered in the
 #'   plotly widget (default \code{"PC 1 & 2"}).  Passed to JavaScript so that
@@ -55,6 +57,7 @@ insert_linear_js_v1 <- function(
   cols,
   mdsDisplay,
   fm_mdsDisplay,
+  fit_display_cfg = NULL,
   ax_slider = NULL,
   initial_pc_key = "PC 1 & 2"
 ) {
@@ -85,6 +88,7 @@ insert_linear_js_v1 <- function(
       class_mean_hover = FALSE,
       mdsDisplays = mdsDisplay,
       fm_mdsDisplay = fm_mdsDisplay,
+      fitDisplay = fit_display_cfg,
       ax_slider = ax_slider,
       initialPCKey = initial_pc_key
     )
