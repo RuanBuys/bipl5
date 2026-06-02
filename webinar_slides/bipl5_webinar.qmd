@@ -368,31 +368,3 @@ stage(bp_ez_bags, height = 560)
 # Wrap-Up {.divider background-color="#7570B3"}
 
 [What to demonstrate live]
-
-## What to Show Live {.smaller}
-
-- **Hover** over observations to see the original `iris` measurements.
-- Use the **dropdown** to switch between stored eigenvector displays.
-- **Click** an observation to draw prediction lines onto the calibrated axes.
-- Use the **legend** to toggle sample groups, axes, translated axes and densities.
-- Open the **fit panel** on PCA biplots for supporting summaries.
-
-## Takeaway
-
-::: {.takeaway}
-`plot()` returns a **Plotly htmlwidget**, so the same `bipl5` object works
-interactively in RStudio, saves as standalone HTML, embeds in Quarto
-documents, and presents in a Quarto slide deck — from one code path.
-:::
-
-. . .
-
-::: {.small-note}
-Pin the widget height (here via the `stage()` helper) so it always fits the slide.
-:::
-
-```{r session-info}
-#| echo: false
-#| results: hide
-invisible(sessionInfo())
-```
