@@ -175,8 +175,12 @@ bp_standalone <- init_biplot(iris) |>
 
 ## The Standalone Plot
 
+```r
+plot(bp_standalone)
+```
+
 ```{r standalone-plot}
-#| echo: true
+#| echo: false
 stage(bp_standalone, height = 560)
 ```
 
@@ -203,7 +207,12 @@ Colour and plotting character are set per group from the `Species` factor.
 
 ## Styled Biplot
 
+```r
+plot(bp_species)
+```
+
 ```{r styled-plot}
+#| echo: false
 stage(bp_species, height = 560)
 ```
 
@@ -229,7 +238,12 @@ bp_dual <- init_biplot(iris_banded) |>
 
 ## Two-Variable Stratification
 
+```r
+plot(bp_dual)
+```
+
 ```{r dual-stratify-plot}
+#| echo: false
 stage(bp_dual, height = 560)
 ```
 
@@ -252,7 +266,12 @@ names(bp_multi$meta$pc_info)
 Switch eigenvector pairs live with the dropdown in the top-left of the widget.
 :::
 
+```r
+plot(bp_multi)
+```
+
 ```{r multi-display-plot}
+#| echo: false
 stage(bp_multi, height = 530)
 ```
 
@@ -274,7 +293,12 @@ head(iris_scores, 5)
 `bp_one_view` keeps only the PC 1 – PC 3 display pulled from the multi-display object.
 :::
 
+```r
+plot(bp_one_view)
+```
+
 ```{r extracted-view-plot}
+#| echo: false
 stage(bp_one_view, height = 530)
 ```
 
@@ -293,7 +317,12 @@ Open the **fit panel** from the widget toolbar to see the effect.
 
 ## Overlay Fit
 
+```r
+plot(bp_overlay)
+```
+
 ```{r overlay-fit-plot}
+#| echo: false
 stage(bp_overlay, height = 560)
 ```
 
@@ -317,7 +346,12 @@ ready for `plot()` and every traversing function.
 
 ## Wrapped PCA Biplot
 
+```r
+plot(bp_ez_pca)
+```
+
 ```{r wrapper-pca-plot}
+#| echo: false
 stage(bp_ez_pca, height = 560)
 ```
 
@@ -334,7 +368,12 @@ bp_ez_cva <- biplotEZ::biplot(iris[, 1:4]) |>
 
 ## Wrapped CVA Biplot
 
+```r
+plot(bp_ez_cva)
+```
+
 ```{r wrapper-cva-plot}
+#| echo: false
 stage(bp_ez_cva, height = 560)
 ```
 
@@ -354,7 +393,12 @@ bp_ez_reg <- biplotEZ::biplot(rock) |>
 
 ## Regression Biplot
 
+```r
+plot(bp_ez_reg)
+```
+
 ```{r wrapper-reg-plot}
+#| echo: false
 stage(bp_ez_reg, height = 560)
 ```
 
@@ -372,7 +416,12 @@ bp_ez_spline <- biplotEZ::biplot(rock, scale = TRUE) |>
 
 ## Spline-Axis Biplot
 
+```r
+plot(bp_ez_spline)
+```
+
 ```{r wrapper-spline-plot}
+#| echo: false
 stage(bp_ez_spline, height = 560)
 ```
 
@@ -391,7 +440,12 @@ bp_ez_bags <- biplotEZ::biplot(iris[, 1:4], group.aes = iris$Species) |>
 
 ## Alpha-Bag Biplot
 
+```r
+plot(bp_ez_bags)
+```
+
 ```{r wrapper-bags-plot}
+#| echo: false
 stage(bp_ez_bags, height = 560)
 ```
 
@@ -418,7 +472,7 @@ documents, and presents in a Quarto slide deck — from one code path.
 . . .
 
 ::: {.small-note}
-Pin the widget height (here via the `stage()` helper) so it always fits the slide.
+Pin the widget height so it always fits the slide.
 :::
 
 ```{r session-info}
