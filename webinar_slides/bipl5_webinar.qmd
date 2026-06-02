@@ -1,7 +1,7 @@
 ---
 title: "**bipl5**"
 subtitle: "An R Package for Reactive Biplots<br><br><p style='color:white;'><b>Ruan Buys<br>Sugnet Lubbe<br>Luca Steyn</b></p>"
-date: "19 May 2026"
+date: "2 June 2026"
 title-slide-attributes:
   data-background-color: "rgb(255,255,255)"
   data-background-image: "background.jpg"
@@ -99,8 +99,6 @@ All examples use the `iris` data set.
       <li><code>init_biplot()</code></li>
       <li><code>scale_mds()</code></li>
       <li><code>format_samples()</code></li>
-      <li><code>colorpal()</code></li>
-      <li><code>Symbol_List()</code></li>
     </ul>
   </div>
   <div class="function-card">
@@ -127,21 +125,53 @@ All examples use the `iris` data set.
 
 [Part 1 — building a biplot from raw data]{.divider-tag}
 
-## Build the Biplot {.smaller .scrollable}
+## Build the Biplot {.smaller}
 
 `init_biplot()` ingests the data and `scale_mds()` chooses the method and
 subspace. Grouping aesthetics are set in the pipeline with `format_samples()`.
 
+```{=html}
+<style>
+.reveal .code-build { justify-items: start; align-items: start; }
+.reveal .code-build > * { grid-area: 1 / 1; width: 100%; margin: 0; }
+.reveal .code-build pre { margin: 0; }
+</style>
+```
+
 ```{r standalone-build}
+#| echo: false
 library(bipl5)
 library(biplotEZ)
 
 bp_standalone <- init_biplot(iris) |>
   scale_mds(type = "pca", eigenvectors = c(1, 2)) |>
   format_samples(stratify = "col", by = Species, col = species_cols)
-
-bp_standalone
 ```
+
+::: {.r-stack .code-build}
+
+::: {.fragment .fade-in-then-out}
+```r
+bp_standalone <- init_biplot(iris)
+```
+:::
+
+::: {.fragment .fade-in-then-out}
+```r
+bp_standalone <- init_biplot(iris) |>
+  scale_mds(type = "pca", eigenvectors = c(1, 2))
+```
+:::
+
+::: {.fragment}
+```r
+bp_standalone <- init_biplot(iris) |>
+  scale_mds(type = "pca", eigenvectors = c(1, 2)) |>
+  format_samples(stratify = "col", by = Species, col = species_cols)
+```
+:::
+
+:::
 
 ## The Standalone Plot
 
