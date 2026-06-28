@@ -106,6 +106,23 @@ test_that("mdsDisplay constructors and fit subtree printers emit readable tree o
   expect_null(cva_subset$fit_measures)
 })
 
+test_that("tree printers can use ASCII symbols in non-UTF output", {
+  old <- options(crayon.enabled = FALSE, bipl5.unicode = FALSE)
+  on.exit(options(old), add = TRUE)
+
+  tree <- bipl5:::tree_symbols()
+  expect_identical(tree$branch, "+-- ")
+  expect_identical(tree$last, "`-- ")
+  expect_identical(tree$pipe, "|   ")
+
+  bp <- wrapped_pca()
+  out <- paste(capture.output(print(bp)), collapse = "\n")
+
+  expect_match(out, "\\+-- mdsDisplay_12 \\[PC 1 & 2\\]")
+  expect_match(out, "`-- fit_measures")
+  expect_false(grepl("<U\\+", out))
+})
+
 test_that(".onAttach emits the package startup message", {
   expect_message(
     bipl5:::.onAttach("fake-lib", "bipl5"),

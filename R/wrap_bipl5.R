@@ -2205,8 +2205,9 @@ print.bipl5_biplot <- function(x, ...) {
     pname <- all_mdsDisplays[i]
     payl <- x[[pname]]
     is_last <- (j == length(present) && is.null(x$fit_measures))
-    branch <- if (is_last) "\u2514\u2500\u2500 " else "\u251C\u2500\u2500 "
-    pipe <- if (is_last) "    " else "\u2502   "
+    tree <- tree_symbols()
+    branch <- if (is_last) tree$last else tree$branch
+    pipe <- if (is_last) tree$space else tree$pipe
 
     cat(
       branch,
@@ -2217,13 +2218,13 @@ print.bipl5_biplot <- function(x, ...) {
     )
 
     # Data sub-element
-    print_data_subtree(payl$Data, pipe)
+    print_data_subtree(payl$Data, pipe, tree)
 
     # Traces
     n_traces <- length(payl$mdsDisplay$trace_data)
     cat(
       pipe,
-      "\u251C\u2500\u2500 ",
+      tree$branch,
       green("trace_data"),
       silver(paste0("  [", n_traces, " traces]")),
       "\n",
@@ -2234,7 +2235,7 @@ print.bipl5_biplot <- function(x, ...) {
     n_ann <- length(payl$mdsDisplay$layout$annotations)
     cat(
       pipe,
-      "\u2514\u2500\u2500 ",
+      tree$last,
       green("annotations"),
       silver(paste0("  [", n_ann, " items]")),
       "\n",
@@ -2244,14 +2245,15 @@ print.bipl5_biplot <- function(x, ...) {
 
   # Fit measures
   if (!is.null(x$fit_measures)) {
+    tree <- tree_symbols()
     cat(
-      "\u2514\u2500\u2500 ",
+      tree$last,
       yellow(bold("fit_measures")),
       silver(" <bipl5_fitmeasures>"),
       "\n",
       sep = ""
     )
-    print_fitmeasures_subtree(x$fit_measures, "    ")
+    print_fitmeasures_subtree(x$fit_measures, tree$space, tree)
   }
 
   invisible(x)
@@ -2271,6 +2273,7 @@ print.bipl5_mdsDisplay <- function(x, ...) {
   cyan <- crayon::cyan
   green <- crayon::green
   silver <- crayon::silver
+  tree <- tree_symbols()
 
   cat(bold(cyan("bipl5_mdsDisplay")), "\n")
   if (!is.null(x$fit_qual)) {
@@ -2278,12 +2281,12 @@ print.bipl5_mdsDisplay <- function(x, ...) {
   }
 
   # Data
-  print_data_subtree(x$Data, "")
+  print_data_subtree(x$Data, "", tree)
 
   # Traces
   n_traces <- length(x$mdsDisplay$trace_data)
   cat(
-    "\u251C\u2500\u2500 ",
+    tree$branch,
     green("trace_data"),
     silver(paste0("  [", n_traces, " traces]")),
     "\n",
@@ -2293,7 +2296,7 @@ print.bipl5_mdsDisplay <- function(x, ...) {
   # Annotations
   n_ann <- length(x$mdsDisplay$layout$annotations)
   cat(
-    "\u2514\u2500\u2500 ",
+    tree$last,
     green("annotations"),
     silver(paste0("  [", n_ann, " items]")),
     "\n",
@@ -2316,24 +2319,26 @@ print.bipl5_data <- function(x, ...) {
   bold <- crayon::bold
   green <- crayon::green
   silver <- crayon::silver
+  tree <- tree_symbols()
 
   cat(bold(green("bipl5_data")), "\n")
 
   # sample_coordinates
   dims <- dim_label(x$sample_coordinates)
-  cat("\u251C\u2500\u2500 sample_coordinates", silver(dims), "\n", sep = "")
+  cat(tree$branch, "sample_coordinates", silver(dims), "\n", sep = "")
 
   # axes_coordinates
   n_ax <- length(x$axes_coordinates)
   cat(
-    "\u251C\u2500\u2500 axes_coordinates",
+    tree$branch,
+    "axes_coordinates",
     silver(paste0("  [", n_ax, " axes]")),
     "\n",
     sep = ""
   )
 
   # translated_axes_coordinates
-  cat("\u2514\u2500\u2500 translated_axes_coordinates\n", sep = "")
+  cat(tree$last, "translated_axes_coordinates\n", sep = "")
 
   invisible(x)
 }
@@ -2351,9 +2356,10 @@ print.bipl5_fitmeasures <- function(x, ...) {
   bold <- crayon::bold
   yellow <- crayon::yellow
   silver <- crayon::silver
+  tree <- tree_symbols()
 
   cat(bold(yellow("bipl5_fitmeasures")), "\n")
-  print_fitmeasures_subtree(x, "")
+  print_fitmeasures_subtree(x, "", tree)
 
   invisible(x)
 }
@@ -2361,34 +2367,60 @@ print.bipl5_fitmeasures <- function(x, ...) {
 
 # ── Print helpers (not exported) ─────────────────────────────────────────────
 
+#' Return tree drawing symbols for the current output locale
+#'
+#' @return A named list of branch and indentation strings.
+#' @noRd
+tree_symbols <- function() {
+  use_unicode <- getOption("bipl5.unicode", isTRUE(l10n_info()[["UTF-8"]]))
+
+  if (isTRUE(use_unicode)) {
+    list(
+      branch = "\u251C\u2500\u2500 ",
+      last = "\u2514\u2500\u2500 ",
+      pipe = "\u2502   ",
+      space = "    "
+    )
+  } else {
+    list(
+      branch = "+-- ",
+      last = "`-- ",
+      pipe = "|   ",
+      space = "    "
+    )
+  }
+}
+
 #' Print the nested \code{Data} branch used by the public print methods
 #'
 #' @param data A \code{bipl5_data} object.
 #' @param prefix Prefix string used to align tree branches with the caller's
 #'   current indentation level.
+#' @param tree Named list of tree drawing symbols from \code{tree_symbols()}.
 #'
 #' @return Invisibly called for its side effect of writing formatted text.
 #' @noRd
-print_data_subtree <- function(data, prefix) {
+print_data_subtree <- function(data, prefix, tree = tree_symbols()) {
   green <- crayon::green
   silver <- crayon::silver
 
   cat(
     prefix,
-    "\u251C\u2500\u2500 ",
+    tree$branch,
     green("Data"),
     silver(" <bipl5_data>"),
     "\n",
     sep = ""
   )
 
-  inner <- paste0(prefix, "\u2502   ")
+  inner <- paste0(prefix, tree$pipe)
 
   # sample_coordinates
   dims <- dim_label(data$sample_coordinates)
   cat(
     inner,
-    "\u251C\u2500\u2500 sample_coordinates",
+    tree$branch,
+    "sample_coordinates",
     silver(dims),
     "\n",
     sep = ""
@@ -2398,14 +2430,15 @@ print_data_subtree <- function(data, prefix) {
   n_ax <- length(data$axes_coordinates)
   cat(
     inner,
-    "\u251C\u2500\u2500 axes_coordinates",
+    tree$branch,
+    "axes_coordinates",
     silver(paste0("  [", n_ax, " axes]")),
     "\n",
     sep = ""
   )
 
   # translated_axes_coordinates
-  cat(inner, "\u2514\u2500\u2500 translated_axes_coordinates\n", sep = "")
+  cat(inner, tree$last, "translated_axes_coordinates\n", sep = "")
 }
 
 #' Print the fit-measures branch used by the public print methods
@@ -2413,10 +2446,11 @@ print_data_subtree <- function(data, prefix) {
 #' @param fm A \code{bipl5_fitmeasures} object.
 #' @param prefix Prefix string used to align tree branches with the caller's
 #'   current indentation level.
+#' @param tree Named list of tree drawing symbols from \code{tree_symbols()}.
 #'
 #' @return Invisibly called for its side effect of writing formatted text.
 #' @noRd
-print_fitmeasures_subtree <- function(fm, prefix) {
+print_fitmeasures_subtree <- function(fm, prefix, tree = tree_symbols()) {
   silver <- crayon::silver
   green <- crayon::green
 
@@ -2426,7 +2460,7 @@ print_fitmeasures_subtree <- function(fm, prefix) {
     n_tr <- length(fm[[nm]])
     cat(
       prefix,
-      "\u251C\u2500\u2500 ",
+      tree$branch,
       nm,
       silver(paste0("  [", n_tr, " traces]")),
       "\n",
@@ -2440,7 +2474,7 @@ print_fitmeasures_subtree <- function(fm, prefix) {
 
   for (j in seq_along(present)) {
     is_last <- (j == length(present))
-    branch <- if (is_last) "\u2514\u2500\u2500 " else "\u251C\u2500\u2500 "
+    branch <- if (is_last) tree$last else tree$branch
     cat(
       prefix,
       branch,
