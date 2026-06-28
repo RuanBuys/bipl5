@@ -26,6 +26,38 @@ format_hover_values <- function(values, digits = 4) {
   out
 }
 
+#' Format Alves direct-reading errors for the hover table
+#'
+#' Turns a numeric matrix of percentage reading errors into a character matrix
+#' with a trailing percent sign, preserving dimensions and names. Missing values
+#' (e.g. axes without a defined reading) are rendered as a dash.
+#'
+#' @param values Numeric matrix of percentage reading errors.
+#' @param digits Number of decimal places to display.
+#'
+#' @return Character matrix the same shape as \code{values}.
+#' @noRd
+format_reading_error <- function(values, digits = 2) {
+  values <- as.matrix(values)
+
+  out <- matrix(
+    "-",
+    nrow = nrow(values),
+    ncol = ncol(values),
+    dimnames = dimnames(values)
+  )
+  if (nrow(values) == 0) {
+    return(out)
+  }
+
+  ok <- is.finite(values)
+  out[ok] <- paste0(
+    formatC(values[ok], format = "f", digits = digits),
+    "%"
+  )
+  out
+}
+
 center_pad_strings <- function(values, width) {
   values <- as.character(values)
   widths <- nchar(values, type = "width")
@@ -60,6 +92,16 @@ hovertext_generator<-function(x,i,linebreak="\n"){
   pred_vals <- format_hover_values(as.matrix(x$XHat[idx, , drop = FALSE]))
   name_width <- max(nchar(var_names, type = "width")) + 1
 
+  # Optional Alves direct-reading-error column (percentage form). Supplied by
+  # score_axes() via x$reading_error; absent during a default build.
+  show_error <- !is.null(x$reading_error)
+  if (show_error) {
+    err_vals <- format_reading_error(
+      x$reading_error[idx, , drop = FALSE],
+      digits = x$reading_error_digits %||% 2
+    )
+  }
+
   #iterate over all observations in the group
   longvector <- character(length(idx))
   for(pos in seq_along(idx)){
@@ -69,6 +111,11 @@ hovertext_generator<-function(x,i,linebreak="\n"){
     actual_width <- max(nchar(c("Actual", actual_row), type = "width")) + 2
     pred_width <- max(nchar(c("Pred", pred_row), type = "width")) + 2
 
+    if (show_error) {
+      err_row <- err_vals[pos, ]
+      err_width <- max(nchar(c("Error", err_row), type = "width")) + 2
+    }
+
     table_head <- c(
       paste0(
         "|",
@@ -77,7 +124,10 @@ hovertext_generator<-function(x,i,linebreak="\n"){
         center_pad_strings("Actual", actual_width),
         "|",
         center_pad_strings("Pred", pred_width),
-        "|"
+        "|",
+        if (show_error) {
+          paste0(center_pad_strings("Error", err_width), "|")
+        }
       ),
       paste0(
         "|:",
@@ -86,7 +136,10 @@ hovertext_generator<-function(x,i,linebreak="\n"){
         strrep("-", actual_width - 2),
         ":|:",
         strrep("-", pred_width - 2),
-        ":|"
+        ":|",
+        if (show_error) {
+          paste0(":", strrep("-", err_width - 2), ":|")
+        }
       )
     )
 
@@ -97,7 +150,10 @@ hovertext_generator<-function(x,i,linebreak="\n"){
       center_pad_strings(actual_row, actual_width),
       "|",
       center_pad_strings(pred_row, pred_width),
-      "|"
+      "|",
+      if (show_error) {
+        paste0(center_pad_strings(err_row, err_width), "|")
+      }
     )
     vec <- paste0(c(table_head, table_body), linebreak, collapse = "")
     vec<-paste0(obs[j],linebreak,linebreak,vec)

@@ -414,6 +414,23 @@ asks how much sum of squares is reproduced by the displayed plane. The Alves
 diagnostics ask how accurately values can be read directly from the plotted
 calibrated axes.
 
+The per-observation direct-reading errors $\delta_{ij}$ can be attached to a
+biplot with `score_axes()`. Inserting this step into the construction pipeline
+
+```r
+init_biplot(data, scale = TRUE) |>
+  scale_mds(type = "pca") |>
+  score_axes() |>
+  plot()
+```
+
+adds an extra `Error` column, expressed as a percentage ($100\,\delta_{ij}$),
+to the hover table that appears when a data point is hovered over, alongside its
+actual and predicted values. The calculation is performed for every displayed
+dimension pair (`mdsDisplay`) in the object, and applies equally to PCA, PCO and
+CVA biplots. Because the diagnostic is opt-in, it is only computed when
+`score_axes()` is called.
+
 # References
 
 Alves, M. R. (2012). Evaluation of the predictive power of biplot axes to
