@@ -1,10 +1,12 @@
 (function () {
   window.bipl5Attach = function (el, x, data) {
     var _initPCKey = data.initialPCKey || "PC 1 & 2";
+    var _fitDisplayMode = (data.fitDisplay && data.fitDisplay.mode) || "panel";
     el.bipl5 = {
       clicked: false, //helps keep trac if an observation is clicked
       rel_but: [0, 0, 0, 0, 0], // includes EditAxes toggle state
-      is_visible: true,
+      fitDisplayMode: _fitDisplayMode,
+      fitOpen: false,
       vect_visible: 0,
       but_names: ["PC", "AxisStats", "TransAxes", "vecload", "EditAxes"], // top-row button ids
       currentPCKey: _initPCKey,
@@ -78,6 +80,59 @@
     }
 
     /**
+     * Applies centered/translated axis visibility across traces and annotations.
+     * Centered mode includes the green outer circle; translated mode includes
+     * ExpAx traces plus their linked densities.
+     *
+     * @param {Object} opts - Visibility controls.
+     * @param {boolean|null} [opts.centered=null] - Visibility for centered axes/circle/Ax annotations.
+     * @param {boolean|null} [opts.translated=null] - Visibility for translated axes/densities/ExpAx annotations.
+     * @returns {void}
+     */
+    function setAxisLayerVisibility(opts) {
+      const cfg = Object.assign({ centered: null, translated: null }, opts || {});
+      const traceIndices = [];
+      const traceVisible = [];
+
+      for (let i = 0; i < el.data.length; i++) {
+        const tag = metaTag(el.data[i]);
+        if ((tag === "axis" || tag === "OuterCircle") && cfg.centered !== null) {
+          traceIndices.push(i);
+          traceVisible.push(cfg.centered);
+          continue;
+        }
+        if ((tag === "ExpAx" || tag === "density") && cfg.translated !== null) {
+          traceIndices.push(i);
+          traceVisible.push(cfg.translated);
+        }
+      }
+
+      let relayoutNeeded = false;
+      const anns = el?.layout?.annotations;
+      if (Array.isArray(anns)) {
+        for (let i = 0; i < anns.length; i++) {
+          const tag = metaTag(anns[i]);
+          if (tag === "Ax" && cfg.centered !== null) {
+            anns[i].visible = cfg.centered;
+            relayoutNeeded = true;
+            continue;
+          }
+          if (tag === "ExpAx" && cfg.translated !== null) {
+            anns[i].visible = cfg.translated;
+            relayoutNeeded = true;
+          }
+        }
+      }
+
+      if (traceIndices.length) {
+        Plotly.restyle(el.id, { visible: traceVisible }, traceIndices);
+      }
+      if (relayoutNeeded) {
+        Plotly.relayout(el, { annotations: el.layout.annotations });
+      }
+    }
+
+    /**
      * Removes annotations whose meta tag matches `item`.
      * Iterates backwards so splicing does not skip elements.
      *
@@ -123,7 +178,210 @@
 
       out.but_names = names;
       out.rel_but = rel.slice(0, names.length);
+      if (typeof out.fitDisplayMode !== "string") {
+        out.fitDisplayMode = _fitDisplayMode;
+      }
+      if (typeof out.fitOpen !== "boolean") {
+        if (typeof out.is_visible === "boolean") {
+          out.fitOpen = !out.is_visible;
+        } else {
+          out.fitOpen = false;
+        }
+      }
       return out;
+    }
+
+    function fitDisplayMode() {
+      return el?.bipl5?.fitDisplayMode || _fitDisplayMode || "panel";
+    }
+
+    function fitDisplayConfig(mode) {
+      const all = data.fitDisplay || {};
+      const key = (mode === "overlay") ? "overlay" : "panel";
+      return deepClone(all[key] || {});
+    }
+
+    function fitOverlayOpen() {
+      return fitDisplayMode() === "overlay" && el?.bipl5?.fitOpen === true;
+    }
+
+    function menuButtonIndexByName(layoutObj, menuIdx, name) {
+      const btns = layoutObj?.updatemenus?.[menuIdx]?.buttons;
+      if (!Array.isArray(btns)) return -1;
+      for (let i = 0; i < btns.length; i++) {
+        const btn = btns[i];
+        const key = btn && (btn.name || btn.label);
+        if (key === name) return i;
+      }
+      return -1;
+    }
+
+    function setMenuButtonVisible(layoutObj, menuIdx, name, visible) {
+      const idx = menuButtonIndexByName(layoutObj, menuIdx, name);
+      if (idx >= 0) {
+        layoutObj.updatemenus[menuIdx].buttons[idx].visible = visible;
+      }
+    }
+
+    function fitYAxisSide(mode, cfg) {
+      if (typeof cfg?.yaxis3_side === "string") return cfg.yaxis3_side;
+      return "left";
+    }
+
+    function fitYAxisPosition(mode, cfg, xaxis3Domain) {
+      const rawFallback = Number(cfg?.yaxis3_position);
+      if (Number.isFinite(rawFallback)) return rawFallback;
+      return Number((xaxis3Domain || [0, 1])[0]);
+    }
+
+    function fitMenuActiveIndex(layoutObj, key) {
+      const idx = menuButtonIndexByName(layoutObj, 2, key);
+      return idx >= 0 ? idx : 0;
+    }
+
+    function fitMenuPadRight(mode) {
+      const cfg = fitDisplayConfig(mode);
+      const raw = Number(cfg?.menu_pad_right);
+      return Number.isFinite(raw) ? raw : 0;
+    }
+
+    function applyFitMenuPadding(layoutObj, mode, fitOpen) {
+      if (!layoutObj || !Array.isArray(layoutObj.updatemenus)) return;
+
+      const padRight = (mode === "overlay" && fitOpen === true)
+        ? fitMenuPadRight(mode)
+        : 0;
+
+      [0, 1].forEach((menuIdx) => {
+        if (!layoutObj.updatemenus[menuIdx]) return;
+        layoutObj.updatemenus[menuIdx].pad = Object.assign(
+          {},
+          layoutObj.updatemenus[menuIdx].pad || {},
+          { r: padRight }
+        );
+      });
+    }
+
+    function stripFitPanelLayout(layoutObj) {
+      const out = deepClone(layoutObj || {});
+      out.annotations = stripFitCaptionAnnotations(out.annotations);
+
+      out.xaxis = Object.assign({}, out.xaxis || {}, { domain: [0, 1] });
+      if (out.updatemenus && out.updatemenus[2]) {
+        out.updatemenus[2].visible = false;
+        out.updatemenus[2].active = 0;
+      }
+      if (out.sliders && out.sliders[0]) {
+        out.sliders[0].len = 1;
+      }
+      applyFitMenuPadding(out, fitDisplayMode(), false);
+
+      return out;
+    }
+
+    function patchFitTracesForMode(traces, mode) {
+      const cloned = deepClone(Array.isArray(traces) ? traces : []);
+      const cfg = fitDisplayConfig(mode);
+      for (let i = 0; i < cloned.length; i++) {
+        const tr = cloned[i];
+        if (!tr || tr.type !== "table") continue;
+        tr.domain = Object.assign({}, tr.domain || {}, {
+          x: deepClone(cfg.table_domain_x || [0.5, 1]),
+          y: deepClone(cfg.table_domain_y || [0.15, 0.85])
+        });
+      }
+      return cloned;
+    }
+
+    function buildFitLayout(layoutObj, mode, key, fitTraces, pcKey) {
+      const out = deepClone(layoutObj || {});
+      const cfg = fitDisplayConfig(mode);
+      const xaxis3Domain = deepClone(cfg.xaxis3_domain || [0.65, 1]);
+      const yaxisSide = fitYAxisSide(mode, cfg);
+      const yaxisPosition = fitYAxisPosition(mode, cfg, xaxis3Domain);
+
+      out.xaxis = Object.assign({}, out.xaxis || {}, {
+        domain: deepClone(cfg.xaxis_domain || [0, 1])
+      });
+      out.xaxis3 = Object.assign({}, out.xaxis3 || {}, {
+        domain: deepClone(xaxis3Domain)
+      });
+      out.yaxis3 = Object.assign({}, out.yaxis3 || {}, {
+        domain: deepClone(cfg.yaxis3_domain || [0.15, 0.85]),
+        anchor: "free",
+        side: yaxisSide,
+        position: yaxisPosition
+      });
+
+      if (out.updatemenus && out.updatemenus[2]) {
+        out.updatemenus[2].visible = true;
+        out.updatemenus[2].active = fitMenuActiveIndex(out, key);
+      }
+      if (out.sliders && out.sliders[0]) {
+        out.sliders[0].len = Number(cfg.slider_len || 1);
+      }
+      applyFitMenuPadding(out, mode, true);
+
+      if (mode === "overlay") {
+        out.annotations = [];
+        out.xaxis.title = "";
+        setMenuButtonVisible(out, 0, "TransAxes", false);
+        setMenuButtonVisible(out, 0, "vecload", false);
+        setMenuButtonVisible(out, 0, "EditAxes", false);
+        if (out.updatemenus && out.updatemenus[3]) {
+          out.updatemenus[3].visible = false;
+        }
+        if (out.sliders && out.sliders[0]) {
+          out.sliders[0].visible = false;
+        }
+      }
+
+      if (key === "Scree Plot") {
+        out.yaxis3 = Object.assign({}, out.yaxis3, { autorange: true });
+      } else if (key === "Summary Table") {
+        out.yaxis3 = Object.assign({}, out.yaxis3, { autorange: false });
+      } else {
+        out.yaxis3 = Object.assign({}, out.yaxis3, { autorange: false, range: [0, 1] });
+      }
+
+      applyFitPanelTitlesAndCaption(out, key, fitTraces, pcKey);
+      return out;
+    }
+
+    function saveCurrentBiplotSnapshot(pcKey) {
+      const prev = data.mdsDisplays[pcKey] || {};
+      syncmdsDisplaySliderFromLayout(prev);
+      const snapshotLayout = (fitDisplayMode() === "panel" && el.bipl5.fitOpen)
+        ? stripFitPanelLayout(el.layout)
+        : deepClone(el.layout || {});
+      applyFitMenuPadding(snapshotLayout, fitDisplayMode(), false);
+      const snapshotState = normalizeBipl5State(deepClone(el.bipl5));
+      snapshotState.fitOpen = false;
+
+      data.mdsDisplays[pcKey] = Object.assign({}, prev, {
+        trace_data: deepClone(el.data.filter(tr => !isFitPanelTrace(tr))),
+        layout: snapshotLayout,
+        bipl5: snapshotState
+      });
+
+      return data.mdsDisplays[pcKey];
+    }
+
+    function restoreBiplotSnapshot(pcKey) {
+      const snap = data.mdsDisplays?.[pcKey];
+      if (!snap || !Array.isArray(snap.trace_data)) return false;
+
+      const layout = deepClone(snap.layout || {});
+      applyFitMenuPadding(layout, fitDisplayMode(), false);
+      const state = normalizeBipl5State(deepClone(snap.bipl5));
+      state.fitDisplayMode = fitDisplayMode();
+      state.fitOpen = false;
+      state.currentFMKey = "Cum. Predictivity";
+      state.currentPCKey = pcKey;
+
+      return Plotly.react(el, deepClone(snap.trace_data), layout).then(() => {
+        el.bipl5 = state;
+      });
     }
 
     /**
@@ -308,33 +566,35 @@
         if (newKey === oldKey) return;
         data.mdsDisplays = data.mdsDisplays || {};
 
-        // ---- A) capture CURRENT RHS (fit panel) state BEFORE we switch ----
-        const fitPanelActive =
-    !!(el.layout.updatemenus && el.layout.updatemenus[2] && el.layout.updatemenus[2].visible);
-
+        const mode = fitDisplayMode();
         const fmKey = el.bipl5.currentFMKey || "Cum. Predictivity";
+
+        if (fitOverlayOpen()) {
+          el.bipl5.currentPCKey = newKey;
+          if (fmKey !== "Summary Table") return;
+
+          const overlayFitTraces = getFitTracesByKey(fmKey, mode, newKey);
+          if (!overlayFitTraces || !overlayFitTraces.length) return;
+
+          const overlayLayout = buildFitLayout(el.layout, mode, fmKey, overlayFitTraces, newKey);
+          Plotly.react(el, overlayFitTraces, overlayLayout).then(() => {
+            el.bipl5.currentPCKey = newKey;
+          });
+          return;
+        }
+
+        // ---- A) capture CURRENT RHS (fit panel) state BEFORE we switch ----
+        const fitPanelActive = mode === "panel" && el.bipl5.fitOpen === true;
         const showingSummary = fitPanelActive && (fmKey === "Summary Table");
 
         // keep current RHS traces unless we are in the Summary Table corner case
-        const currentFitPanelTraces = deepClone(el.data.filter(isFitPanelTrace));
+        const currentFitPanelTraces = fitPanelActive
+          ? deepClone(el.data.filter(isFitPanelTrace))
+          : [];
 
 
         // ---- B) save CURRENT LHS (biplot) into mdsDisplays[oldKey]
-        const prev = data.mdsDisplays[oldKey] || {};
-        // Save per-mdsDisplay slider selection before leaving this PC view.
-        syncmdsDisplaySliderFromLayout(prev);
-        const curBiplotTraces = deepClone(el.data.filter(tr => !isFitPanelTrace(tr)));
-
-
-        // Save CURRENT state into mdsDisplays[oldKey]
-        // (this is where "PC 1 & 2" gets created the first time)
-
-
-        data.mdsDisplays[oldKey] = Object.assign({}, prev, {
-          trace_data: curBiplotTraces,
-          layout: deepClone(el.layout),
-          bipl5: deepClone(el.bipl5)
-        });
+        saveCurrentBiplotSnapshot(oldKey);
 
 
         // ----C) Load the NEW mdsDisplay for LHS display
@@ -342,8 +602,9 @@
         if (!nextmdsDisplay) return; // nothing to switch to
 
         const next_bipl5=normalizeBipl5State(deepClone(nextmdsDisplay.bipl5));
-        next_bipl5.is_visible=deepClone(el.bipl5.is_visible);
-        next_bipl5.currentFMKey=deepClone(el.bipl5.currentFMKey || "Cum. Predictivity");
+        next_bipl5.fitDisplayMode=mode;
+        next_bipl5.fitOpen=fitPanelActive;
+        next_bipl5.currentFMKey=deepClone(fmKey);
         el.bipl5=next_bipl5;
 
 
@@ -354,19 +615,20 @@
 
         // Corner case: Summary Table must update when PC changes
         if (showingSummary) {
-          const tableTraces = nextmdsDisplay.fit_table;
-          nextFitPanelTraces = deepClone(tableTraces);
+          nextFitPanelTraces = getFitTracesByKey("Summary Table", mode, newKey);
         }
          // ---- D) merge layout: need to change title and button names
         var newLayout = Object.assign({}, el.layout || {});
         newLayout.annotations = stripFitCaptionAnnotations(
           deepClone((nextmdsDisplay.layout && nextmdsDisplay.layout.annotations) || [])
         );
-        newLayout.xaxis.title = deepClone((nextmdsDisplay.layout && nextmdsDisplay.layout.xaxis.title) || []);
-        newLayout.xaxis.autorange=true;
-        newLayout.yaxis.autorange=true;
+        newLayout.xaxis = Object.assign({}, newLayout.xaxis || {}, {
+          title: deepClone((nextmdsDisplay.layout && nextmdsDisplay.layout.xaxis.title) || []),
+          autorange: true
+        });
+        newLayout.yaxis = Object.assign({}, newLayout.yaxis || {}, { autorange: true });
         if (fitPanelActive) {
-          applyFitPanelTitlesAndCaption(newLayout, fmKey, nextFitPanelTraces, newKey);
+          newLayout = buildFitLayout(newLayout, mode, fmKey, nextFitPanelTraces, newKey);
         }
 
         // Ensure TransAxes button caption reflects restored state after PC switch.
@@ -428,15 +690,16 @@
           const editIdx = el.bipl5.but_names.indexOf("EditAxes");
           const hasExpAxes = mdsDisplayHasExpAxes(nextmdsDisplay);
           const transOn = transIdx >= 0 && el.bipl5.rel_but[transIdx] === 1;
+          const vectorsOn = vectorModeOn();
 
           // If translated axes are unavailable or not active in this mdsDisplay,
           // EditAxes must reset and remain hidden.
-          if (!hasExpAxes || !transOn) {
+          if (!hasExpAxes || !transOn || vectorsOn) {
             if (editIdx >= 0) el.bipl5.rel_but[editIdx] = 0;
           }
 
           const editOn = editIdx >= 0 && el.bipl5.rel_but[editIdx] === 1;
-          const editButtonVisible = hasExpAxes && transOn;
+          const editButtonVisible = hasExpAxes && transOn && !vectorsOn;
 
           if (!editButtonVisible) {
             setEditAxesUI({ editButtonVisible: false, dropdownVisible: false, sliderVisible: false, usePrompt: true });
@@ -497,18 +760,21 @@
      * @param {string} key - Fit-menu key.
      * @returns {Object[]|null} Trace list for that key, or null if unknown.
      */
-    function getFitTracesByKey(key) {
-      const pcKey = el.bipl5.currentPCKey || _initPCKey;
-      const mdsDisplay = data.mdsDisplays?.[pcKey];
+    function getFitTracesByKey(key, mode, pcKey) {
+      const resolvedMode = mode || fitDisplayMode();
+      const resolvedPCKey = pcKey || el.bipl5.currentPCKey || _initPCKey;
+      const mdsDisplay = data.mdsDisplays?.[resolvedPCKey];
+      let source = null;
 
       // pick the right source
-      if (key === "Cum. Predictivity") return data.fm_mdsDisplay.CumPred;
-      if (key === "Cum. Adequacy")     return data.fm_mdsDisplay.CumAd;
-      if (key === "Scree Plot")        return data.fm_mdsDisplay.Scree;
-      if (key === "Variance Explained")return data.fm_mdsDisplay.VarExp;
-      if (key === "Summary Table")     return mdsDisplay?.fit_table;
+      if (key === "Cum. Predictivity") source = data.fm_mdsDisplay.CumPred;
+      if (key === "Cum. Adequacy")     source = data.fm_mdsDisplay.CumAd;
+      if (key === "Scree Plot")        source = data.fm_mdsDisplay.Scree;
+      if (key === "Variance Explained")source = data.fm_mdsDisplay.VarExp;
+      if (key === "Summary Table")     source = mdsDisplay?.fit_table;
 
-      return null;
+      if (!source) return null;
+      return patchFitTracesForMode(source, resolvedMode);
     }
 
     /**
@@ -691,34 +957,24 @@
       var oldKey = el.bipl5.currentFMKey || "Cum. Predictivity";
       if (newKey === oldKey) return false;
 
+      const mode = fitDisplayMode();
+      const pcKey = el.bipl5.currentPCKey || _initPCKey;
+      const tracesToAdd = getFitTracesByKey(newKey, mode, pcKey);
+      if (!tracesToAdd || !tracesToAdd.length) return false;
+
+      if (mode === "overlay") {
+        const newLayout = buildFitLayout(el.layout, mode, newKey, tracesToAdd, pcKey);
+        return Plotly.react(el, tracesToAdd, newLayout).then(() => {
+          el.bipl5.currentFMKey = newKey;
+        });
+      }
 
       // 1) Remove existing FitPanel traces from CURRENT plot state
       const baseData = el.data.filter(tr => !isFitPanelTrace(tr));
 
-      // 2) Prepare new traces
-      const tracesToAdd = deepClone(getFitTracesByKey(newKey));
-      if (!tracesToAdd || !tracesToAdd.length) return false;
-
       // 3) Build new data + layout for react (single redraw)
       const newData = baseData.concat(tracesToAdd);
-
-      const newLayout = deepClone(el.layout);
-
-
-      // yaxis3 scaling rule: fixed [0,1] except Scree Plot (autorange)
-      if (newKey === "Scree Plot") {
-        newLayout.yaxis3 = Object.assign({}, newLayout.yaxis3, { autorange: true });
-      } else if (newKey === "Summary Table") {
-        newLayout.yaxis3 = Object.assign({}, newLayout.yaxis3, { autorange: false });
-      } else {
-        newLayout.yaxis3 = Object.assign({}, newLayout.yaxis3, { autorange: false, range: [0, 1] });
-      }
-      applyFitPanelTitlesAndCaption(
-        newLayout,
-        newKey,
-        tracesToAdd,
-        el.bipl5.currentPCKey || _initPCKey
-      );
+      const newLayout = buildFitLayout(el.layout, mode, newKey, tracesToAdd, pcKey);
 
       return Plotly.react(el, newData, newLayout).then(() => {
               el.bipl5.currentFMKey = newKey;
@@ -789,14 +1045,7 @@ function ensureSliderInfo(mdsDisplay, p, defaultActive) {
  */
 function topMenuButtonIndexByName(name) {
   // Resolve dynamic index since button ordering can change with layout updates.
-  const btns = el?.layout?.updatemenus?.[0]?.buttons;
-  if (!Array.isArray(btns)) return -1;
-  for (let i = 0; i < btns.length; i++) {
-    const b = btns[i];
-    const k = b && (b.name || b.label);
-    if (k === name) return i;
-  }
-  return -1;
+  return menuButtonIndexByName(el.layout, 0, name);
 }
 
 /**
@@ -1072,51 +1321,49 @@ function toggleSlider(d) {
      * @returns {boolean} False to suppress default button behavior.
      */
     function switch_fit_panel(){
-      const show = el.bipl5.is_visible;
+      const mode = fitDisplayMode();
+      const fitOpen = el.bipl5.fitOpen === true;
+      const pcKey = el.bipl5.currentPCKey || _initPCKey;
 
-      if (show) {
-        const add = deepClone(getFitTracesByKey("Cum. Predictivity"));
+      if (!fitOpen) {
+        if (mode === "overlay") {
+          saveCurrentBiplotSnapshot(pcKey);
+        }
+
+        const add = getFitTracesByKey("Cum. Predictivity", mode, pcKey);
         if (!add || !add.length) return false;
-        const newData = el.data.concat(add);
-        const newLayout = Object.assign({}, el.layout, {
-          xaxis: Object.assign({}, el.layout.xaxis, { domain: [0, 0.5] })
-        });
 
-        newLayout.updatemenus[2].visible=true;
-        newLayout.sliders[0].len=0.5;
-        newLayout.yaxis3.zeroline=true;
-        applyFitPanelTitlesAndCaption(
-          newLayout,
-          "Cum. Predictivity",
-          add,
-          el.bipl5.currentPCKey || _initPCKey
-        );
+        const newData = (mode === "overlay")
+          ? add
+          : el.data.concat(add);
+        const newLayout = buildFitLayout(el.layout, mode, "Cum. Predictivity", add, pcKey);
 
         Plotly.react(el, newData, newLayout).then(() => {
-        el.bipl5.is_visible = false;
-        });
-
-        return false;
-        } else {
-
-          // hide: remove fitpanel traces from el.data yourself, then react
-          const keep = el.data.filter(tr => !hasMeta(tr, "FitPanel"));
-          const newLayout = Object.assign({}, el.layout, {
-            xaxis: Object.assign({}, el.layout.xaxis, { domain: [0, 1] })
-          });
-          newLayout.updatemenus[2].visible=false;
-          newLayout.yaxis3.zeroline=true;
-          newLayout.updatemenus[2].active=0;
-          newLayout.sliders[0].len=1;
-          newLayout.annotations = stripFitCaptionAnnotations(newLayout.annotations);
-
-          Plotly.react(el, keep, newLayout).then(() => {
-          el.bipl5.is_visible = true;
+          el.bipl5.fitOpen = true;
           el.bipl5.currentFMKey = "Cum. Predictivity";
         });
 
         return false;
-        }
+      }
+
+      if (mode === "overlay") {
+        const restored = restoreBiplotSnapshot(pcKey);
+        if (restored === false) return false;
+        return restored.then(() => {
+          el.bipl5.fitOpen = false;
+          el.bipl5.currentFMKey = "Cum. Predictivity";
+        });
+      }
+
+      const keep = el.data.filter(tr => !hasMeta(tr, "FitPanel"));
+      const newLayout = stripFitPanelLayout(el.layout);
+
+      Plotly.react(el, keep, newLayout).then(() => {
+        el.bipl5.fitOpen = false;
+        el.bipl5.currentFMKey = "Cum. Predictivity";
+      });
+
+      return false;
     }
 //-------------- UPDATEMENU-----------------
 
@@ -1129,10 +1376,13 @@ function toggleSlider(d) {
         }
         if(d.menu.name==="Fit_toggle"){
           toggleFit(d);
+          return;
         }
 
         if(d.menu.name==="Slider_toggle"){
+          if (fitOverlayOpen()) return false;
           toggleSlider(d);
+          return;
         }
 
       }
@@ -1144,9 +1394,14 @@ function toggleSlider(d) {
         return;
       }
 
+      if (fitOverlayOpen()) {
+        return false;
+      }
+
       if (d.button.name === "EditAxes") {
         // Edit mode is only available while translated axes are active.
         const transOn = el.bipl5.rel_but[el.bipl5.but_names.indexOf("TransAxes")] === 1;
+        const vectorsOn = vectorModeOn();
         const pcKey = el.bipl5.currentPCKey || _initPCKey;
         data.mdsDisplays = data.mdsDisplays || {};
         const mdsDisplay = data.mdsDisplays[pcKey] || (data.mdsDisplays[pcKey] = {});
@@ -1157,7 +1412,7 @@ function toggleSlider(d) {
         ensureSliderInfo(mdsDisplay, data.p, sliderActiveNow);
         const si = mdsDisplay.config.slider_info;
 
-        if (!transOn) {
+        if (!transOn || vectorsOn) {
           si.axis_chosen = false;
           setEditAxesUI({ editButtonVisible: false, dropdownVisible: false, sliderVisible: false, usePrompt: true });
           return;
@@ -1182,35 +1437,9 @@ function toggleSlider(d) {
 
       if (d.button.name === "TransAxes") {
         // that is need to swop between normal axes and translated ones
-        //
         if (rel_but_sel === 0) {
-          // First we remove any prediction lines
           RemovePredictions();
-          //next we need to remove the circle and current axes
-          //simultaneously sommer visible the ExpAxes
-          var ax_hide = [];
-          var exp_ax_hide = [];
-          var old_axes_visible = []
-          for (let i = 0; i < el.data.length; i++) {
-            let tag = metaTag(el.data[i]);
-            if (tag === "axis" || tag === "OuterCircle") ax_hide.push(i);
-            if (tag === "ExpAx" || tag === 'density') exp_ax_hide.push(i);
-          }
-          var ax_update = {
-            visible: false,
-          };
-          var exp_ax_update = {
-            visible: true,
-          };
-
-          //haal uit al die annotation
-          for (i = 0; i < el.layout.annotations.length; i++) {
-            if (el.layout.annotations[i].meta !== "ExpAx") {
-              el.layout.annotations[i].visible = false;
-            } else {
-              el.layout.annotations[i].visible = true;
-            }
-          }
+          const vectorsOn = vectorModeOn();
           const editBtnStateIdx = el.bipl5.but_names.indexOf("EditAxes");
           if (editBtnStateIdx >= 0) el.bipl5.rel_but[editBtnStateIdx] = 0;
           const pcKey = el.bipl5.currentPCKey || _initPCKey;
@@ -1218,49 +1447,25 @@ function toggleSlider(d) {
           const mdsDisplay = data.mdsDisplays[pcKey] || (data.mdsDisplays[pcKey] = {});
           ensureSliderInfo(mdsDisplay, data.p, 0);
           mdsDisplay.config.slider_info.axis_chosen = false;
-          // When TransAxes turns on: show EditAxes button, but keep controls hidden.
-          setEditAxesUI({ editButtonVisible: true, dropdownVisible: false, sliderVisible: false, usePrompt: true });
-          //searchAnnot("vecload",false);
-          el.bipl5.ax_hide = ax_hide;
-          el.bipl5.exp_ax_hide = exp_ax_hide;
 
-          // Sit Exploding asse in
-          //voor einde maak label van die knop na teenoorgestelde
+          if (vectorsOn) {
+            // Keep all axes hidden while vector display is active.
+            setAxisLayerVisibility({ centered: false, translated: false });
+            setEditAxesUI({ editButtonVisible: false, dropdownVisible: false, sliderVisible: false, usePrompt: true });
+          } else {
+            setAxisLayerVisibility({ centered: false, translated: true });
+            setEditAxesUI({ editButtonVisible: true, dropdownVisible: false, sliderVisible: false, usePrompt: true });
+          }
+
           const index = d.button._index;
           el.layout.updatemenus[0].buttons[index].label = "Centered Axes";
-          // Sit Exploding asse in
-          Plotly.restyle(el.id, ax_update, ax_hide);
-          Plotly.restyle(el.id, exp_ax_update, exp_ax_hide);
-
           toggleButton(d.button.name);
-
           return;
         }
 
         if (rel_but_sel === 1) {
-          // First we remove any prediction lines or red circle
-          if (el.bipl5.clicked) {
-            var remove = [];
-            el.data.forEach(function (item, index, arr) {
-              if (arr[index].meta === "predict") {
-                remove.push(index);
-              }
-              if (arr[index].meta === "veccircle") {
-                remove.push(index);
-              }
-            });
-            removeAnnotation('predict');
-            Plotly.deleteTraces(el.id, remove);
-            el.bipl5.clicked = false;
-          }
-          for (i = 0; i < el.layout.annotations.length; i++) {
-            if (el.layout.annotations[i].meta === "ExpAx") {
-              el.layout.annotations[i].visible = false;
-            } else {
-              el.layout.annotations[i].visible = true;
-            }
-          }
-
+          RemovePredictions();
+          const vectorsOn = vectorModeOn();
           const editBtnStateIdx = el.bipl5.but_names.indexOf("EditAxes");
           if (editBtnStateIdx >= 0) el.bipl5.rel_but[editBtnStateIdx] = 0;
           const pcKey = el.bipl5.currentPCKey || _initPCKey;
@@ -1268,108 +1473,59 @@ function toggleSlider(d) {
           const mdsDisplay = data.mdsDisplays[pcKey] || (data.mdsDisplays[pcKey] = {});
           ensureSliderInfo(mdsDisplay, data.p, 0);
           mdsDisplay.config.slider_info.axis_chosen = false;
-          // When TransAxes turns off: hide EditAxes button and controls.
+
+          setAxisLayerVisibility(
+            vectorsOn
+              ? { centered: false, translated: false }
+              : { centered: true, translated: false }
+          );
           setEditAxesUI({ editButtonVisible: false, dropdownVisible: false, sliderVisible: false, usePrompt: true });
+          if (!vectorsOn) {
+            searchAnnot("vecload", false);
+          }
 
-          searchAnnot('vecload', false);
-
-          var exp_ax_update = {
-            visible: false,
-          };
-          var ax_update = {
-            visible: true,
-          };
-          //voor einde maak label van die knop na teenoorgestelde
           const index = d.button._index;
           el.layout.updatemenus[0].buttons[index].label = "Translated Axes";
-
-          Plotly.restyle(el.id, exp_ax_update, el.bipl5.exp_ax_hide);
-          Plotly.restyle(el.id, ax_update, el.bipl5.ax_hide);
           toggleButton(d.button.name);
           return;
         }
       }
 
       if (d.button.name === "vecload") {
-        // that is need to insert/delete red circle and vectors
+        // Toggle vector annotations.
         if (rel_but_sel === 0) {
-          //need to insert vects
-          // first remove prediction lines
           RemovePredictions();
-
-          // next we need to insert red circle and vects pappa
-          var update = {
-            visible: true
-          };
-
-          for (i = 0; i < el.data.length; i++) {
-            if (el.data[i].meta[0] === "veccircle") {
-              el.data[i].visible = true;
-            }
-          }
-          //take out all axis tickmarks - ExpAx stays
-          searchAnnot("Ax",false);
-          //make arrows vect_visible
-          searchAnnot("vecload",true);
-
-
-          //Plotly.restyle(el.id, update);
+          setAxisLayerVisibility({ centered: false, translated: false });
+          searchAnnot("vecload", true);
+          const editBtnStateIdx = el.bipl5.but_names.indexOf("EditAxes");
+          if (editBtnStateIdx >= 0) el.bipl5.rel_but[editBtnStateIdx] = 0;
+          setEditAxesUI({ editButtonVisible: false, dropdownVisible: false, sliderVisible: false, usePrompt: true });
 
           el.bipl5.vect_visible = 1;
-
-          //alright pappa now need to take away axes
-
-          var tr_index = [];
-          for (let i = 0; i < el.data.length; i++) {
-            let tag = metaTag(el.data[i]);
-            if (tag === "axis") {
-              tr_index.push(i);
-            }
-          }
-          var trace_update = {
-            visible: false
-          };
-          Plotly.restyle(el.id, trace_update, tr_index);
           toggleButton(d.button.name);
+          return;
         }
-        if (rel_but_sel === 1) {
-          //need to remove vects and insert axes once more
-          var tr_index = [];
-          var update = {
-            visible: false
-          };
-          if(el.bipl5.rel_but[el.bipl5.but_names.indexOf("TransAxes")] === 0){
-            for (let i = 0; i < el.data.length; i++) {
-              let tag = metaTag(el.data[i]);
-              if (tag === "axis") {
-                el.data[i].visible = true;
-              }
-              if (tag === "OuterCircle") {
-                el.data[i].visible = true;
-              }
-            }
-            //dan net vecload annotations
-            searchAnnot('Ax',true);
 
-          }
-          for (let i = 0; i < el.data.length; i++) {
-            let tag = metaTag(el.data[i]);
-            if (tag === "veccircle") {
-              tr_index.push(i);
-            }
-          }
-          searchAnnot('vecload',false);
+        if (rel_but_sel === 1) {
+          searchAnnot("vecload", false);
+          const transOn = translatedAxesModeOn();
+          setAxisLayerVisibility({
+            centered: !transOn,
+            translated: transOn
+          });
+          const hasExpAxes = searchAxes("ExpAx").length > 0;
+          setEditAxesUI({
+            editButtonVisible: transOn && hasExpAxes,
+            dropdownVisible: false,
+            sliderVisible: false,
+            usePrompt: true
+          });
 
           el.bipl5.vect_visible = 0;
-
-          Plotly.restyle(el.id, update, tr_index);
           toggleButton(d.button.name);
-
-
-
-        el.bipl5.clicked = false;
-        return;
-      }
+          el.bipl5.clicked = false;
+          return;
+        }
       }
     });
 
@@ -1529,6 +1685,15 @@ function toggleSlider(d) {
       if (!Array.isArray(names) || !Array.isArray(rel)) return false;
       const idx = names.indexOf("TransAxes");
       return idx >= 0 && rel[idx] === 1;
+    }
+
+    /**
+     * Returns whether vector-display mode is currently enabled.
+     *
+     * @returns {boolean} True when vector display is active.
+     */
+    function vectorModeOn() {
+      return el?.bipl5?.vect_visible === 1;
     }
 
     /**
@@ -1698,6 +1863,9 @@ function toggleSlider(d) {
       const tr = dat?.data?.[dat.curveNumber];
       if (!tr) return false;
       const tag = metaTag(tr);
+      if (fitOverlayOpen() && !hasMeta(tr, "FitPanel")) {
+        return false;
+      }
       // Delete predictive lines
       if (tag === "predict") {
         RemovePredictions()
@@ -1843,6 +2011,7 @@ function shiftNumericArray(arr, delta) {
 }
 
     el.on("plotly_sliderchange", function(e) {
+      if (fitOverlayOpen()) return;
       // Only do this when TransAxes is ON
       const transOn = el.bipl5.rel_but[el.bipl5.but_names.indexOf("TransAxes")] === 1;
       if (!transOn) return;
@@ -2045,6 +2214,7 @@ function shiftNumericArray(arr, delta) {
     }
 
     el.on("plotly_click", function (d) {
+      if (fitOverlayOpen()) return false;
       const clickedPoint = d && Array.isArray(d.points) ? d.points[0] : null;
       const clickedTrace = clickedPoint && clickedPoint.data ? clickedPoint.data : null;
       if (!clickedPoint || !clickedTrace) return false;

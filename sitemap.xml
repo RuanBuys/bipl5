@@ -1,35 +1,105 @@
-<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
-<url><loc>https://www.bipl5.co.za/404.html</loc></url>
-<url><loc>https://www.bipl5.co.za/CONTRIBUTING.html</loc></url>
-<url><loc>https://www.bipl5.co.za/LICENSE-text.html</loc></url>
-<url><loc>https://www.bipl5.co.za/LICENSE.html</loc></url>
-<url><loc>https://www.bipl5.co.za/agents.html</loc></url>
-<url><loc>https://www.bipl5.co.za/articles/index.html</loc></url>
-<url><loc>https://www.bipl5.co.za/articles/pca-biplots.html</loc></url>
-<url><loc>https://www.bipl5.co.za/articles/regression-biplots.html</loc></url>
-<url><loc>https://www.bipl5.co.za/authors.html</loc></url>
-<url><loc>https://www.bipl5.co.za/index.html</loc></url>
-<url><loc>https://www.bipl5.co.za/news/index.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/Symbol_List.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/append_mdsDisplay.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/bipl5.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/colorpal.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/extract.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/format_samples.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/index.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/init_biplot.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/plot.bipl5_biplot.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/plot.bipl5_fit.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/print.bipl5_biplot.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/print.bipl5_data.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/print.bipl5_fitmeasures.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/print.bipl5_mdsDisplay.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/remove_mdsDisplay.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/scale_mds.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/wrap_bipl5.CVA.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/wrap_bipl5.PCA.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/wrap_bipl5.PCO.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/wrap_bipl5.html</loc></url>
-<url><loc>https://www.bipl5.co.za/reference/wrap_bipl5.regress.html</loc></url>
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.bipl5.co.za/404.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/agents.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/articles/index.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/articles/pca-biplots.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/articles/regression-biplots.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/authors.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/CONTRIBUTING.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/index.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/LICENSE-text.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/LICENSE.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/news/index.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/append_mdsDisplay.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/bipl5.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/colorpal.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/extract.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/format_samples.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/index.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/init_biplot.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/overlay_fit.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/plot.bipl5_biplot.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/plot.bipl5_fit.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/print.bipl5_biplot.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/print.bipl5_data.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/print.bipl5_fitmeasures.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/print.bipl5_mdsDisplay.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/remove_mdsDisplay.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/scale_mds.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/score_axes.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/Symbol_List.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/wrap_bipl5.CVA.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/wrap_bipl5.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/wrap_bipl5.PCA.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/wrap_bipl5.PCO.html</loc>
+  </url>
+  <url>
+    <loc>https://www.bipl5.co.za/reference/wrap_bipl5.regress.html</loc>
+  </url>
 </urlset>
-
