@@ -238,14 +238,17 @@ sample_point_frame <- function(x) {
 
 #' Build the layer data for alpha bags and concentration ellipses
 #'
+#' \code{biplotEZ::alpha.bags()} and \code{biplotEZ::ellipses()} both store
+#' ready-to-draw boundary coordinates, and \pkg{biplotEZ} renders them with a
+#' plain \code{graphics::polygon()} call. They are therefore drawn here exactly
+#' as stored, with no refitting.
+#'
 #' @param coords Named list of polygon coordinate matrices.
 #' @param aes_list The matching aesthetics list from the biplotEZ object.
-#' @param ellipse Logical; whether the coordinates should first be summarised by
-#'   an ellipsoid hull, matching the plotly renderer.
 #'
 #' @return A data frame, or \code{NULL} when there is nothing to draw.
 #' @noRd
-polygon_frame <- function(coords, aes_list, ellipse = FALSE) {
+polygon_frame <- function(coords, aes_list) {
   if (is.null(coords) || length(coords) == 0L) {
     return(NULL)
   }
@@ -257,10 +260,6 @@ polygon_frame <- function(coords, aes_list, ellipse = FALSE) {
     xy <- as.matrix(coords[[i]])
     if (nrow(xy) < 3L) {
       next
-    }
-    if (ellipse) {
-      hull <- cluster::ellipsoidhull(xy)
-      xy <- as.matrix(cluster::predict.ellipsoid(hull, n.out = 101))
     }
 
     frames[[i]] <- data.frame(
@@ -410,7 +409,7 @@ build_bipl5_gg <- function(
     polygon_frame(x$alpha.bags, x$alpha.bag.aes)
   }
   ellipse_frame <- if (isTRUE(conc_ellipses)) {
-    polygon_frame(x$conc.ellipses, x$conc.ellipse.aes, ellipse = TRUE)
+    polygon_frame(x$conc.ellipses, x$conc.ellipse.aes)
   }
   poly_frame <- do.call(rbind, Filter(Negate(is.null), list(
     bag_frame,

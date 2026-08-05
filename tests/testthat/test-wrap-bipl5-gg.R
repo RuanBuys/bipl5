@@ -298,6 +298,40 @@ test_that("group aesthetics, class means and polygons reach the plot", {
   expect_silent(ggplot2::ggplot_build(p))
 })
 
+test_that("bags and ellipses are drawn exactly as biplotEZ stores them", {
+  ez <- suppressMessages(
+    biplotEZ::biplot(iris[, 1:4], scale = TRUE) |>
+      biplotEZ::PCA(group.aes = iris[, 5]) |>
+      biplotEZ::alpha.bags(alpha = 0.9) |>
+      biplotEZ::ellipses(kappa = 2)
+  )
+
+  # biplotEZ renders both with graphics::polygon() on the stored boundary, so
+  # the ggplot2 layer must not refit or resample them
+  for (field in c("alpha.bags", "conc.ellipses")) {
+    aes_field <- if (field == "alpha.bags") "alpha.bag.aes" else "conc.ellipse.aes"
+    frame <- bipl5:::polygon_frame(ez[[field]], ez[[aes_field]])
+    expect_equal(nrow(frame), sum(vapply(ez[[field]], nrow, integer(1))))
+
+    for (i in seq_along(ez[[field]])) {
+      sub <- frame[frame$poly_group == i, , drop = FALSE]
+      expect_equal(sub$x, unname(ez[[field]][[i]][, 1]))
+      expect_equal(sub$y, unname(ez[[field]][[i]][, 2]))
+      expect_identical(sub$poly_colour[1], ez[[aes_field]]$col[i])
+      expect_identical(sub$poly_alpha[1], ez[[aes_field]]$opacity[i])
+    }
+  }
+
+  # both sets of polygons reach the plot, under distinct grouping
+  p <- wrap_bipl5_gg(ez)
+  poly_layer <- p$layers[[which(vapply(
+    p$layers, function(l) inherits(l$geom, "GeomPolygon"), logical(1)
+  ))[1]]]
+  expect_length(unique(poly_layer$data$poly_group), 6L)
+  expect_silent(ggplot2::ggplot_build(p))
+  expect_s3_class(gg_build_grob(p), "gtable")
+})
+
 test_that("display quality is reported as the plot caption", {
   p <- wrap_bipl5_gg(pca_ez())
   expect_match(p$labels$caption, "^Quality of display")
