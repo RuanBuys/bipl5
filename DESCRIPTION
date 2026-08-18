@@ -31,11 +31,12 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
-Imports: 
+Imports:
     biplotEZ (>= 2.0),
     cluster,
     crayon (>= 1.5.2),
-    ggplot2,
+    ggplot2 (>= 3.4.0),
+    grid,
     htmltools,
     htmlwidgets (>= 1.6.2),
     knitr (>= 1.43),

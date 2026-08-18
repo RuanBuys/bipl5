@@ -868,6 +868,60 @@ means the dependency was not loaded (JS not attached, wrong `src`, file not in `
 
 ---
 
+## 25b) The ggplot2 renderer (`wrap_bipl5_gg()`)
+
+`wrap_bipl5_gg()` is the static counterpart of `wrap_bipl5()`. It takes the same
+biplotEZ objects and returns a plain `ggplot`, so none of the mdsDisplay / trace /
+meta-tag machinery documented above applies to it.
+
+### Files
+
+- `R/wrap_bipl5_gg.R` — the user-facing `wrap_bipl5_gg()`, the shared builder
+  `build_bipl5_gg()`, the layer-data builders (`calibrated_axis_frame()`,
+  `sample_point_frame()`, `polygon_frame()`, `class_mean_frame()`), and
+  `gg_biplot_context()`, which resolves the per-family differences (PCA / CVA /
+  regress / PCO) in one place instead of through S3 methods.
+- `R/geom_calibrated_axis.R` — `geom_calibrated_axis()` and the
+  `GeomCalibratedAxis` ggproto object.
+- `R/wrap_bipl5_gg_helper.R` — geometry helpers shared by the layer.
+
+### How the calibrated axes work
+
+The rendering geometry is that of `gggda::GeomAxis` (the layer behind
+`ordr::geom_cols_axis()`): the axis is an infinite line clipped to the panel,
+tick marks are short orthogonal segments, marker values are rotated to the axis
+angle and dodged to one side, and the variable name is written at the panel
+border on the increasing end of the axis.
+
+Two behaviours are worth knowing about:
+
+1. **The axes never widen the plotting window.** `GeomCalibratedAxis$setup_data()`
+   renames `x`/`y` to `x_t`/`y_t`, which hides them from the round of scale
+   training that ggplot2 performs *after* `setup_data()`. The panel range is
+   therefore set by the sample points alone, exactly as in `ordr::ggbiplot()`.
+   Anything reading the built layer data must look for `x_t`/`y_t`, not `x`/`y`.
+
+2. **The calibration comes from biplotEZ, not from ggplot2.** `gggda` derives
+   marker values at draw time from `center`/`scale` aesthetics via Wilkinson's
+   extended breaks algorithm. bipl5 instead reads
+   `biplotEZ::axes_coordinates()` and recovers the affine map
+   `v -> (x0 + v*dxdv, y0 + v*dydv)` implied by those coordinates
+   (`gg_axis_calibration()`). With `tick_extend = TRUE` the layer regenerates
+   markers along the whole visible axis from that map, keeping the marker
+   spacing and phase biplotEZ chose. So `biplotEZ::axes(ticks = n)` still
+   controls marker density.
+
+Axis aesthetics use deliberately non-standard names (`axis_colour`,
+`tick_colour`, `text_size`, ...). Mapping `colour` or `linewidth` would create
+ggplot2 scales and legends for the axes and collide with the sample-point
+scales, so they are passed through unscaled and resolved inside `draw_panel()`.
+
+Spline (PCO) axes are drawn with `axis_type = "curve"`: the axis becomes a
+`GeomPath`, each vertex carries its own `angle` from `gg_curve_angles()`, and
+only rows flagged by the `tick` aesthetic get a tick mark and label.
+
+---
+
 ## 26) Quick reference: complete user API
 
 ```r
@@ -882,6 +936,10 @@ bp$mdsDisplay_12$Data    # print the data sub-object
 
 # ── Plotting ──────────────────────────────────────────────────
 plot(bp)              # full interactive plotly widget
+
+# ── Static ggplot2 rendering ──────────────────────────────────
+biplot(iris[,1:4], scale = TRUE) |> PCA(group.aes = iris[,5]) |> wrap_bipl5_gg()
+geom_calibrated_axis(...)   # the calibrated-axis layer on its own
 
 # ── Extraction ────────────────────────────────────────────────
 extract(bp, mdsDisplay_12)                            # subset → plottable bipl5_biplot
